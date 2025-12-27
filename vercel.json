@@ -50,11 +50,8 @@
   ],
   "rewrites": [
     {
-      "source": "/((?!api|_next/static|_next/image|assets|favicon.ico|static|public|node_modules|\\.well-known|\\.vercel|\\.git|\\.svn|\\.hg).*)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
-  ],
-  "github": {
-    "silent": true
-  }
+  ]
 }
