@@ -18,7 +18,7 @@ JX CLOUD (江西云厨) is an enterprise-level hospitality management suite buil
 ## Key Components
 
 - **App.tsx**: Main application with dashboard, room grid, order management, menu management, etc.
-- **Services**: API service, Supabase client, notification service, AI service
+- **Services**: API service, Supabase client, notification service, AI service, business logic, security, network management
 - **Components**: Modular UI components for each feature area (Dashboard, RoomGrid, OrderManagement, MenuManagement, etc.)
 
 ## Database Schema
@@ -45,6 +45,12 @@ npm run build
 
 # Preview production build
 npm run preview
+
+# Run specific test file
+npm run test:utils
+
+# Alternative test command
+tsx test-functions.ts
 ```
 
 ## Environment Variables
@@ -52,6 +58,7 @@ npm run preview
 - `VITE_SUPABASE_URL`: Supabase project URL
 - `VITE_SUPABASE_ANON_KEY`: Supabase anonymous key
 - `API_KEY`: Gemini API key (for AI features)
+- `GEMINI_API_KEY`: Alternative Gemini API key variable
 
 ## Key Features
 
@@ -63,6 +70,7 @@ npm run preview
 - Room/table status management
 - Security audit logging for sensitive operations
 - Mobile-responsive design
+- Payment processing with multiple payment methods (GCash, Maya, GrabPay, etc.)
 
 ## Authentication
 
@@ -76,93 +84,67 @@ The system uses simulated authentication in the frontend with:
 - Automatic security logging for sensitive operations
 - Role-based permissions system
 - Client-side validation and sanitization
+- Network error handling and request tracking
 
 ## Important Files
 
 - `App.tsx`: Main application component
 - `services/api.ts`: All API calls and security logging
 - `services/supabaseClient.ts`: Database connection
+- `services/business.ts`: Business logic validation
+- `services/network.ts`: Network error handling and request tracking
 - `types.ts`: TypeScript interfaces and enums
 - `components/`: All UI components
 - `README.md`: Database initialization scripts
-- 项目文档体系构建指南
+- `tsconfig.json`: TypeScript configuration
+- `vite.config.ts`: Vite build configuration
 
-## 文档分类与编写要求
+## Testing and Quality Assurance
 
-### 1. 核心交付文档（面向客户/最终用户）
-**目标用户**：酒店管理人员、前台操作员、系统使用者
-**编写要求**：语言简洁明了，避免技术术语，配图说明操作步骤
+- Unit tests: Run with `npm run test:utils` or `tsx test-functions.ts`
+- API validation: Services include comprehensive validation for all data operations
+- Type safety: Full TypeScript coverage with strict typing
 
-- 《用户操作手册》
-  - 包含各功能模块的详细操作步骤
-  - 房间管理、订单处理、菜单配置等核心功能说明
-  - 常用操作的快捷方式和技巧
+## Key Services
 
-- 《系统管理员手册》
-  - 用户权限管理、角色配置说明
-  - 系统设置、参数配置指南
-  - 数据备份与恢复操作
+- `api.ts`: Main API gateway with security logging
+- `business.ts`: Business logic validation and rules
+- `network.ts`: Network error handling and request tracking
+- `security.ts`: Security utilities and audit functions
+- `utils.ts`: General utility functions
+- `notification.ts`: Notification service
+- `aiService.ts`: AI functionality with Gemini API
+- `supabaseClient.ts`: Database client configuration
 
-- 《系统服务条款与使用协议》
-  - 服务范围、责任界定
-  - 数据安全与隐私保护条款
-  - 服务级别协议(SLA)
+## Key Components
 
-### 2. 技术开发文档（面向开发团队/维护人员）
-**目标用户**：开发人员、技术负责人、系统架构师
-**编写要求**：技术细节完整，架构图清晰，部署步骤详细
+- `Dashboard.tsx`: Main dashboard with analytics
+- `RoomGrid.tsx`: Room/table management interface
+- `OrderManagement.tsx`: Order processing and tracking
+- `MenuManagement.tsx`: Menu and dish management
+- `StaffManagement.tsx`: Employee management
+- `FinanceManagement.tsx`: Financial tracking and reporting
+- `PaymentManagement.tsx`: Payment processing
+- `GuestOrder.tsx`: Guest-facing ordering interface
 
-- 《技术架构与部署文档》
-  - 系统架构图与组件关系说明
-  - 开发环境搭建步骤
-  - 生产环境部署指南
-  - 数据库设计与API接口文档
+## Type Definitions
 
-- 《代码仓库文档》
-  - README.md：项目概述、安装配置、运行说明
-  - CONTRIBUTING.md：贡献指南
-  - CHANGELOG.md：版本变更记录
+The `types.ts` file contains comprehensive TypeScript interfaces for:
+- User roles and permissions (UserRole enum)
+- Room and order statuses (RoomStatus, OrderStatus enums)
+- Payment methods (PaymentMethod enum)
+- All core data models (User, Dish, Order, Expense, SecurityLog, etc.)
 
-### 3. 运维支持文档（面向运维/客服人员）
-**目标用户**：系统运维人员、技术支持、客服团队
-**编写要求**：问题定位快速，解决方案明确，应急处理步骤清晰
+## Deployment Notes
 
-- 《系统运维手册》
-  - 监控指标与告警设置
-  - 日常维护任务清单
-  - 性能优化建议
+- Deploy frontend to Vercel
+- Backend services hosted on Supabase
+- Ensure Realtime subscription is enabled for the `orders` table in Supabase Dashboard
+- Environment variables must be configured in deployment platform
+- Database initialization script must be run in Supabase SQL Editor before deployment
 
-- 《常见问题FAQ》
-  - 用户高频问题及解决方案
-  - 系统异常情况处理
-  - 权限相关问题解答
+## Documentation Structure
 
-- 《故障排查指南》
-  - 常见错误代码含义
-  - 系统日志分析方法
-  - 应急恢复流程
-
-### 4. 项目管理文档（过程记录与资产）
-**目标用户**：项目经理、产品负责人、未来维护人员
-
-- 《项目交付清单》
-- 《版本发布说明》
-- 《需求变更记录》
-
-## 文档编写最佳实践
-
-### 存储与版本管理
-- 所有文档统一存放在 `docs/` 目录下
-- 使用Git进行版本控制，与代码同步更新
-- 建立文档更新日志，记录变更历史
-
-### 格式与规范
-- 统一使用Markdown(.md)格式编写
-- 在主README.md中建立完整文档导航索引
-- 图片统一存放于 `docs/images/` 目录
-- 文档命名规范：使用英文，避免特殊字符
-
-### 交付与分发
-- 最终交付时提供在线文档链接
-- 准备《文档交付说明信》，明确各文档用途和目标用户
-- 重要文档提供PDF格式备份文
+- `docs/` directory contains user manuals, admin guides, and technical documentation
+- API documentation and database schema in README.md
+- Deployment checklist in DeploymentChecklist.tsx component
