@@ -200,11 +200,30 @@ ON CONFLICT (username) DO NOTHING;
 
 欢迎提交 Issue 和 Pull Request 来帮助改进项目！
 
-## 📄 法律文档
+## 📄 文档索引
 
-- [隐私政策](./PRIVACY_POLICY.md) - 了解我们如何保护您的隐私
-- [服务条款](./TERMS_OF_SERVICE.md) - 使用本服务的条款和条件
-- [免责声明](./DISCLAIMER.md) - 了解责任边界和服务现状
+### 用户文档
+- [用户手册](../user/用户手册.md) - 系统基本功能使用指南
+- [住客点餐指南](../user/住客点餐指南.md) - 住客点餐操作说明
+
+### 管理员文档
+- [管理员手册](../admin/管理员手册.md) - 系统管理员操作指南
+- [酒店管理员操作手册](../admin/酒店管理员操作手册.md) - 酒店日常操作流程
+
+### 技术文档
+- [数据库字典](./DICTIONARY.md) - 数据库表结构说明
+- [生产部署清单](./PRODUCTION_CHECKLIST.md) - 生产环境部署检查清单
+- [RLS安全策略设置](./RLS_SETUP.md) - 行级安全策略配置
+- [存储设置指南](./STORAGE_SETUP.md) - Supabase存储配置
+- [用户设置脚本](./USER_SETUP.md) - 用户初始化脚本
+- [OAuth设置指南](./OAUTH_SETUP.md) - OAuth认证配置
+- [二维码设置](./QR_CODE_SETUP.md) - 房间二维码生成配置
+- [图片素材库指南](./IMAGE_LIBRARY_GUIDE.md) - 图片素材管理
+
+### 法律文档
+- [隐私政策](../legal/PRIVACY_POLICY.md) - 了解我们如何保护您的隐私
+- [服务条款](../legal/系统服务条款.md) - 使用本服务的条款和条件
+- [免责声明](../legal/DISCLAIMER.md) - 了解责任边界和服务现状
 
 ## 📞 支持
 

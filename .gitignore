@@ -99,3 +99,81 @@ supabase/
 .cache/
 .vercel/
 .vercelignore
+
+# Documentation build outputs (if any)
+docs/_build/
+docs/build/
+docs/.vitepress/
+docs/.vuepress/
+
+# IDE specific
+.vs/
+*.sublime-project
+*.sublime-workspace
+.vscode-test/
+
+# Testing
+coverage/
+.nyc_output/
+.jest/
+
+# CI/CD
+.semaphore/
+.github/workflows/
+
+# Sensitive files
+config/
+secrets/
+credentials.json
+*.pem
+*.key
+*.crt
+*.cert
+
+# Local configuration
+local-config.json
+config.local.json
+
+# Logs
+.log
+logs/
+*.log
+
+# Temporary files
+.temp/
+tmp/
+*.tmp
+*.temp
+
+# OS generated files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Icon?
+._*
+
+# Editor specific
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Bundle output
+stats.html
+/dist/stats.html
+/dist/stats-*.html
+*.visualizer.html
+
+# Environment specific
+.env.production
+.env.development
+.env.staging
+.env.backup
+
+# Database
+*.db
+*.db-journal
+
+# Node modules cache
+node_modules/.cache/
+node_modules/.vite/

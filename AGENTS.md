@@ -28,8 +28,8 @@ JX Cloud (江西云厨) is an enterprise-grade hospitality management suite buil
 ## Development Commands
 
 ```bash
-# Install dependencies (use legacy peer deps due to React 19 compatibility)
-npm install --legacy-peer-deps
+# Install dependencies
+npm install
 
 # Start development server
 npm run dev
@@ -39,18 +39,42 @@ npm run build
 
 # Preview production build
 npm run preview
+
+# Build with bundle analysis (for performance optimization)
+npm run build:analyze
 ```
+
+## Build and Optimization
+
+- The application uses code splitting with manualChunks configuration to optimize bundle size
+- Rollup plugins include visualizer for bundle analysis (stats.html)
+- Terser is used for advanced minification
+- Chunk size warning limit is set to 1000KB to address build warnings
 
 ## Environment Configuration
 
 - Environment variables use VITE_ prefix for client-side access
 - Required variables: `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`
-- Demo mode activates when environment variables are missing
+- Demo mode activates when environment variables are missing, using fallback data
 - Default admin credentials: username 'admin', password 'admin123'
 
 ## Database Initialization
 
 Run the SQL script from README.md in Supabase SQL Editor to initialize all tables and pre-configure 64 rooms (8201-8232 and 8301-8332).
+
+## API and Services Architecture
+
+- **API Layer**: Located in `services/api.ts`, uses enhanced retry logic with fallback data for resilience
+- **Supabase Client**: Configured with environment variable detection and demo mode handling
+- **Realtime Subscriptions**: Implemented for order updates via Supabase Realtime
+- **Audit Logging**: Security logs are maintained for critical actions
+- **Enhanced Error Handling**: Comprehensive error handling with fallback mechanisms
+
+## Component Structure
+
+- **Main Components**: Dashboard, RoomGrid, OrderManagement, MenuManagement, FinanceManagement, StaffManagement, SystemSettings
+- **Specialized Components**: GuestOrder (for guest ordering interface), ImageLibrary (for asset management), NotificationCenter (for real-time notifications)
+- **Shared Components**: Sidebar, ErrorBoundary, ConfirmationModal, OptimizedImage
 
 ## Key Features
 
@@ -63,6 +87,7 @@ Run the SQL script from README.md in Supabase SQL Editor to initialize all table
 - Financial tracking and expense management
 - Security audit logging
 - Guest ordering interface accessible via ?room= parameter
+- QR code generation for room access
 
 ## Important Notes
 
