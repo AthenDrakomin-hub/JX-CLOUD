@@ -1,12 +1,75 @@
 # JX CLOUD (江西云厨) - 企业级酒店管理套件
 
-JX CLOUD 是一款专为现代化酒店、高端餐饮及综合度假村打造的全链路管理系统。基于 **React 19** 与 **Supabase** 云原生架构。
+> 专为现代化酒店、高端餐饮及综合度假村打造的全链路管理系统
 
----
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev/) [![Supabase](https://img.shields.io/badge/Supabase-2.39.0-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com/) [![Vite](https://img.shields.io/badge/Vite-6.0-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
 
-## 🚀 生产环境数据库初始化 (Supabase)
+JX Cloud 是一款现代化的企业级酒店管理套件，采用 React 19 与 Supabase 云原生架构，为酒店、餐厅及度假村提供全链路管理解决方案。
 
-请在 Supabase 的 **SQL Editor** 中运行以下脚本。该脚本已包含所有 64 个房间的自动初始化逻辑。
+## ✨ 特性
+
+- **实时订单管理** - 基于 Supabase Realtime 的实时订单状态更新
+- **多语言支持** - 支持中文、英文、菲律宾语三语切换
+- **扫码点餐** - 为每个房间生成专属二维码，客人可直接扫码点餐
+- **多角色权限** - 管理员、经理、员工三级权限管理
+- **财务审计** - 完整的收入支出跟踪与审计功能
+- **安全可靠** - 基于 JWT 的身份验证与行级安全策略
+
+## 🚀 快速开始
+
+### 环境要求
+
+- Node.js 18+
+- npm 或 yarn
+- Supabase 账户
+
+### 本地开发
+
+1. **克隆项目**
+
+```bash
+git clone <repository-url>
+cd jx-cloud-enterprise-hospitality-suite
+```
+
+2. **安装依赖**
+
+```bash
+npm install
+```
+
+3. **配置环境变量**
+
+创建 `.env` 文件并添加：
+
+```env
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+4. **启动开发服务器**
+
+```bash
+npm run dev
+```
+
+### 生产部署
+
+1. **构建项目**
+
+```bash
+npm run build
+```
+
+2. **部署到 Vercel**
+
+在 Vercel 项目设置中配置以下环境变量：
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+
+## 🏗️ 数据库初始化
+
+在 Supabase SQL 编辑器中运行以下脚本初始化数据库表结构和基础数据：
 
 ```sql
 -- 启用 UUID 扩展
@@ -95,32 +158,61 @@ BEGIN
     END LOOP;
 END $$;
 
--- 预置初始管理员 (默认密码 admin123 逻辑在前端处理)
+-- 预置初始管理员
 INSERT INTO users (username, name, role) 
 VALUES ('admin', '系统管理员', 'admin') 
 ON CONFLICT (username) DO NOTHING;
 ```
 
+## 🛠 配置要点
+
+1. **Realtime 订阅**：在 Supabase Dashboard 的 **Database -> Replication** 中，确保 `orders` 表已启用 **Realtime** 选项
+2. **RLS 策略**：运行 `enable_rls.sql` 脚本为 `security_logs` 和 `rooms` 表启用行级安全策略
+3. **存储桶配置**：如需使用图片素材库功能，在 Supabase Dashboard 的 **Storage** 中创建名为 `materials` 的存储桶
+4. **用户配置**：运行 `user_setup.sql` 脚本配置 2 个管理员和 3 个员工账号
+
+## 📋 功能模块
+
+- **Dashboard** - 实时业务数据分析与监控
+- **Rooms** - 房间/桌位状态管理与二维码生成
+- **Orders** - 订单全流程跟踪与管理
+- **Menu** - 菜单配置与库存管理
+- **Finance** - 财务审计与支出管理
+- **Users** - 员工管理与安全审计
+- **Settings** - 系统配置与法律文档
+
+## 🔐 安全特性
+
+- **身份验证**：通过 Supabase Auth 实现安全认证
+- **行级安全**：通过 RLS 策略控制数据访问权限
+- **匿名化设计**：不收集个人身份信息，保护用户隐私
+- **加密传输**：所有数据传输使用 HTTPS 加密
+
+## 🌐 国际化
+
+系统支持中文、英文、菲律宾语三语切换，可轻松扩展至更多语言。
+
+## 📄 许可证
+
+本项目遵循特定许可证协议。详细信息请参阅 [LICENSE](./LICENSE) 文件（如存在）。
+
+## 🤝 贡献
+
+欢迎提交 Issue 和 Pull Request 来帮助改进项目！
+
+## 📄 法律文档
+
+- [隐私政策](./PRIVACY_POLICY.md) - 了解我们如何保护您的隐私
+- [服务条款](./TERMS_OF_SERVICE.md) - 使用本服务的条款和条件
+- [免责声明](./DISCLAIMER.md) - 了解责任边界和服务现状
+
+## 📞 支持
+
+如需技术支持或有疑问，请通过以下方式联系：
+
+- 项目主页: https://www.jiangxijiudian.store/
+- 问题报告: [GitHub Issues](链接到项目 Issues)
+
 ---
 
-## 🛠 部署注意事项
-
-1. **环境变量**：在 Vercel 部署面板中，必须配置 `VITE_SUPABASE_URL` 和 `VITE_SUPABASE_ANON_KEY`。
-2. **Realtime 订阅**：请在 Supabase Dashboard 的 **Database -> Replication** 中，确保 `orders` 表已启用 **Realtime** 选项。
-3. **依赖冲突 (核心修复)**：本项目使用 React 19。由于部分第三方库（如 `qrcode.react`）尚未更新 Peer Deps，系统已内置 `.npmrc` 文件配置 `legacy-peer-deps=true`。如果手动构建，请确保使用 `npm install --legacy-peer-deps`。
-4. **存储桶配置**：如需使用图片素材库功能，请在 Supabase Dashboard 的 **Storage** 中创建名为 `materials` 的存储桶，并运行 `supabase_storage_public_config.sql` 中的SQL脚本来设置正确的访问策略。
-5. **自定义域名**：系统已成功部署到自定义域名 https://www.jiangxijiudian.store/ 。
-6. **身份验证**：生产环境中，用户认证通过 Supabase Auth 进行，不再使用硬编码密码。
-7. **OAuth 配置**：如需启用 OAuth 提供商（如 Google、GitHub 等），请在 Supabase 仪表板的 Authentication 设置中配置提供商，并将回调 URL 设置为 `https://yourdomain.com/auth/callback`。
-8. **电子邮件提供商登录**：支持直接使用电子邮件地址登录。用户可以使用注册时的电子邮件地址和密码进行登录。
-9. **RLS 安全策略**：请在 Supabase 仪表板的 SQL 编辑器中运行 `enable_rls.sql` 脚本，为 `security_logs` 和 `rooms` 表启用行级安全 (RLS) 策略。
-10. **房间二维码点餐**：在房间管理页面中，每个房间都有对应的二维码，客人可以扫描二维码直接进入点餐页面。二维码链接格式为 `?room=房间号`。
-11. **用户账号配置**：系统预设 2 个管理员账号和 3 个员工账号，已禁用用户注册功能。管理员账号需要绑定真实邮箱，员工账号可使用虚拟邮箱。
-
-## 🌐 系统访问
-
-- **生产环境**：https://www.jiangxijiudian.store/
-- **开发环境**：https://[project-name].vercel.app/
-- **Supabase Dashboard**：https://app.supabase.com/project/[project-id]
-
-**江西云厨系统研发部 &copy; 2025**
+**江西云厨系统研发部 &copy; 2025****

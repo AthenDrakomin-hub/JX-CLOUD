@@ -8,7 +8,7 @@ import MenuManagement from './components/MenuManagement';
 import ImageLibrary from './components/ImageLibrary';
 import FinanceManagement from './components/FinanceManagement';
 import StaffManagement from './components/StaffManagement';
-import DeploymentChecklist from './components/DeploymentChecklist';
+import SystemSettings from './components/SystemSettings';
 import LegalFooter from './components/LegalFooter';
 import ErrorBoundary from './components/ErrorBoundary';
 import GuestOrder from './components/GuestOrder';
@@ -348,7 +348,7 @@ const App: React.FC = () => {
                   {currentTab === 'materials' && <ImageLibrary materials={materials} onAddMaterial={async (m) => { await api.materials.create(m); fetchData(); }} onDeleteMaterial={async (id) => { await api.materials.delete(id); fetchData(); }} currentUser={currentUser} lang={lang} />}
                   {currentTab === 'users' && <StaffManagement users={users} onAddUser={async (u) => { await api.users.create(u); fetchData(); }} onDeleteUser={async (id) => { await api.users.delete(id); fetchData(); }} lang={lang} />}
                   {currentTab === 'finance' && <FinanceManagement orders={orders} expenses={expenses} onAddExpense={async (e) => { await api.expenses.create(e); fetchData(); }} onDeleteExpense={async (id) => { await api.expenses.delete(id); fetchData(); }} lang={lang} />}
-                  {currentTab === 'deployment' && <DeploymentChecklist lang={lang} />}
+                  {currentTab === 'deployment' && <SystemSettings lang={lang} />}
                 </>
               )}
             </div>

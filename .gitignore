@@ -69,3 +69,33 @@ stats.html
 
 # Dependency analysis
 node_modules/.cache
+
+# Local development
+.env.backup
+
+# Database
+*.db
+*.db-journal
+
+# IDE
+.vs/
+*.swp
+*.swo
+
+# OS
+.Spotlight-V100
+.Trashes
+
+# Browser extensions
+*.crx
+*.xpi
+
+# Build outputs specific to Vite
+.vite
+
+# Project specific
+.supabase
+supabase/
+.cache/
+.vercel/
+.vercelignore
