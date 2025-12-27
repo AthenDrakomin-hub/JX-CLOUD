@@ -2,7 +2,8 @@
 import { Order, Dish, HotelRoom, Expense, User, OrderStatus, RoomStatus, MaterialImage, SecurityLog, UserRole, PaymentMethod, PaymentMethodConfig, PermissionKey } from '../types';
 import { supabase, isDemoMode } from './supabaseClient';
 import { notificationService } from './notification';
-import { validateOrderData, validateDishData, validateUserData, checkDishAvailability, updateDishStock } from './utils';
+import { checkDishAvailability, updateDishStock } from './utils';
+import { validateOrderData, validateDishData, validateUserData } from './security';
 import { validateOrderForKitchen } from './business';
 import { safeApiCall, handleSupabaseError, NetworkError, requestTracker, NetworkErrorType } from './network';
 

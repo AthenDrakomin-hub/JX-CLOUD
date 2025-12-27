@@ -60,6 +60,20 @@ tsx test-functions.ts
 - `API_KEY`: Gemini API key (for AI features)
 - `GEMINI_API_KEY`: Alternative Gemini API key variable
 
+## Database Setup
+
+To connect to the Supabase database:
+
+1. Create a Supabase project at https://supabase.com
+2. Get your Project URL and anon key from Project Settings > API
+3. Set the environment variables in `.env.local`:
+   ```env
+   VITE_SUPABASE_URL=your_supabase_project_url
+   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+   ```
+4. Run the database initialization script in Supabase SQL Editor (see README.md)
+5. Enable Realtime for the `orders` table in Database > Replication
+
 ## Key Features
 
 - Real-time order tracking and management
