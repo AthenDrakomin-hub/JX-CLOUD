@@ -1,3 +1,19 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+dist-ssr/
+build/
+out/
+
+# Environment variables
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*
+
 # Logs
 logs
 *.log
@@ -7,10 +23,15 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
 
 # Editor directories and files
 .vscode/*
@@ -22,3 +43,20 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Icon?
+._*
+
+# Vite
+.vite/
+
+# TypeScript
+*.tsbuildinfo
