@@ -1,18 +1,11 @@
+# 代码仓库文档
 
+## README.md
+
+```markdown
 # JX CLOUD (江西云厨) - 企业级酒店管理套件
 
 JX CLOUD 是一款专为现代化酒店、高端餐饮及综合度假村打造的全链路管理系统。基于 **React 19** 与 **Supabase** 云原生架构。
-
-## 📚 文档导航
-
-- [用户操作手册](./docs/user_manual.md) - 面向酒店管理人员和操作员
-- [系统管理员手册](./docs/admin_manual.md) - 面向系统管理员
-- [技术架构与部署文档](./docs/architecture_deployment.md) - 面向开发人员
-- [系统运维手册](./docs/operations_manual.md) - 面向运维人员
-- [常见问题FAQ](./docs/faq.md) - 常见问题解答
-- [完整文档目录](./docs/index.md) - 所有文档的完整索引
-
----
 
 ## 🚀 生产环境数据库初始化 (Supabase)
 
@@ -135,8 +128,6 @@ VALUES ('admin', '系统管理员', 'admin')
 ON CONFLICT (username) DO NOTHING;
 ```
 
----
-
 ## 🛠 部署注意事项
 
 1. **环境变量**：在 Vercel 部署面板中，必须配置 `API_KEY` (Gemini) 和 `SUPABASE_URL`。
@@ -144,3 +135,119 @@ ON CONFLICT (username) DO NOTHING;
 3. **安全审计**：系统所有敏感操作都会通过 `logAuditAction` 自动记录在 `security_logs` 表中。
 
 **江西云厨系统研发部 &copy; 2025**
+```
+
+## CONTRIBUTING.md
+
+```markdown
+# 贡献指南
+
+感谢您对JX Cloud项目的兴趣！我们欢迎各种形式的贡献。
+
+## 开发环境设置
+
+1. Fork 项目仓库
+2. 克隆到本地
+3. 安装依赖：`npm install`
+4. 创建特性分支：`git checkout -b feature-name`
+5. 提交更改：`git commit -m 'Add some feature'`
+6. 推送到分支：`git push origin feature-name`
+7. 提交Pull Request
+
+## 代码规范
+
+- 使用TypeScript进行类型安全编程
+- 遵循React最佳实践
+- 组件保持单一职责
+- 代码应包含适当注释
+
+## 提交信息规范
+
+请遵循以下格式提交信息：
+```
+type(scope): description
+
+[optional body]
+
+[optional footer]
+```
+
+类型包括：
+- feat: 新功能
+- fix: 修复bug
+- docs: 文档更新
+- style: 代码格式调整
+- refactor: 代码重构
+- test: 测试相关
+- chore: 构建过程或辅助工具变动
+
+## 报告问题
+
+- 使用问题模板
+- 提供复现步骤
+- 包含环境信息
+- 附上错误截图（如适用）
+
+## 代码审查
+
+所有提交都需要经过审查，审查重点包括：
+- 代码质量
+- 安全性
+- 性能影响
+- 文档完整性
+```
+
+## CHANGELOG.md
+
+```markdown
+# 变更日志
+
+## [v3.1.0] - 2025-01-01
+
+### 新增功能
+- 添加多语言支持（中文、英文、塔加路语）
+- 实现动态翻译功能
+- 增加VIP房间标识
+- 添加云端素材库功能
+
+### 改进
+- 优化订单处理界面
+- 改进响应式设计
+- 增强安全审计日志
+- 优化数据库查询性能
+
+### 修复
+- 修复订单状态同步问题
+- 修复房间状态显示问题
+- 修复支付模块显示问题
+
+## [v3.0.0] - 2024-12-15
+
+### 新增功能
+- 完整的订单管理系统
+- 房间/桌位状态管理
+- 菜单配置管理
+- 财务审计功能
+- 员工权限管理
+- 支付管理模块
+
+### 改进
+- 使用React 19重构
+- 集成Supabase数据库
+- 实现实时数据同步
+- 添加安全审计机制
+
+## [v2.0.0] - 2024-06-01
+
+### 新增功能
+- 初步的酒店管理系统
+- 基础订单处理
+- 简单的房间管理
+
+## [v1.0.0] - 2024-01-01
+
+### 初始版本
+- 项目基础架构搭建
+- 基础UI组件
+- 原型设计
+```

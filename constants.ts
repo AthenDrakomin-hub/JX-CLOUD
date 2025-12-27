@@ -4,7 +4,6 @@ import { RoomStatus, Dish } from './types';
 export const ROOM_NUMBERS = [
   ...Array.from({ length: 32 }, (_, i) => (8201 + i).toString()),
   ...Array.from({ length: 32 }, (_, i) => (8301 + i).toString()),
-  '84', 
   'vip666', 
   'vip888', 
   'vip000'
