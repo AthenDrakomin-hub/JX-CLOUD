@@ -285,7 +285,7 @@ const App: React.FC = () => {
               </div>
             )}
           </div>
-          <div className="p-8 border-t border-slate-100 bg-slate-50/50 flex justify-end shrink-0">
+          <div className="p-8 border-t border-slate-300 bg-slate-50/50 flex justify-end shrink-0">
              <button onClick={() => setLegalModal(null)} className="px-8 py-3 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-[#d4af37] transition-all active:scale-95 shadow-lg">
                 Got it
              </button>
@@ -302,25 +302,25 @@ const App: React.FC = () => {
         <div className="min-h-screen bg-[#f8fafc] text-[#0f172a]">
           <Sidebar currentTab={currentTab} setCurrentTab={setCurrentTab} userRole={currentUser.role} onLogout={() => setCurrentUser(null)} lang={lang} />
           <main className="pl-72 min-h-screen">
-            <header className="sticky top-0 z-40 h-24 bg-white/70 backdrop-blur-xl border-b border-slate-100 px-10 flex items-center justify-between">
+            <header className="sticky top-0 z-40 h-24 bg-white/70 backdrop-blur-xl border-b border-slate-300 px-10 flex items-center justify-between">
               <div className="flex flex-col">
-                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] leading-none mb-1">{t('centralConsole')}</span>
-                 <h2 className="text-2xl font-bold tracking-tight text-[#0f172a]">{t(currentTab)}</h2>
+                 <span className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em] leading-none mb-1">{t('centralConsole')}</span>
+                 <h2 className="text-2xl font-bold tracking-tight text-slate-900">{t(currentTab)}</h2>
               </div>
               <div className="flex items-center space-x-8">
-                <button onClick={() => setIsNotificationsOpen(true)} className="relative p-3 bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-md transition-all group">
+                <button onClick={() => setIsNotificationsOpen(true)} className="relative p-3 bg-white border border-slate-300 rounded-2xl shadow-sm hover:shadow-md transition-all group">
                   <Bell size={20} className="text-slate-400 group-hover:text-[#d4af37]" />
                   {unreadCount > 0 && <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[8px] font-black flex items-center justify-center rounded-full border-2 border-white animate-bounce">{unreadCount}</span>}
                 </button>
                 <div className="hidden lg:flex items-center space-x-6">
                    <div className="flex items-center space-x-2">
                       <div className={`w-1.5 h-1.5 rounded-full ${isSyncing ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'} shadow-[0_0_8px_rgba(16,185,129,0.6)]`}></div>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{isSyncing ? t('syncing') : t('encryptedConnect')}</span>
+                      <span className="text-[10px] font-bold text-slate-800 uppercase tracking-widest">{isSyncing ? t('syncing') : t('encryptedConnect')}</span>
                    </div>
-                   <div className="h-4 w-[1px] bg-slate-200"></div>
+                   <div className="h-4 w-[1px] bg-slate-500"></div>
                    <LanguageSelector />
                 </div>
-                <div className="flex items-center space-x-4 border-l border-slate-100 pl-8">
+                <div className="flex items-center space-x-4 border-l border-slate-400 pl-8">
                    <div className="text-right hidden sm:block">
                       <p className="text-sm font-bold text-slate-900 leading-none">{currentUser.name}</p>
                       <p className="text-[9px] font-black text-[#d4af37] uppercase tracking-tighter mt-1">{currentUser.role}</p>
@@ -365,7 +365,7 @@ const App: React.FC = () => {
 
         {/* 登录模态框 */}
         <div className="relative z-10 w-full max-w-md px-6 animate-in zoom-in-95 fade-in duration-700">
-           <div className="bg-white/95 backdrop-blur-xl rounded-[2.5rem] shadow-[0_40px_120px_rgba(0,0,0,0.5)] border border-white/50 overflow-hidden flex flex-col p-10 md:p-12 space-y-10">
+           <div className="bg-white/95 backdrop-blur-xl rounded-[2.5rem] shadow-[0_40px_120px_rgba(0,0,0,0.5)] border border-slate-300 overflow-hidden flex flex-col p-10 md:p-12 space-y-10">
               
               <div className="flex items-center justify-between">
                  <div className="flex flex-col">
@@ -392,7 +392,7 @@ const App: React.FC = () => {
                           autoComplete="username"
                           value={loginForm.username} 
                           onChange={e => setLoginForm(p => ({...p, username: e.target.value}))} 
-                          className="w-full pl-14 pr-4 py-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white focus:border-[#d4af37] focus:ring-4 focus:ring-[#d4af37]/10 font-bold text-slate-900 transition-all placeholder:text-slate-300" 
+                          className="w-full pl-14 pr-4 py-5 bg-slate-50 border border-slate-400 rounded-2xl outline-none focus:bg-white focus:border-[#d4af37] focus:ring-4 focus:ring-[#d4af37]/10 font-bold text-slate-900 transition-all placeholder:text-slate-500" 
                           placeholder={t('username')} 
                           required 
                        />
@@ -405,7 +405,7 @@ const App: React.FC = () => {
                           autoComplete="current-password"
                           value={loginForm.password} 
                           onChange={e => setLoginForm(p => ({...p, password: e.target.value}))} 
-                          className="w-full pl-14 pr-14 py-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white focus:border-[#d4af37] focus:ring-4 focus:ring-[#d4af37]/10 font-bold text-slate-900 transition-all placeholder:text-slate-300" 
+                          className="w-full pl-14 pr-14 py-5 bg-slate-50 border border-slate-400 rounded-2xl outline-none focus:bg-white focus:border-[#d4af37] focus:ring-4 focus:ring-[#d4af37]/10 font-bold text-slate-900 transition-all placeholder:text-slate-500" 
                           placeholder={t('password')} 
                           required 
                        />
@@ -433,7 +433,7 @@ const App: React.FC = () => {
                  </button>
               </form>
 
-              <div className="pt-6 border-t border-slate-100">
+              <div className="pt-6 border-t border-slate-300">
                  <div className="flex items-center justify-center space-x-4 mb-4">
                     <button 
                       type="button" 
@@ -442,7 +442,7 @@ const App: React.FC = () => {
                     >
                       {t('privacyPolicy')}
                     </button>
-                    <span className="w-1 h-1 rounded-full bg-slate-200" />
+                    <span className="w-1 h-1 rounded-full bg-slate-400" />
                     <button 
                       type="button" 
                       onClick={() => setLegalModal('disclaimer')}

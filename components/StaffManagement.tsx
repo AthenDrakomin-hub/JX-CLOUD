@@ -99,24 +99,24 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ users, onAddUser, onD
   return (
     <div className="space-y-12 pb-20">
       {/* Header Section */}
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 bg-white p-12 rounded-[4rem] border border-slate-100 shadow-sm">
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 bg-white p-12 rounded-[4rem] border border-slate-300 shadow-sm">
         <div className="space-y-2">
            <div className="flex items-center space-x-2 text-[#d4af37]">
               <Fingerprint size={14} />
               <span className="text-[10px] font-black uppercase tracking-[0.4em]">{t('enterpriseSecurityConsole')}</span>
            </div>
            <h2 className="text-5xl font-serif italic text-slate-900 tracking-tighter">{t('personnelAudit')}</h2>
-           <p className="text-sm text-slate-400 font-medium tracking-widest max-w-md">
+           <p className="text-sm text-slate-600 font-medium tracking-widest max-w-md">
              Integrated identity protection & behavioral auditing workspace.
            </p>
         </div>
 
         <div className="flex flex-col sm:flex-row items-center gap-4">
           <div className="flex bg-slate-100 p-1 rounded-full border border-slate-200 shadow-inner">
-            <button onClick={() => setViewMode('directory')} className={`px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'directory' ? 'bg-white text-slate-900 shadow-md' : 'text-slate-400 hover:text-slate-600'}`}>
+            <button onClick={() => setViewMode('directory')} className={`px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'directory' ? 'bg-white text-slate-900 shadow-md' : 'text-slate-600 hover:text-slate-800'}`}>
               {t('directory')}
             </button>
-            <button onClick={() => setViewMode('audit')} className={`px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'audit' ? 'bg-white text-slate-900 shadow-md' : 'text-slate-400 hover:text-slate-600'}`}>
+            <button onClick={() => setViewMode('audit')} className={`px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'audit' ? 'bg-white text-slate-900 shadow-md' : 'text-slate-600 hover:text-slate-800'}`}>
               {t('auditLogs')}
             </button>
           </div>
@@ -136,7 +136,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ users, onAddUser, onD
       {viewMode === 'directory' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
           {users.map((user, idx) => (
-            <div key={user.id} className={`bg-white p-8 rounded-[3rem] border border-slate-50 shadow-sm group hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 animate-in fade-in slide-in-from-bottom-10 ${user.isLocked ? 'grayscale opacity-75' : ''}`} style={{ animationDelay: `${idx * 50}ms` }}>
+            <div key={user.id} className={`bg-white p-8 rounded-[3rem] border border-slate-200 shadow-sm group hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 animate-in fade-in slide-in-from-bottom-10 ${user.isLocked ? 'grayscale opacity-75' : ''}`} style={{ animationDelay: `${idx * 50}ms` }}>
                <div className="flex items-start justify-between">
                   <div className="flex items-center space-x-6">
                     <div className="relative">
@@ -151,7 +151,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ users, onAddUser, onD
                     </div>
                     <div className="space-y-1">
                        <h4 className="text-xl font-bold text-slate-900 tracking-tight">{user.name}</h4>
-                       <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{user.username}</p>
+                       <p className="text-[10px] text-slate-600 font-black uppercase tracking-widest">{user.username}</p>
                        <div className={`mt-2 px-3 py-1 rounded-full border inline-flex items-center space-x-2 ${getRoleColor(user.role)}`}>
                           <ShieldCheck size={10} />
                           <span className="text-[8px] font-black uppercase tracking-widest">{user.role}</span>
@@ -177,21 +177,21 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ users, onAddUser, onD
 
                <div className="mt-6 flex flex-wrap gap-2">
                  {(user.permissions || []).slice(0, 3).map(p => (
-                   <span key={p} className="px-3 py-1 bg-slate-50 rounded-lg text-[7px] font-black uppercase text-slate-400 tracking-tighter">
+                   <span key={p} className="px-3 py-1 bg-slate-50 rounded-lg text-[7px] font-black uppercase text-slate-600 tracking-tighter">
                      {p.replace('_', ' ')}
                    </span>
                  ))}
-                 {user.permissions?.length > 3 && <span className="text-[7px] font-bold text-slate-300">+{user.permissions.length - 3} More</span>}
+                 {user.permissions?.length > 3 && <span className="text-[7px] font-bold text-slate-500">+{user.permissions.length - 3} More</span>}
                </div>
                
                <div className="mt-8 pt-6 border-t border-slate-50 flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <div className={`w-1.5 h-1.5 rounded-full ${user.isLocked ? 'bg-red-500' : 'bg-emerald-500'}`} />
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                    <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">
                       {user.isLocked ? t('locked') : t('active')}
                     </span>
                   </div>
-                  <p className="text-[9px] text-slate-300 font-black uppercase tracking-[0.2em]">{new Date(user.lastLogin || Date.now()).toLocaleTimeString()}</p>
+                  <p className="text-[9px] text-slate-500 font-black uppercase tracking-[0.2em]">{new Date(user.lastLogin || Date.now()).toLocaleTimeString()}</p>
                </div>
             </div>
           ))}
@@ -200,19 +200,19 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ users, onAddUser, onD
         <div className="bg-slate-950 rounded-[4rem] p-10 shadow-2xl overflow-hidden border border-white/5">
            <div className="overflow-x-auto no-scrollbar">
               <table className="w-full text-left">
-                 <thead className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em]">
+                 <thead className="text-[10px] font-black text-slate-700 uppercase tracking-[0.3em]">
                     <tr>
-                       <th className="px-6 py-6 border-b border-white/5">{t('securityTimestamp')}</th>
-                       <th className="px-6 py-6 border-b border-white/5">{t('authAgent')}</th>
-                       <th className="px-6 py-6 border-b border-white/5">{t('action')}</th>
-                       <th className="px-6 py-6 border-b border-white/5">{t('auditDetails')}</th>
-                       <th className="px-6 py-6 border-b border-white/5 text-center">{t('threatLevel')}</th>
+                       <th className="px-6 py-6 border-b border-white/10 text-slate-300">{t('securityTimestamp')}</th>
+                       <th className="px-6 py-6 border-b border-white/10 text-slate-300">{t('authAgent')}</th>
+                       <th className="px-6 py-6 border-b border-white/10 text-slate-300">{t('action')}</th>
+                       <th className="px-6 py-6 border-b border-white/10 text-slate-300">{t('auditDetails')}</th>
+                       <th className="px-6 py-6 border-b border-white/10 text-center text-slate-300">{t('threatLevel')}</th>
                     </tr>
                  </thead>
                  <tbody className="divide-y divide-white/5">
                     {logs.map((log, i) => (
                        <tr key={log.id} className="text-white hover:bg-white/5 transition-colors group">
-                          <td className="px-6 py-6 text-[10px] font-mono text-slate-500">{new Date(log.timestamp).toLocaleString()}</td>
+                          <td className="px-6 py-6 text-[10px] font-mono text-slate-300">{new Date(log.timestamp).toLocaleString()}</td>
                           <td className="px-6 py-6">
                             <div className="flex items-center space-x-3">
                               <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-[10px] font-black group-hover:bg-[#d4af37] group-hover:text-slate-900 transition-colors">
@@ -222,7 +222,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ users, onAddUser, onD
                             </div>
                           </td>
                           <td className="px-6 py-6 text-sm text-[#d4af37] font-medium">{log.action}</td>
-                          <td className="px-6 py-6 text-xs text-slate-400 font-medium italic max-w-xs truncate">{log.details || '—'}</td>
+                          <td className="px-6 py-6 text-xs text-slate-600 font-medium italic max-w-xs truncate">{log.details || '—'}</td>
                           <td className="px-6 py-6 text-center">
                              <div className={`inline-flex items-center px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest ${log.riskLevel === 'High' ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
                                 {log.riskLevel === 'High' ? <AlertTriangle size={10} className="mr-2" /> : <ShieldCheck size={10} className="mr-2" />}
@@ -246,39 +246,39 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ users, onAddUser, onD
              <div className="h-2 w-full absolute top-0 left-0 bg-[#d4af37] z-10" />
              
              {/* Left Panel: Primary Info */}
-             <div className="lg:w-1/2 p-10 lg:p-16 space-y-8 border-r border-slate-100">
+             <div className="lg:w-1/2 p-10 lg:p-16 space-y-8 border-r border-slate-300">
                 <div className="flex items-center justify-between mb-4">
                    <div className="space-y-1">
                       <h3 className="text-3xl font-bold text-slate-900 tracking-tight">{editingUser ? t('editStaff') : t('addStaff')}</h3>
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em]">Profile & Credentials</p>
+                      <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em]">Profile & Credentials</p>
                    </div>
-                   <button type="button" onClick={() => setIsModalOpen(false)} className="lg:hidden w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400">
+                   <button type="button" onClick={() => setIsModalOpen(false)} className="lg:hidden w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 text-slate-600">
                       <X size={20} />
                    </button>
                 </div>
 
                 <div className="space-y-6">
                    <div className="space-y-3">
-                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Identity Display Name</label>
-                      <input name="name" defaultValue={editingUser?.name} required placeholder="e.g. John Doe" className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-[#d4af37]/10 focus:border-[#d4af37] transition-all font-bold text-slate-900" />
+                      <label className="text-[9px] font-black text-slate-600 uppercase tracking-widest ml-1">Identity Display Name</label>
+                      <input name="name" defaultValue={editingUser?.name} required placeholder="e.g. John Doe" className="w-full px-6 py-4 bg-slate-50 border border-slate-300 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-[#d4af37]/10 focus:border-[#d4af37] transition-all font-bold text-slate-900" />
                    </div>
                    <div className="space-y-3">
-                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('username')}</label>
-                      <input name="username" defaultValue={editingUser?.username} required placeholder="Unique Login Handle" className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-[#d4af37]/10 focus:border-[#d4af37] transition-all font-bold text-slate-900" />
+                      <label className="text-[9px] font-black text-slate-600 uppercase tracking-widest ml-1">{t('username')}</label>
+                      <input name="username" defaultValue={editingUser?.username} required placeholder="Unique Login Handle" className="w-full px-6 py-4 bg-slate-50 border border-slate-300 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-[#d4af37]/10 focus:border-[#d4af37] transition-all font-bold text-slate-900" />
                    </div>
                    <div className="space-y-3">
-                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('resetPassword')}</label>
+                      <label className="text-[9px] font-black text-slate-600 uppercase tracking-widest ml-1">{t('resetPassword')}</label>
                       <div className="relative group">
-                         <input name="password" type={showPassword ? "text" : "password"} placeholder={editingUser ? t('passwordHint') : "Enter secure password"} className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-[#d4af37]/10 focus:border-[#d4af37] transition-all font-bold text-slate-900" />
-                         <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-[#d4af37] transition-colors">
+                         <input name="password" type={showPassword ? "text" : "password"} placeholder={editingUser ? t('passwordHint') : "Enter secure password"} className="w-full px-6 py-4 bg-slate-50 border border-slate-300 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-[#d4af37]/10 focus:border-[#d4af37] transition-all font-bold text-slate-900" />
+                         <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-[#d4af37] transition-colors">
                             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                          </button>
                       </div>
                    </div>
                    <div className="space-y-3">
-                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Role Architecture</label>
+                      <label className="text-[9px] font-black text-slate-600 uppercase tracking-widest ml-1">Role Architecture</label>
                       <div className="relative group">
-                        <select name="role" defaultValue={editingUser?.role || UserRole.STAFF} className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-[#d4af37]/10 focus:border-[#d4af37] transition-all font-black text-slate-900 appearance-none cursor-pointer">
+                        <select name="role" defaultValue={editingUser?.role || UserRole.STAFF} className="w-full px-6 py-4 bg-slate-50 border border-slate-300 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-[#d4af37]/10 focus:border-[#d4af37] transition-all font-black text-slate-900 appearance-none cursor-pointer">
                            <option value={UserRole.ADMIN}>Administrator</option>
                            <option value={UserRole.MANAGER}>Management Unit</option>
                            <option value={UserRole.STAFF}>Service Staff</option>
@@ -293,7 +293,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ users, onAddUser, onD
                          </div>
                          <div>
                             <p className="text-sm font-bold text-slate-900">{t('accountStatus')}</p>
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{accountLocked ? t('locked') : t('active')}</p>
+                            <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest">{accountLocked ? t('locked') : t('active')}</p>
                          </div>
                       </div>
                       <button type="button" onClick={() => setAccountLocked(!accountLocked)} className={`w-14 h-7 rounded-full relative transition-all ${accountLocked ? 'bg-red-500' : 'bg-slate-200'}`}>
@@ -308,9 +308,9 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ users, onAddUser, onD
                 <div className="flex items-center justify-between">
                    <div className="space-y-1">
                       <h3 className="text-2xl font-bold text-slate-900 tracking-tight">{t('permissions')}</h3>
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em]">Granular Access Logic</p>
+                      <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em]">Granular Access Logic</p>
                    </div>
-                   <button type="button" onClick={() => setIsModalOpen(false)} className="hidden lg:flex w-12 h-12 items-center justify-center rounded-[1.25rem] bg-white text-slate-400 hover:bg-slate-900 hover:text-white transition-all shadow-sm">
+                   <button type="button" onClick={() => setIsModalOpen(false)} className="hidden lg:flex w-12 h-12 items-center justify-center rounded-[1.25rem] bg-white text-slate-600 hover:bg-slate-900 hover:text-white transition-all shadow-sm">
                       <X size={24} />
                    </button>
                 </div>

@@ -33,10 +33,10 @@ const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab, userRole, 
   const filteredItems = menuItems.filter(item => item.roles.includes(userRole));
 
   return (
-    <div className="w-72 bg-[#0f172a] text-white flex flex-col h-screen fixed left-0 top-0 z-50 border-r border-white/10 shadow-[20px_0_60px_rgba(0,0,0,0.4)]">
+    <div className="w-72 bg-[#0f172a] text-white flex flex-col h-screen fixed left-0 top-0 z-50 border-r border-slate-700 shadow-[20px_0_60px_rgba(0,0,0,0.4)]">
       <div className="p-12">
         <div className="flex flex-col space-y-2 group">
-           <div className="flex items-center space-x-2 text-[#d4af37] opacity-80">
+           <div className="flex items-center space-x-2 text-[#d4af37]">
               <Sparkles size={12} />
               <span className="text-[10px] font-black uppercase tracking-[0.4em]">VERSION 3.1.0</span>
            </div>
@@ -50,7 +50,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab, userRole, 
       </div>
       
       <nav className="flex-1 px-6 space-y-2 overflow-y-auto no-scrollbar">
-        <div className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6 ml-6">{t('registryControls')}</div>
+        <div className="text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] mb-6 ml-6">{t('registryControls')}</div>
         {filteredItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentTab === item.id;
@@ -78,7 +78,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab, userRole, 
         <div className="h-[1px] bg-white/10 w-full mb-6" />
         <button
           onClick={onLogout}
-          className="w-full flex items-center space-x-5 px-6 py-4 rounded-full text-slate-400 hover:bg-red-500/20 hover:text-red-400 transition-all group"
+          className="w-full flex items-center space-x-5 px-6 py-4 rounded-full text-slate-500 hover:bg-red-500/20 hover:text-red-400 transition-all group"
         >
           <LogOut size={18} className="group-hover:-translate-x-1 transition-transform" />
           <span className="text-xs font-black uppercase tracking-widest">{t('signOut')}</span>

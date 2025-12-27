@@ -53,11 +53,11 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ orders, onUpdateStatu
           <title>Kitchen Ticket #${order.id.slice(-6)}</title>
           <style>
             body { font-family: 'Courier New', Courier, monospace; padding: 30px; line-height: 1.4; color: #333; }
-            .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px; }
+            .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px; }
             .title { font-size: 22px; font-weight: bold; margin-bottom: 5px; }
             .info { margin-bottom: 25px; font-size: 14px; }
             .items { margin-bottom: 25px; }
-            .total-row { display: flex; justify-content: space-between; font-weight: bold; font-size: 18px; border-top: 2px solid #000; padding-top: 15px; }
+            .total-row { display: flex; justify-content: space-between; font-weight: bold; font-size: 18px; border-top: 2px solid #333; padding-top: 15px; }
             .payment-badge { 
               display: inline-block; padding: 4px 10px; border-radius: 4px; border: 1px solid #000; 
               margin-top: 10px; font-size: 12px; font-weight: bold;
@@ -120,13 +120,13 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ orders, onUpdateStatu
            <h2 className="text-5xl font-serif italic text-slate-900 tracking-tighter">{t('kitchenWorkspace')}</h2>
         </div>
         
-        <div className="flex bg-white p-1.5 rounded-full border border-slate-100 shadow-sm">
+        <div className="flex bg-white p-1.5 rounded-full border border-slate-300 shadow-sm">
           {filterOptions.map((f) => (
             <button 
               key={f.id} 
               onClick={() => setFilter(f.id as any)} 
               className={`px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all
-                ${filter === f.id ? 'bg-slate-900 text-white shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}
+                ${filter === f.id ? 'bg-slate-900 text-white shadow-xl' : 'text-slate-600 hover:text-slate-800'}`}
             >
               {f.label}
             </button>
@@ -153,7 +153,7 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ orders, onUpdateStatu
                           <Printer size={16} />
                         </button>
                       </div>
-                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">#{order.id.slice(-6)}</p>
+                      <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">#{order.id.slice(-6)}</p>
                    </div>
                    <div className="flex flex-col items-end space-y-2">
                       <div className={`w-3 h-3 rounded-full shadow-[0_0_15px] ${getStatusColor(order.status)}`} style={{ boxShadow: `0 0 15px ${getStatusColor(order.status)}` }} />
@@ -171,21 +171,21 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ orders, onUpdateStatu
                       <div key={i} className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/5">
                          <div className="flex items-center space-x-4">
                             <span className="w-8 h-8 bg-[#d4af37] text-[#0f172a] rounded-lg flex items-center justify-center font-black text-xs">{item.quantity}</span>
-                            <span className="text-sm font-bold text-slate-200">{item.name}</span>
+                            <span className="text-sm font-bold text-slate-100">{item.name}</span>
                          </div>
-                         <span className="text-xs font-serif italic text-slate-400">₱{item.price * item.quantity}</span>
+                         <span className="text-xs font-serif italic text-slate-300">₱{item.price * item.quantity}</span>
                       </div>
                    ))}
                 </div>
 
                 <div className="flex items-end justify-between pt-6 border-t border-white/10">
                    <div>
-                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">{t('totalBill')}</p>
+                      <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1">{t('totalBill')}</p>
                       <p className="text-3xl font-serif italic text-[#d4af37]">₱{order.totalAmount}</p>
                    </div>
                    <div className="text-right">
                       <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">{t('timestamp')}</p>
-                      <p className="text-xs font-bold text-slate-300">{new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                      <p className="text-xs font-bold text-slate-200">{new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                    </div>
                 </div>
 
@@ -224,7 +224,7 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ orders, onUpdateStatu
                    {![OrderStatus.COMPLETED, OrderStatus.CANCELLED].includes(order.status) && (
                      <button 
                        onClick={() => setConfirmCancel({ isOpen: true, orderId: order.id })}
-                       className="w-full py-4 text-slate-500 hover:text-red-400 transition-colors flex items-center justify-center space-x-2 text-[10px] font-black uppercase tracking-widest"
+                       className="w-full py-4 text-slate-400 hover:text-red-400 transition-colors flex items-center justify-center space-x-2 text-[10px] font-black uppercase tracking-widest"
                      >
                        <Ban size={14} />
                        <span>{t('voidOrder')}</span>

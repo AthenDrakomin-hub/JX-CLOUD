@@ -16,13 +16,13 @@ interface SystemSettingsProps {
 const LegalSection: React.FC<{ title: string; children: React.ReactNode; icon: any }> = ({ title, children, icon: Icon }) => {
   const [isOpen, setIsOpen] = useState(false);
   return (
-    <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden transition-all duration-500 hover:shadow-md">
+    <div className="bg-white rounded-[2.5rem] border border-slate-400 shadow-sm overflow-hidden transition-all duration-500 hover:shadow-md">
       <button 
         onClick={() => setIsOpen(!isOpen)}
         className="w-full px-8 py-7 flex items-center justify-between hover:bg-slate-50 transition-colors"
       >
         <div className="flex items-center space-x-5">
-          <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-700 shadow-inner border border-slate-200">
+          <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-700 shadow-inner border border-slate-400">
             <Icon size={20} />
           </div>
           <span className="text-sm font-black uppercase tracking-widest text-slate-900">{title}</span>
@@ -71,7 +71,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang }) => {
               <span className="text-xs font-black uppercase tracking-[0.4em]">{t('systemConfig')}</span>
            </div>
            <h2 className="text-5xl font-serif italic text-slate-900 tracking-tighter">{t('settings')}</h2>
-           <p className="text-sm text-slate-500 font-medium tracking-widest max-w-md leading-relaxed">
+           <p className="text-sm text-slate-700 font-medium tracking-widest max-w-md leading-relaxed">
              {t('systemSettingsDesc')}
            </p>
         </div>
@@ -88,8 +88,8 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang }) => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
         <div className="lg:col-span-2 space-y-12">
           {/* General Section */}
-          <section className="bg-white rounded-[4rem] border border-slate-100 shadow-sm overflow-hidden animate-in fade-in">
-             <div className="p-12 border-b border-slate-100 bg-slate-50/30 flex items-center space-x-5">
+          <section className="bg-white rounded-[4rem] border border-slate-300 shadow-sm overflow-hidden animate-in fade-in">
+             <div className="p-12 border-b border-slate-300 bg-slate-50/30 flex items-center space-x-5">
                 <div className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center shadow-lg">
                    <Settings size={22} />
                 </div>
@@ -130,18 +130,18 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang }) => {
              <div className="space-y-6">
                 <LegalSection title={t('intellectualProperty')} icon={Copyright}>
                   <div className="space-y-6 text-sm">
-                    <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
+                    <div className="p-6 bg-slate-50 rounded-3xl border border-slate-300">
                       <h5 className="text-slate-900 font-black text-xs uppercase tracking-widest mb-4 flex items-center">
                         <Gavel size={14} className="mr-2 text-[#d4af37]" />
                         {t('ipTitle1')}
                       </h5>
-                      <p>{t('ipDesc1')}</p>
+                      <p className="text-slate-700">{t('ipDesc1')}</p>
                     </div>
                     <div>
                       <h5 className="text-slate-900 font-black text-sm mb-3">{t('ipTitle2')}</h5>
-                      <p className="indent-4 mb-3">{t('ipDesc2')}</p>
+                      <p className="indent-4 mb-3 text-slate-700">{t('ipDesc2')}</p>
                       <h5 className="text-slate-900 font-black text-sm mb-3">{t('ipTitle3')}</h5>
-                      <ul className="list-disc list-inside space-y-2 ml-4">
+                      <ul className="list-disc list-inside space-y-2 ml-4 text-slate-700">
                         <li>{t('ipItem3_1')}</li>
                         <li>{t('ipItem3_2')}</li>
                         <li>{t('ipItem3_3')}</li>
@@ -154,13 +154,13 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang }) => {
                   <div className="space-y-6 text-sm">
                     <div className="p-6 bg-red-50/30 rounded-3xl border border-red-100">
                       <h5 className="text-red-900 font-black text-xs uppercase tracking-widest mb-4">特别警示 / WARNING</h5>
-                      <p className="text-red-700 font-bold">{t('disclaimerWarning')}</p>
+                      <p className="text-red-800 font-bold">{t('disclaimerWarning')}</p>
                     </div>
                     <div className="space-y-4">
                       <h5 className="text-slate-900 font-black text-sm">{t('disclaimerTitle1')}</h5>
-                      <p className="indent-4">{t('disclaimerDesc1')}</p>
+                      <p className="indent-4 text-slate-700">{t('disclaimerDesc1')}</p>
                       <h5 className="text-slate-900 font-black text-sm">{t('disclaimerTitle2')}</h5>
-                      <p className="indent-4">{t('disclaimerDesc2')}</p>
+                      <p className="indent-4 text-slate-700">{t('disclaimerDesc2')}</p>
                     </div>
                   </div>
                 </LegalSection>
@@ -197,7 +197,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang }) => {
                     <span className="text-xs font-black uppercase tracking-widest">{t('dataManagement')}</span>
                  </div>
                  <h3 className="text-3xl font-serif italic tracking-tighter">{t('resetSystem')}</h3>
-                 <p className="text-sm text-slate-400 font-medium leading-relaxed">
+                 <p className="text-sm text-slate-700 font-medium leading-relaxed">
                    {t('resetDesc')}
                  </p>
                  <button 
@@ -211,7 +211,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang }) => {
            </section>
 
            {/* Health Stats */}
-           <div className="bg-white rounded-[4rem] p-12 border border-slate-200 shadow-sm space-y-12">
+           <div className="bg-white rounded-[4rem] p-12 border border-slate-400 shadow-sm space-y-12">
               <div className="space-y-10">
                 <div className="flex items-center justify-between">
                    <div className="flex items-center space-x-3 text-blue-600">
