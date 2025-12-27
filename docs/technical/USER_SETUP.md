@@ -43,7 +43,7 @@
 
 ### 2. 更新用户角色
 
-1. 在 Supabase SQL 编辑器中运行 `user_setup.sql` 脚本
+1. 在 Supabase SQL 编辑器中运行 `database/user_setup.sql` 脚本
 2. 这将创建或更新用户记录并设置正确的角色
 
 ### 3. 禁用用户注册

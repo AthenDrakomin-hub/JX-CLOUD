@@ -167,9 +167,9 @@ ON CONFLICT (username) DO NOTHING;
 ## 🛠 配置要点
 
 1. **Realtime 订阅**：在 Supabase Dashboard 的 **Database -> Replication** 中，确保 `orders` 表已启用 **Realtime** 选项
-2. **RLS 策略**：运行 `enable_rls.sql` 脚本为 `security_logs` 和 `rooms` 表启用行级安全策略
+2. **RLS 策略**：运行 `database/enable_rls.sql` 脚本为 `security_logs` 和 `rooms` 表启用行级安全策略
 3. **存储桶配置**：如需使用图片素材库功能，在 Supabase Dashboard 的 **Storage** 中创建名为 `materials` 的存储桶
-4. **用户配置**：运行 `user_setup.sql` 脚本配置 2 个管理员和 3 个员工账号
+4. **用户配置**：运行 `database/user_setup.sql` 脚本配置 2 个管理员和 3 个员工账号
 
 ## 📋 功能模块
 
@@ -216,6 +216,7 @@ ON CONFLICT (username) DO NOTHING;
 - [RLS安全策略设置](./RLS_SETUP.md) - 行级安全策略配置
 - [存储设置指南](./STORAGE_SETUP.md) - Supabase存储配置
 - [用户设置脚本](./USER_SETUP.md) - 用户初始化脚本
+- [数据库初始化脚本](../database/) - 数据库表结构和初始化脚本
 - [OAuth设置指南](./OAUTH_SETUP.md) - OAuth认证配置
 - [二维码设置](./QR_CODE_SETUP.md) - 房间二维码生成配置
 - [图片素材库指南](./IMAGE_LIBRARY_GUIDE.md) - 图片素材管理

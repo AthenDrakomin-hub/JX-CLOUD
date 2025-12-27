@@ -6,14 +6,12 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview",
-    "build:prod": "vite build",
-    "build:analyze": "vite build --mode analyze"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
     "lucide-react": "^0.475.0",
-    "qrcode.react": "^4.2.0",
+    "qrcode.react": "^4.0.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "recharts": "^2.15.0"
@@ -21,9 +19,6 @@
   "devDependencies": {
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "@vitejs/plugin-react": "^4.3.4",
-    "rollup-plugin-visualizer": "^6.0.5",
-    "terser": "^5.44.1",
     "typescript": "^5.0.0",
     "vite": "^6.0.0"
   }

@@ -21,6 +21,6 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 确保在Supabase项目中：
 
 1. 已创建materials存储桶
-2. 已运行supabase_storage_public_config.sql中的策略配置
+2. 已运行database/supabase_storage_public_config.sql中的策略配置
 3. 已启用orders表的Realtime功能
 4. 已创建storage.objects_owner_updates审计表

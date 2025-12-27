@@ -16,7 +16,7 @@ RLS (Row Level Security) 是数据库安全的重要组成部分，它允许您�
 1. 登录到 Supabase 仪表板
 2. 进入您的项目
 3. 点击左侧菜单的 "SQL"
-4. 在 SQL 编辑器中粘贴并运行 `enable_rls.sql` 文件中的内容
+4. 在 SQL 编辑器中粘贴并运行 `database/enable_rls.sql` 文件中的内容
 
 ### 2. RLS 策略说明
 
