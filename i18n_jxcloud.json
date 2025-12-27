@@ -1,0 +1,762 @@
+{
+  "projectOverview": {
+    "zh": "项目概述",
+    "en": "Project Overview",
+    "tl": "Pangkalahatang-ideya ng Proyekto"
+  },
+  "jxCloud": {
+    "zh": "江西云厨 (JX Cloud) - 企业级酒店管理套件",
+    "en": "Jiangxi Cloud Chef (JX Cloud) - Enterprise Hotel Management Suite",
+    "tl": "Jiangxi Cloud Chef (JX Cloud) - Enterprise Suite sa Pamamahala ng Hotel"
+  },
+  "analytics": {
+    "zh": "经营分析",
+    "en": "Business Analytics",
+    "tl": "Pagsusuri sa Negosyo"
+  },
+  "stations": {
+    "zh": "桌位/房间",
+    "en": "Tables/Rooms",
+    "tl": "Mga Mesa/Kuwarto"
+  },
+  "kitchen": {
+    "zh": "后厨出餐",
+    "en": "Kitchen Order Fulfillment",
+    "tl": "Pagtupad sa Order ng Kusina"
+  },
+  "menu": {
+    "zh": "菜单配置",
+    "en": "Menu Configuration",
+    "tl": "Pagsasaayos ng Menu"
+  },
+  "materials": {
+    "zh": "云端资产",
+    "en": "Cloud Assets",
+    "tl": "Mga Asset sa Cloud"
+  },
+  "finance": {
+    "zh": "财务审计",
+    "en": "Financial Audit",
+    "tl": "Audit sa Pananalapi"
+  },
+  "users": {
+    "zh": "安全中心",
+    "en": "Security Center",
+    "tl": "Sentro ng Seguridad"
+  },
+  "deployment": {
+    "zh": "系统部署",
+    "en": "System Deployment",
+    "tl": "Pag-deploy ng Sistema"
+  },
+  "centralConsole": {
+    "zh": "中央控制台",
+    "en": "Central Console",
+    "tl": "Sentrong Console"
+  },
+  "encryptedConnect": {
+    "zh": "加密连接已建立",
+    "en": "Securely Connected",
+    "tl": "Ligtas na Nakakonekta"
+  },
+  "syncing": {
+    "zh": "同步中...",
+    "en": "Syncing...",
+    "tl": "Pagsasabay-sabay..."
+  },
+  "signOut": {
+    "zh": "安全退出",
+    "en": "Sign Out",
+    "tl": "Mag-sign Out"
+  },
+  "systemAccess": {
+    "zh": "系统访问",
+    "en": "System Access",
+    "tl": "Access sa Sistema"
+  },
+  "identity": {
+    "zh": "身份",
+    "en": "Identity",
+    "tl": "Pagkakakilanlan"
+  },
+  "username": {
+    "zh": "用户名",
+    "en": "Username",
+    "tl": "Username"
+  },
+  "credential": {
+    "zh": "凭据",
+    "en": "Credential",
+    "tl": "Kredensyal"
+  },
+  "password": {
+    "zh": "密码",
+    "en": "Password",
+    "tl": "Password"
+  },
+  "initializeSession": {
+    "zh": "初始化会话",
+    "en": "Initialize Session",
+    "tl": "Simulan ang Session"
+  },
+  "integratedSpaceRegistry": {
+    "zh": "集成空间注册",
+    "en": "Integrated Space Registry",
+    "tl": "Pinagsamang Rehistro ng Espasyo"
+  },
+  "stationManagement": {
+    "zh": "房间标识管理",
+    "en": "Station Identifiers Management",
+    "tl": "Pamamahala sa Pagkakakilanlan ng Istasyon"
+  },
+  "stationDesc": {
+    "zh": "管理您的房间或桌位标识，仅用于点餐关联",
+    "en": "Manage station identifiers for order association only.",
+    "tl": "Pamahalaan ang mga pagkakakilanlan ng istasyon para lamang sa pagkakaugnay ng order."
+  },
+  "bulkPrintQR": {
+    "zh": "批量打印二维码",
+    "en": "Bulk Print QR Codes",
+    "tl": "Maramihang Pag-print ng mga QR Code"
+  },
+  "syncAllData": {
+    "zh": "同步所有数据",
+    "en": "Sync All Data",
+    "tl": "I-sync ang Lahat ng Data"
+  },
+  "zone": {
+    "zh": "区域",
+    "en": "Zone",
+    "tl": "Zone"
+  },
+  "station": {
+    "zh": "房间",
+    "en": "Station",
+    "tl": "Istasyon"
+  },
+  "scanToMenu": {
+    "zh": "扫码点餐",
+    "en": "Scan to Order",
+    "tl": "I-scan para Mag-order"
+  },
+  "downloadVector": {
+    "zh": "下载矢量图",
+    "en": "Download Vector",
+    "tl": "Mag-download ng Vector"
+  },
+  "closeTerminal": {
+    "zh": "关闭终端",
+    "en": "Close Terminal",
+    "tl": "Isara ang Terminal"
+  },
+  "filterAll": {
+    "zh": "全部",
+    "en": "All",
+    "tl": "Lahat"
+  },
+  "filterPending": {
+    "zh": "待处理",
+    "en": "Pending",
+    "tl": "Nakabinbin"
+  },
+  "filterOngoing": {
+    "zh": "进行中",
+    "en": "Ongoing",
+    "tl": "Kasulukuyang Ginagawa"
+  },
+  "filterFinished": {
+    "zh": "已完成",
+    "en": "Finished",
+    "tl": "Natapos"
+  },
+  "liveQueue": {
+    "zh": "实时队列",
+    "en": "Live Queue",
+    "tl": "Live na Pila"
+  },
+  "kitchenWorkspace": {
+    "zh": "厨房工作区",
+    "en": "Kitchen Workspace",
+    "tl": "Workspace ng Kusina"
+  },
+  "orderId": {
+    "zh": "订单ID",
+    "en": "Order ID",
+    "tl": "ID ng Order"
+  },
+  "totalBill": {
+    "zh": "总账单",
+    "en": "Total Bill",
+    "tl": "Kabuuang Bill"
+  },
+  "timestamp": {
+    "zh": "时间戳",
+    "en": "Timestamp",
+    "tl": "Timestamp"
+  },
+  "initPrep": {
+    "zh": "开始制作",
+    "en": "Start Preparation",
+    "tl": "Simulan ang Paghahanda"
+  },
+  "dispatch": {
+    "zh": "开始配送",
+    "en": "Dispatch",
+    "tl": "I-dispatch"
+  },
+  "confirmArrival": {
+    "zh": "确认送达",
+    "en": "Confirm Arrival",
+    "tl": "Kumpirmahin ang Pagdating"
+  },
+  "voidOrder": {
+    "zh": "作废订单",
+    "en": "Void Order",
+    "tl": "I-void ang Order"
+  },
+  "cancelled": {
+    "zh": "已取消",
+    "en": "Cancelled",
+    "tl": "Nakansela"
+  },
+  "ready": {
+    "zh": "可用",
+    "en": "Available",
+    "tl": "Available"
+  },
+  "ordering": {
+    "zh": "使用中",
+    "en": "In Use",
+    "tl": "Ginagamit"
+  },
+  "completed": {
+    "zh": "已完成",
+    "en": "Completed",
+    "tl": "Nakumpleto"
+  },
+  "pending": {
+    "zh": "待处理",
+    "en": "Pending",
+    "tl": "Nakabinbin"
+  },
+  "preparing": {
+    "zh": "烹饪中",
+    "en": "Cooking",
+    "tl": "Nagluluto"
+  },
+  "delivering": {
+    "zh": "配送中",
+    "en": "Delivering",
+    "tl": "Ipinadadala"
+  },
+  "financialBalanceHub": {
+    "zh": "财务平衡中心",
+    "en": "Financial Balance Hub",
+    "tl": "Hub ng Balanse sa Pananalapi"
+  },
+  "diningLedger": {
+    "zh": "经营分类账",
+    "en": "Dining Ledger",
+    "tl": "Ledger ng Pagkain"
+  },
+  "transHistory": {
+    "zh": "交易审计",
+    "en": "Transaction History",
+    "tl": "Kasaysayan ng Transaksyon"
+  },
+  "refDate": {
+    "zh": "日期",
+    "en": "Date",
+    "tl": "Petsa"
+  },
+  "entity": {
+    "zh": "交易项目",
+    "en": "Transaction Entity",
+    "tl": "Entity ng Transaksyon"
+  },
+  "amount": {
+    "zh": "金额 (PHP)",
+    "en": "Amount (PHP)",
+    "tl": "Halaga (PHP)"
+  },
+  "totalRev": {
+    "zh": "总营业额",
+    "en": "Total Revenue",
+    "tl": "Kabuuang Kita"
+  },
+  "opCosts": {
+    "zh": "运营支出",
+    "en": "Operating Costs",
+    "tl": "Mga Gastos sa Operasyon"
+  },
+  "netValuation": {
+    "zh": "净利现值",
+    "en": "Net Valuation",
+    "tl": "Netong Pagpapahalaga"
+  },
+  "paymentDistribution": {
+    "zh": "支付渠道分布",
+    "en": "Payment Distribution",
+    "tl": "Distribusyon ng Pagbabayad"
+  },
+  "tax": {
+    "zh": "税金 (12% VAT)",
+    "en": "Tax (12% VAT)",
+    "tl": "Buwis (12% VAT)"
+  },
+  "total": {
+    "zh": "总计",
+    "en": "Total",
+    "tl": "Kabuuan"
+  },
+  "payNow": {
+    "zh": "立即结算",
+    "en": "Pay Now",
+    "tl": "Magbayad Ngayon"
+  },
+  "processSecurePayment": {
+    "zh": "处理安全支付",
+    "en": "Process Secure Payment",
+    "tl": "Proseso ng Secure na Pagbabayad"
+  },
+  "gatewayEncrypt": {
+    "zh": "256位端到端加密",
+    "en": "256-bit End-to-End Encryption",
+    "tl": "256-bit End-to-End na Pag-encrypt"
+  },
+  "curatedMenu": {
+    "zh": "精选菜单",
+    "en": "Curated Menu",
+    "tl": "Curated Menu"
+  },
+  "kitchenGallery": {
+    "zh": "厨艺展示",
+    "en": "Kitchen Gallery",
+    "tl": "Gallery ng Kusina"
+  },
+  "menuDesc": {
+    "zh": "管理您的菜单项、定价和库存",
+    "en": "Manage menu items, pricing, and inventory.",
+    "tl": "Pamahalaan ang mga item sa menu, pagpepresyo, at imbentaryo."
+  },
+  "searchDishes": {
+    "zh": "搜索菜品...",
+    "en": "Search dishes...",
+    "tl": "Maghanap ng mga ulam..."
+  },
+  "price": {
+    "zh": "价格",
+    "en": "Price",
+    "tl": "Presyo"
+  },
+  "inventory": {
+    "zh": "库存",
+    "en": "Inventory",
+    "tl": "Imbentaryo"
+  },
+  "editCreation": {
+    "zh": "编辑菜品",
+    "en": "Edit Dish",
+    "tl": "I-edit ang Ulam"
+  },
+  "newCollection": {
+    "zh": "新增菜品",
+    "en": "Add New Dish",
+    "tl": "Magdag dag ng Bagong Ulam"
+  },
+  "dishNameZh": {
+    "zh": "中文名称",
+    "en": "Chinese Name",
+    "tl": "Pangalang Tsino"
+  },
+  "dishNameEn": {
+    "zh": "英文名称",
+    "en": "English Name",
+    "tl": "Pangalang Ingles"
+  },
+  "visualAsset": {
+    "zh": "视觉资产 (URL)",
+    "en": "Visual Asset (URL)",
+    "tl": "Visual na Asset (URL)"
+  },
+  "cancel": {
+    "zh": "取消",
+    "en": "Cancel",
+    "tl": "Kanselahin"
+  },
+  "save": {
+    "zh": "保存",
+    "en": "Save",
+    "tl": "I-save"
+  },
+  "confirm": {
+    "zh": "确认",
+    "en": "Confirm",
+    "tl": "Kumpirmahin"
+  },
+  "delete": {
+    "zh": "删除",
+    "en": "Delete",
+    "tl": "Burahin"
+  },
+  "enterpriseSecurityConsole": {
+    "zh": "企业安全控制台",
+    "en": "Enterprise Security Console",
+    "tl": "Console ng Seguridad ng Enterprise"
+  },
+  "personnelAudit": {
+    "zh": "人员审计",
+    "en": "Personnel Audit",
+    "tl": "Audit ng Tauhan"
+  },
+  "directory": {
+    "zh": "员工名录",
+    "en": "Staff Directory",
+    "tl": "Direktoryo ng Staff"
+  },
+  "auditLogs": {
+    "zh": "审计日志",
+    "en": "Audit Logs",
+    "tl": "Mga Audit Log"
+  },
+  "securityHealth": {
+    "zh": "安全状态",
+    "en": "Security Health",
+    "tl": "Kalusugan ng Seguridad"
+  },
+  "firewallActive": {
+    "zh": "防火墙状态",
+    "en": "Firewall Status",
+    "tl": "Katayuan ng Firewall"
+  },
+  "dataBackup": {
+    "zh": "数据备份",
+    "en": "Data Backup",
+    "tl": "Backup ng Data"
+  },
+  "lastActive": {
+    "zh": "最后活跃",
+    "en": "Last Active",
+    "tl": "Huling Aktibo"
+  },
+  "securityTimestamp": {
+    "zh": "时间戳",
+    "en": "Timestamp",
+    "tl": "Timestamp"
+  },
+  "authAgent": {
+    "zh": "认证用户",
+    "en": "Authenticated Agent",
+    "tl": "Awtorisadong Ahente"
+  },
+  "action": {
+    "zh": "操作行为",
+    "en": "Action",
+    "tl": "Aksyon"
+  },
+  "threatLevel": {
+    "zh": "威胁等级",
+    "en": "Threat Level",
+    "tl": "Antas ng Banta"
+  },
+  "location": {
+    "zh": "登录地点",
+    "en": "Login Location",
+    "tl": "Lokasyon ng Pag-login"
+  },
+  "ipAddress": {
+    "zh": "IP 地址",
+    "en": "IP Address",
+    "tl": "IP Address"
+  },
+  "materialLibrary": {
+    "zh": "素材库",
+    "en": "Asset Library",
+    "tl": "Library ng mga Asset"
+  },
+  "preProductionAudit": {
+    "zh": "预生产审计",
+    "en": "Pre-Production Audit",
+    "tl": "Audit Bago ang Produksyon"
+  },
+  "productionReadiness": {
+    "zh": "生产就绪度",
+    "en": "Production Readiness",
+    "tl": "Kahandaan sa Produksyon"
+  },
+  "deploymentDesc": {
+    "zh": "检查系统部署状态，确保所有模块已上线",
+    "en": "Verify deployment status to ensure all modules are live.",
+    "tl": "Patunayan ang katayuan ng deployment upang matiyak na live ang lahat ng module."
+  },
+  "infraSecurity": {
+    "zh": "基础架构安全",
+    "en": "Infrastructure Security",
+    "tl": "Seguridad ng Imprastruktura"
+  },
+  "sslTlsLabel": {
+    "zh": "SSL/TLS 配置",
+    "en": "SSL/TLS Configuration",
+    "tl": "Pagsasaayos ng SSL/TLS"
+  },
+  "sslTlsDesc": {
+    "zh": "端到端加密传输协议",
+    "en": "End-to-end encryption protocol.",
+    "tl": "End-to-end na protocol ng pag-encrypt."
+  },
+  "jwtAuthLabel": {
+    "zh": "JWT 认证",
+    "en": "JWT Authentication",
+    "tl": "Pagpapatotong JWT"
+  },
+  "jwtAuthDesc": {
+    "zh": "无状态身份验证令牌",
+    "en": "Stateless authentication token.",
+    "tl": "Stateless na token ng pagpapatotoo."
+  },
+  "corsPolicyLabel": {
+    "zh": "CORS 策略",
+    "en": "CORS Policy",
+    "tl": "Patakarang CORS"
+  },
+  "corsPolicyDesc": {
+    "zh": "跨域资源共享限制",
+    "en": "Cross-origin resource sharing restrictions.",
+    "tl": "Mga paghihigpit sa pagbabahagi ng mapagkukunan sa iba't ibang pinagmulan."
+  },
+  "envVarsLabel": {
+    "zh": "环境变量",
+    "en": "Environment Variables",
+    "tl": "Mga Variable ng Kapaligiran"
+  },
+  "envVarsDesc": {
+    "zh": "敏感凭据隔离",
+    "en": "Sensitive credential isolation.",
+    "tl": "Paghiwalay ng sensitibong kredensyal."
+  },
+  "backendStorage": {
+    "zh": "后端存储",
+    "en": "Backend Storage",
+    "tl": "Imbakan sa Backend"
+  },
+  "dbProdLabel": {
+    "zh": "生产数据库",
+    "en": "Production Database",
+    "tl": "Production Database"
+  },
+  "dbProdDesc": {
+    "zh": "高性能持久化存储",
+    "en": "High-performance persistent storage.",
+    "tl": "Mataas na performans na matibay na imbakan."
+  },
+  "redisCacheLabel": {
+    "zh": "Redis 缓存",
+    "en": "Redis Cache",
+    "tl": "Redis Cache"
+  },
+  "redisCacheDesc": {
+    "zh": "内存级数据加速",
+    "en": "Memory-level data acceleration.",
+    "tl": "Pagpapabilis ng data sa antas ng memorya."
+  },
+  "dbBackupLabel": {
+    "zh": "数据库备份",
+    "en": "Database Backup",
+    "tl": "Backup ng Database"
+  },
+  "dbBackupDesc": {
+    "zh": "异地容灾恢复策略",
+    "en": "Disaster recovery strategy.",
+    "tl": "Diskarte sa pagbawi mula sa sakuna."
+  },
+  "businessIntegration": {
+    "zh": "业务集成",
+    "en": "Business Integration",
+    "tl": "Integrasyon sa Negosyo"
+  },
+  "paymentSdkLabel": {
+    "zh": "支付 SDK",
+    "en": "Payment SDK",
+    "tl": "Payment SDK"
+  },
+  "paymentSdkDesc": {
+    "zh": "第三方支付网关对接",
+    "en": "Third-party payment gateway integration.",
+    "tl": "Integrasyon ng third-party payment gateway."
+  },
+  "cloudPrintLabel": {
+    "zh": "云打印",
+    "en": "Cloud Print",
+    "tl": "Cloud Print"
+  },
+  "cloudPrintDesc": {
+    "zh": "远程小票打印集成",
+    "en": "Remote receipt printing integration.",
+    "tl": "Integrasyon ng remote na pag-print ng resibo."
+  },
+  "pointsAlgoLabel": {
+    "zh": "积分算法",
+    "en": "Loyalty Points Algorithm",
+    "tl": "Algorithm ng Loyalty Points"
+  },
+  "pointsAlgoDesc": {
+    "zh": "忠诚度计划逻辑",
+    "en": "Loyalty program logic.",
+    "tl": "Lohika ng programa ng katapatan."
+  },
+  "responseLatency": {
+    "zh": "响应延迟",
+    "en": "Response Latency",
+    "tl": "Latency ng Tugon"
+  },
+  "globalCdn": {
+    "zh": "全球 CDN",
+    "en": "Global CDN",
+    "tl": "Global CDN"
+  },
+  "dataIntegrity": {
+    "zh": "数据完整性",
+    "en": "Data Integrity",
+    "tl": "Integridad ng Data"
+  },
+  "ddosMitigation": {
+    "zh": "DDoS 防护",
+    "en": "DDoS Protection",
+    "tl": "Proteksyon sa DDoS"
+  },
+  "statusActive": {
+    "zh": "激活中",
+    "en": "Active",
+    "tl": "Aktibo"
+  },
+  "analyticsEngine": {
+    "zh": "分析引擎",
+    "en": "Analytics Engine",
+    "tl": "Engine ng Pagsusuri"
+  },
+  "enterpriseIntelligence": {
+    "zh": "企业情报",
+    "en": "Enterprise Intelligence",
+    "tl": "Intelligence ng Enterprise"
+  },
+  "secureCloudActive": {
+    "zh": "安全云激活",
+    "en": "Secure Cloud Active",
+    "tl": "Aktibo ang Secure na Cloud"
+  },
+  "liveNodeLatency": {
+    "zh": "实时节点延迟",
+    "en": "Live Node Latency",
+    "tl": "Latency ng Live Node"
+  },
+  "revenue": {
+    "zh": "总收入",
+    "en": "Revenue",
+    "tl": "Kita"
+  },
+  "expenses": {
+    "zh": "总支出",
+    "en": "Expenses",
+    "tl": "Mga Gastos"
+  },
+  "activeGuests": {
+    "zh": "活跃顾客",
+    "en": "Active Guests",
+    "tl": "Aktibong Bisita"
+  },
+  "occupancy": {
+    "zh": "占用率",
+    "en": "Occupancy Rate",
+    "tl": "Rate ng Okupasyon"
+  },
+  "peakTraffic": {
+    "zh": "高峰流量",
+    "en": "Peak Traffic",
+    "tl": "Rurok ng Trapiko"
+  },
+  "kitchenLoad": {
+    "zh": "厨房负载",
+    "en": "Kitchen Load",
+    "tl": "Load ng Kusina"
+  },
+  "marketShare": {
+    "zh": "市场份额",
+    "en": "Market Share",
+    "tl": "Bahagi sa Market"
+  },
+  "revByCategory": {
+    "zh": "分品类收入",
+    "en": "Revenue by Category",
+    "tl": "Kita ayon sa Kategorya"
+  },
+  "totalYield": {
+    "zh": "总产量",
+    "en": "Total Yield",
+    "tl": "Kabuuang Yield"
+  },
+  "privacyPolicy": {
+    "zh": "隐私政策",
+    "en": "Privacy Policy",
+    "tl": "Patakaran sa Privacy"
+  },
+  "foodSafety": {
+    "zh": "食品安全",
+    "en": "Food Safety",
+    "tl": "Kaligtasan ng Pagkain"
+  },
+  "errorOccurred": {
+    "zh": "系统发生错误",
+    "en": "An Error Occurred",
+    "tl": "May Naganap na Error"
+  },
+  "retryAction": {
+    "zh": "重试操作",
+    "en": "Retry",
+    "tl": "Subukan Muli"
+  },
+  "reportIssue": {
+    "zh": "报告问题",
+    "en": "Report Issue",
+    "tl": "I-report ang Isyu"
+  },
+  "hospitalitySuite": {
+    "zh": "酒店管理套件",
+    "en": "Hospitality Suite",
+    "tl": "Suite sa Pamamahala ng Hotel"
+  },
+  "systemSovereign": {
+    "zh": "系统主宰",
+    "en": "System Sovereign",
+    "tl": "Soberano ng Sistema"
+  },
+  "operationalUnit": {
+    "zh": "操作单元",
+    "en": "Operational Unit",
+    "tl": "Yunit ng Operasyon"
+  },
+  "currency": {
+    "zh": "₱",
+    "en": "₱",
+    "tl": "₱"
+  },
+  "establishment": {
+    "zh": "创立于",
+    "en": "Established",
+    "tl": "Itinatag"
+  },
+  "registryControls": {
+    "zh": "注册控制",
+    "en": "Registry Controls",
+    "tl": "Mga Kontrol sa Rehistro"
+  },
+  "networkError": {
+    "zh": "云端异常",
+    "en": "Cloud Exception",
+    "tl": "Pagkakamali sa Cloud"
+  },
+  "verifyCredentials": {
+    "zh": "请登录",
+    "en": "Please Log In",
+    "tl": "Mangyaring Mag-log In"
+  }
+}

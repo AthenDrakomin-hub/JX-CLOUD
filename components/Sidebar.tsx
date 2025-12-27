@@ -32,7 +32,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab, userRole, 
   const filteredItems = menuItems.filter(item => item.roles.includes(userRole));
 
   return (
-    <div className="w-72 bg-[#0f172a] text-white flex flex-col h-screen fixed left-0 top-0 z-50 border-r border-white/5 shadow-[20px_0_60px_rgba(0,0,0,0.3)]">
+    <div className="w-72 bg-[#0f172a] text-white flex flex-col h-screen md:fixed left-0 top-0 z-50 border-r border-white/5 shadow-[20px_0_60px_rgba(0,0,0,0.3)] md:w-72 w-5/6">
       <div className="p-12">
         <div className="flex flex-col space-y-2 group">
            <div className="flex items-center space-x-2 text-[#d4af37] opacity-60">

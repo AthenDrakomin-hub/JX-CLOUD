@@ -108,5 +108,6 @@ ON CONFLICT (username) DO NOTHING;
 1. **环境变量**：在 Vercel 部署面板中，必须配置 `VITE_SUPABASE_URL` 和 `VITE_SUPABASE_ANON_KEY`。
 2. **Realtime 订阅**：请在 Supabase Dashboard 的 **Database -> Replication** 中，确保 `orders` 表已启用 **Realtime** 选项。
 3. **依赖冲突 (核心修复)**：本项目使用 React 19。由于部分第三方库（如 `qrcode.react`）尚未更新 Peer Deps，系统已内置 `.npmrc` 文件配置 `legacy-peer-deps=true`。如果手动构建，请确保使用 `npm install --legacy-peer-deps`。
+4. **存储桶配置**：如需使用图片素材库功能，请在 Supabase Dashboard 的 **Storage** 中创建名为 `materials` 的存储桶，并运行 `supabase_storage_public_config.sql` 中的SQL脚本来设置正确的访问策略。
 
 **江西云厨系统研发部 &copy; 2025**

@@ -222,7 +222,7 @@ const App: React.FC = () => {
       <ErrorBoundary lang={lang}>
         <div className="min-h-screen bg-[#f8fafc] text-[#0f172a]">
           <Sidebar currentTab={currentTab} setCurrentTab={setCurrentTab} userRole={currentUser.role} onLogout={() => setCurrentUser(null)} lang={lang} />
-          <main className="pl-72 min-h-screen">
+          <main className="md:pl-72 min-h-screen">
             <header className="sticky top-0 z-40 h-24 bg-white/70 backdrop-blur-xl border-b border-slate-100 px-10 flex items-center justify-between">
               <div className="flex flex-col">
                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] leading-none mb-1">{t('centralConsole')}</span>
@@ -268,7 +268,7 @@ const App: React.FC = () => {
                   {currentTab === 'rooms' && <RoomGrid rooms={rooms} onUpdateRoom={async (r) => { await api.rooms.update(r); fetchData(); }} lang={lang} />}
                   {currentTab === 'orders' && <OrderManagement orders={orders} onUpdateStatus={async (id, s) => { await api.orders.updateStatus(id, s); fetchData(); }} lang={lang} />}
                   {currentTab === 'menu' && <MenuManagement dishes={dishes} materials={materials} onAddDish={async (d) => { await api.dishes.create(d); fetchData(); }} onUpdateDish={async (d) => { await api.dishes.update(d); fetchData(); }} onDeleteDish={async (id) => { await api.dishes.delete(id); fetchData(); }} onAddMaterial={async (m) => { await api.materials.create(m); fetchData(); }} onDeleteMaterial={async (id) => { await api.materials.delete(id); fetchData(); }} lang={lang} />}
-                  {currentTab === 'materials' && <ImageLibrary materials={materials} onAddMaterial={async (m) => { await api.materials.create(m); fetchData(); }} onDeleteMaterial={async (id) => { await api.materials.delete(id); fetchData(); }} lang={lang} />}
+                  {currentTab === 'materials' && <ImageLibrary materials={materials} onAddMaterial={async (m) => { await api.materials.create(m); fetchData(); }} onDeleteMaterial={async (id) => { await api.materials.delete(id); fetchData(); }} currentUser={currentUser} lang={lang} />}
                   {currentTab === 'users' && <StaffManagement users={users} onAddUser={async (u) => { await api.users.create(u); fetchData(); }} onDeleteUser={async (id) => { await api.users.delete(id); fetchData(); }} lang={lang} />}
                   {currentTab === 'finance' && <FinanceManagement orders={orders} expenses={expenses} onAddExpense={async (e) => { await api.expenses.create(e); fetchData(); }} onDeleteExpense={async (id) => { await api.expenses.delete(id); fetchData(); }} lang={lang} />}
                   {currentTab === 'deployment' && <DeploymentChecklist lang={lang} />}

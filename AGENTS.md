@@ -73,3 +73,13 @@ Run the SQL script from README.md in Supabase SQL Editor to initialize all table
 - For production deployment on Vercel, ensure `orders` table has Realtime enabled in Supabase Dashboard
 - Previously had React 19 compatibility issues with qrcode.react 3.2.0, resolved by updating to qrcode.react 4.2.0 which supports React 19
 - The .npmrc file previously configured `legacy-peer-deps=true` due to React 19 compatibility issues, but this is now resolved
+- Chunk size warning resolved by implementing code splitting with manualChunks configuration for better performance
+- Added Supabase Storage integration for image upload and management in the ImageLibrary component
+- Supabase storage buckets configured for public read access with owner-based write permissions for shared assets
+- Storage objects indexed with idx_storage_objects_bucket_name for optimized file lookup performance
+- Updated storage client to properly set owner metadata for RLS policy compliance
+- Integrated set-owner-id Edge Function to ensure proper owner_id column population in storage.objects table
+- Created comprehensive multilingual dictionary (Chinese/English/Filipino) for UI internationalization
+- Production system deployed at https://www.jiangxijiudian.store/
+- Enhanced font readability with improved color contrast and font stack
+- Fixed mobile responsiveness issues with responsive sidebar and viewport settings

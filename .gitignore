@@ -58,5 +58,14 @@ Icon?
 # Vite
 .vite/
 
+# Build analysis
+stats.html
+/dist/stats.html
+/dist/stats-*.html
+*.visualizer.html
+
 # TypeScript
 *.tsbuildinfo
+
+# Dependency analysis
+node_modules/.cache
