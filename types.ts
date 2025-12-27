@@ -27,19 +27,40 @@ export enum PaymentMethod {
   CASH = 'Cash'
 }
 
+export interface PaymentMethodConfig {
+  id: string;
+  name: string;
+  type: PaymentMethod;
+  isActive: boolean;
+  instructions?: string;
+  iconType: 'smartphone' | 'wallet' | 'banknote' | 'credit-card';
+}
+
+// 细化权限类型
+export type PermissionKey = 
+  | 'manage_menu'      // 菜单管理
+  | 'view_finance'     // 财务查看
+  | 'process_orders'   // 订单处理
+  | 'manage_staff'     // 人员管理
+  | 'system_config'    // 系统配置
+  | 'material_assets'; // 素材资产
+
 export interface User {
   id: string;
   username: string;
+  password?: string; // 生产环境仅用于模拟修改逻辑
   role: UserRole;
   name: string;
   lastLogin?: string;
-  permissions?: string[];
+  permissions: PermissionKey[];
+  isLocked?: boolean;
 }
 
 export interface Dish {
   id: string;
   name: string;
   nameEn?: string;
+  description?: string;
   price: number;
   category: string;
   stock: number;
@@ -99,6 +120,7 @@ export interface SecurityLog {
   id: string;
   userId: string;
   action: string;
+  details?: string;
   timestamp: string;
   ip: string;
   location?: string;

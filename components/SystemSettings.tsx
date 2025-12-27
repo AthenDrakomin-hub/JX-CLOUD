@@ -1,219 +1,254 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { 
-  Settings, Shield, Database, CreditCard, Users, Globe, Bell, 
-  Lock, HardDrive, Server, Zap, AlertCircle, CheckCircle2
+  Sparkles, Settings, RotateCcw, Scale, Shield, 
+  ChevronDown, ChevronUp, ShieldAlert, Zap, Globe, ShieldCheck,
+  Database, Save, Copyright, Gavel, Eye
 } from 'lucide-react';
 import { translations, Language } from '../translations';
+import { api } from '../services/api';
+import ConfirmationModal from './ConfirmationModal';
 
 interface SystemSettingsProps {
   lang: Language;
 }
 
+const LegalSection: React.FC<{ title: string; children: React.ReactNode; icon: any }> = ({ title, children, icon: Icon }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden transition-all duration-500 hover:shadow-md">
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-8 py-7 flex items-center justify-between hover:bg-slate-50 transition-colors"
+      >
+        <div className="flex items-center space-x-5">
+          <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-700 shadow-inner border border-slate-200">
+            <Icon size={20} />
+          </div>
+          <span className="text-sm font-black uppercase tracking-widest text-slate-900">{title}</span>
+        </div>
+        {isOpen ? <ChevronUp size={20} className="text-slate-500" /> : <ChevronDown size={20} className="text-slate-500" />}
+      </button>
+      {isOpen && (
+        <div className="px-10 pb-12 animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="prose prose-slate max-w-none text-sm text-slate-600 font-medium leading-relaxed space-y-6">
+            {children}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const SystemSettings: React.FC<SystemSettingsProps> = ({ lang }) => {
+  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+  const [config, setConfig] = useState<any>({ hotelName: 'JX CLOUD 江西云厨', version: '3.1.0-STABLE' });
+  const [isSaving, setIsSaving] = useState(false);
+  
   const t = (key: keyof typeof translations.zh) => (translations[lang] as any)[key] || (translations.zh as any)[key] || key;
-  const [activeTab, setActiveTab] = useState('general');
 
-  const settingsTabs = [
-    { id: 'general', label: t('systemAccess'), icon: Settings },
-    { id: 'security', label: t('firewallActive'), icon: Shield },
-    { id: 'database', label: t('backendStorage'), icon: Database },
-    { id: 'payment', label: t('paymentDistribution'), icon: CreditCard },
-    { id: 'users', label: t('directory'), icon: Users },
-    { id: 'notifications', label: t('transHistory'), icon: Bell }
-  ];
+  useEffect(() => {
+    api.config.get().then(setConfig);
+  }, []);
 
-  const generalSettings = [
-    { label: t('centralConsole'), value: 'Enabled', type: 'toggle' },
-    { label: t('encryptedConnect'), value: 'TLS 1.3', type: 'select' },
-    { label: t('syncing'), value: '5 min', type: 'select' },
-    { label: t('currency'), value: '₱', type: 'input' }
-  ];
+  const handleSaveConfig = async () => {
+    setIsSaving(true);
+    await api.config.update(config);
+    setIsSaving(false);
+  };
 
-  const securitySettings = [
-    { label: t('sslTlsLabel'), value: 'Enabled', type: 'toggle' },
-    { label: '2FA Authentication', value: 'Disabled', type: 'toggle' },
-    { label: t('corsPolicyLabel'), value: 'Strict', type: 'select' },
-    { label: 'Brute Force Protection', value: 'Enabled', type: 'toggle' }
-  ];
-
-  const renderSettingsForm = () => {
-    const settings = activeTab === 'general' ? generalSettings : securitySettings;
-    
-    return (
-      <div className="bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden">
-        <div className="p-8 border-b border-slate-100 bg-slate-50/50">
-          <h3 className="text-2xl font-bold text-slate-900 capitalize">{activeTab} Settings</h3>
-        </div>
-        <div className="p-8 space-y-6">
-          {settings.map((setting, index) => (
-            <div key={index} className="flex flex-col sm:flex-row sm:items-center justify-between py-4 border-b border-slate-50 last:border-0">
-              <div className="mb-2 sm:mb-0">
-                <h4 className="font-bold text-slate-900">{setting.label}</h4>
-              </div>
-              {setting.type === 'toggle' ? (
-                <div className="flex items-center">
-                  <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-[#d4af37]">
-                    <span className="inline-block h-4 w-4 transform rounded-full bg-white transition translate-x-6" />
-                  </button>
-                </div>
-              ) : setting.type === 'select' ? (
-                <select className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-700">
-                  <option>Enabled</option>
-                  <option>Disabled</option>
-                </select>
-              ) : (
-                <input 
-                  type="text" 
-                  defaultValue={setting.value} 
-                  className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 w-40"
-                />
-              )}
-            </div>
-          ))}
-        </div>
-        <div className="p-8 bg-slate-50/30 flex justify-end">
-          <button className="px-8 py-3 bg-slate-900 text-white rounded-full font-bold hover:bg-[#d4af37] transition-colors">
-            {t('save')}
-          </button>
-        </div>
-      </div>
-    );
+  const handleResetSystem = () => {
+    localStorage.clear();
+    window.location.reload();
   };
 
   return (
-    <div className="space-y-8 pb-24">
-      <div className="space-y-2">
-        <div className="flex items-center space-x-2 text-[#d4af37]">
-          <Settings size={16} />
-          <span className="text-[10px] font-black uppercase tracking-[0.4em]">{t('systemSovereign')}</span>
+    <div className="space-y-16 pb-24">
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
+        <div className="space-y-2">
+           <div className="flex items-center space-x-2 text-[#d4af37]">
+              <Sparkles size={14} />
+              <span className="text-xs font-black uppercase tracking-[0.4em]">{t('systemConfig')}</span>
+           </div>
+           <h2 className="text-5xl font-serif italic text-slate-900 tracking-tighter">{t('settings')}</h2>
+           <p className="text-sm text-slate-500 font-medium tracking-widest max-w-md leading-relaxed">
+             {t('systemSettingsDesc')}
+           </p>
         </div>
-        <h2 className="text-4xl font-bold text-slate-900">{t('registryControls')}</h2>
-        <p className="text-sm text-slate-500 max-w-2xl">
-          {t('deploymentDesc')}
-        </p>
+        <button 
+          onClick={handleSaveConfig}
+          disabled={isSaving}
+          className="flex items-center space-x-3 px-8 py-4 bg-slate-900 text-white rounded-full font-black text-xs uppercase tracking-widest hover:bg-[#d4af37] transition-all shadow-2xl active:scale-95 disabled:opacity-50"
+        >
+          {isSaving ? <Zap size={16} className="animate-spin" /> : <Save size={16} />}
+          <span>{lang === 'zh' ? '保存更改' : 'Save Changes'}</span>
+        </button>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-8">
-        <div className="lg:w-1/4">
-          <div className="bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden">
-            <div className="p-6 border-b border-slate-100">
-              <h3 className="text-lg font-bold text-slate-900 flex items-center">
-                <Settings size={18} className="mr-2" />
-                {t('operationalUnit')}
-              </h3>
-            </div>
-            <div className="p-4 space-y-2">
-              {settingsTabs.map((tab) => {
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-left transition-all ${
-                      activeTab === tab.id
-                        ? 'bg-[#d4af37]/10 text-[#d4af37] border border-[#d4af37]/20'
-                        : 'hover:bg-slate-50 text-slate-600'
-                    }`}
-                  >
-                    <Icon size={18} />
-                    <span className="text-sm font-medium">{tab.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+        <div className="lg:col-span-2 space-y-12">
+          {/* General Section */}
+          <section className="bg-white rounded-[4rem] border border-slate-100 shadow-sm overflow-hidden animate-in fade-in">
+             <div className="p-12 border-b border-slate-100 bg-slate-50/30 flex items-center space-x-5">
+                <div className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center shadow-lg">
+                   <Settings size={22} />
+                </div>
+                <h3 className="text-xl font-black uppercase tracking-widest text-slate-900">{t('generalSettings')}</h3>
+             </div>
+             <div className="p-12 space-y-12">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between group gap-8">
+                   <div className="space-y-1">
+                      <h4 className="text-lg font-bold text-slate-900">{t('hotelName')}</h4>
+                      <p className="text-sm text-slate-500 font-medium">{t('hotelNameDesc')}</p>
+                   </div>
+                   <input 
+                      value={config.hotelName}
+                      onChange={(e) => setConfig({ ...config, hotelName: e.target.value })}
+                      className="flex-1 max-w-md px-8 py-5 bg-slate-50 rounded-2xl border border-slate-200 font-serif italic text-2xl text-slate-900 shadow-inner outline-none focus:ring-2 focus:ring-[#d4af37]/30 transition-all"
+                   />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                   <div className="space-y-1">
+                      <h4 className="text-lg font-bold text-slate-900">{lang === 'zh' ? '系统架构版本' : 'Architecture Version'}</h4>
+                      <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">Enterprise Edition</p>
+                   </div>
+                   <div className="px-8 py-3 bg-slate-900 text-white rounded-full text-xs font-black tracking-widest shadow-xl">
+                      {config.version || 'v3.1.0-STABLE'}
+                   </div>
+                </div>
+             </div>
+          </section>
+
+          {/* Legal Compliance Section */}
+          <section className="space-y-8">
+             <div className="flex items-center space-x-4 px-10">
+                <Scale size={24} className="text-[#d4af37]" />
+                <h3 className="text-2xl font-black uppercase tracking-widest text-slate-900">{t('legalCompliance')}</h3>
+             </div>
+             
+             <div className="space-y-6">
+                <LegalSection title={t('intellectualProperty')} icon={Copyright}>
+                  <div className="space-y-6 text-sm">
+                    <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
+                      <h5 className="text-slate-900 font-black text-xs uppercase tracking-widest mb-4 flex items-center">
+                        <Gavel size={14} className="mr-2 text-[#d4af37]" />
+                        {t('ipTitle1')}
+                      </h5>
+                      <p>{t('ipDesc1')}</p>
+                    </div>
+                    <div>
+                      <h5 className="text-slate-900 font-black text-sm mb-3">{t('ipTitle2')}</h5>
+                      <p className="indent-4 mb-3">{t('ipDesc2')}</p>
+                      <h5 className="text-slate-900 font-black text-sm mb-3">{t('ipTitle3')}</h5>
+                      <ul className="list-disc list-inside space-y-2 ml-4">
+                        <li>{t('ipItem3_1')}</li>
+                        <li>{t('ipItem3_2')}</li>
+                        <li>{t('ipItem3_3')}</li>
+                      </ul>
+                    </div>
+                  </div>
+                </LegalSection>
+
+                <LegalSection title={t('disclaimerTitle')} icon={ShieldAlert}>
+                  <div className="space-y-6 text-sm">
+                    <div className="p-6 bg-red-50/30 rounded-3xl border border-red-100">
+                      <h5 className="text-red-900 font-black text-xs uppercase tracking-widest mb-4">特别警示 / WARNING</h5>
+                      <p className="text-red-700 font-bold">{t('disclaimerWarning')}</p>
+                    </div>
+                    <div className="space-y-4">
+                      <h5 className="text-slate-900 font-black text-sm">{t('disclaimerTitle1')}</h5>
+                      <p className="indent-4">{t('disclaimerDesc1')}</p>
+                      <h5 className="text-slate-900 font-black text-sm">{t('disclaimerTitle2')}</h5>
+                      <p className="indent-4">{t('disclaimerDesc2')}</p>
+                    </div>
+                  </div>
+                </LegalSection>
+
+                <LegalSection title={t('privacyPolicy')} icon={Shield}>
+                  <div className="space-y-6 text-sm">
+                    <div className="flex items-center space-x-4 mb-6">
+                       <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center">
+                          <Eye size={18} />
+                       </div>
+                       <h5 className="text-slate-900 font-black text-sm uppercase tracking-widest">Privacy by Design</h5>
+                    </div>
+                    <div className="space-y-4">
+                      <h5 className="text-slate-900 font-black text-sm">{t('privacyTitle1')}</h5>
+                      <p className="indent-4">{t('privacyDesc1')}</p>
+                      <h5 className="text-slate-900 font-black text-sm">{t('privacyTitle2')}</h5>
+                      <p className="indent-4">{t('privacyDesc2')}</p>
+                      <h5 className="text-slate-900 font-black text-sm">{t('privacyTitle3')}</h5>
+                      <p className="indent-4">{t('privacyDesc3')}</p>
+                    </div>
+                  </div>
+                </LegalSection>
+             </div>
+          </section>
         </div>
 
-        <div className="lg:w-3/4">
-          {renderSettingsForm()}
+        <div className="space-y-12">
+           {/* Data Management Sidebar Card */}
+           <section className="bg-slate-950 rounded-[4rem] p-12 text-white shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-48 h-48 bg-red-500/20 blur-[80px] rounded-full translate-x-1/2 -translate-y-1/2" />
+              <div className="relative z-10 space-y-8">
+                 <div className="flex items-center space-x-3 text-red-500">
+                    <Database size={20} />
+                    <span className="text-xs font-black uppercase tracking-widest">{t('dataManagement')}</span>
+                 </div>
+                 <h3 className="text-3xl font-serif italic tracking-tighter">{t('resetSystem')}</h3>
+                 <p className="text-sm text-slate-400 font-medium leading-relaxed">
+                   {t('resetDesc')}
+                 </p>
+                 <button 
+                  onClick={() => setIsResetConfirmOpen(true)}
+                  className="w-full py-6 bg-red-600 text-white rounded-[2rem] font-black text-xs uppercase tracking-widest hover:bg-white hover:text-red-700 transition-all flex items-center justify-center space-x-3 active:scale-95 shadow-[0_20px_40px_rgba(239,68,68,0.3)]"
+                 >
+                    <RotateCcw size={18} />
+                    <span>{t('resetSystem')}</span>
+                 </button>
+              </div>
+           </section>
+
+           {/* Health Stats */}
+           <div className="bg-white rounded-[4rem] p-12 border border-slate-200 shadow-sm space-y-12">
+              <div className="space-y-10">
+                <div className="flex items-center justify-between">
+                   <div className="flex items-center space-x-3 text-blue-600">
+                      <Zap size={20} />
+                      <span className="text-xs font-black uppercase tracking-widest text-slate-500">{t('responseLatency')}</span>
+                   </div>
+                   <span className="text-xl font-bold tracking-tighter text-slate-900">0.02ms</span>
+                </div>
+                <div className="flex items-center justify-between">
+                   <div className="flex items-center space-x-3 text-emerald-600">
+                      <Globe size={20} />
+                      <span className="text-xs font-black uppercase tracking-widest text-slate-500">{t('globalCdn')}</span>
+                   </div>
+                   <span className="text-xl font-bold tracking-tighter text-slate-900">124 Pts</span>
+                </div>
+                <div className="flex items-center justify-between">
+                   <div className="flex items-center space-x-3 text-[#d4af37]">
+                      <ShieldCheck size={20} />
+                      <span className="text-xs font-black uppercase tracking-widest text-slate-500">{t('dataIntegrity')}</span>
+                   </div>
+                   <span className="text-xl font-bold tracking-tighter text-slate-900">99.99%</span>
+                </div>
+              </div>
+           </div>
         </div>
       </div>
 
-      {/* System Status Overview */}
-      <div className="bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden">
-        <div className="p-8 border-b border-slate-100">
-          <h3 className="text-2xl font-bold text-slate-900">{t('securityHealth')}</h3>
-        </div>
-        <div className="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-slate-50 rounded-3xl p-6">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="p-3 bg-emerald-500/10 rounded-2xl">
-                <CheckCircle2 size={24} className="text-emerald-500" />
-              </div>
-              <h4 className="font-bold text-slate-900">{t('statusActive')}</h4>
-            </div>
-            <p className="text-3xl font-bold text-slate-900">99.9%</p>
-            <p className="text-sm text-slate-500 mt-1">Uptime</p>
-          </div>
-          
-          <div className="bg-slate-50 rounded-3xl p-6">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="p-3 bg-amber-500/10 rounded-2xl">
-                <AlertCircle size={24} className="text-amber-500" />
-              </div>
-              <h4 className="font-bold text-slate-900">Security</h4>
-            </div>
-            <p className="text-3xl font-bold text-slate-900">A+</p>
-            <p className="text-sm text-slate-500 mt-1">Rating</p>
-          </div>
-          
-          <div className="bg-slate-50 rounded-3xl p-6">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="p-3 bg-blue-500/10 rounded-2xl">
-                <Server size={24} className="text-blue-500" />
-              </div>
-              <h4 className="font-bold text-slate-900">Response</h4>
-            </div>
-            <p className="text-3xl font-bold text-slate-900">42ms</p>
-            <p className="text-sm text-slate-500 mt-1">Avg. Latency</p>
-          </div>
-          
-          <div className="bg-slate-50 rounded-3xl p-6">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="p-3 bg-purple-500/10 rounded-2xl">
-                <HardDrive size={24} className="text-purple-500" />
-              </div>
-              <h4 className="font-bold text-slate-900">Storage</h4>
-            </div>
-            <p className="text-3xl font-bold text-slate-900">62%</p>
-            <p className="text-sm text-slate-500 mt-1">Usage</p>
-          </div>
-        </div>
-      </div>
-      
-      {/* Fixed footer with Terms of Service and Privacy Policy */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 py-4 z-50 shadow-lg">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row justify-between items-center text-center sm:text-left">
-          <div className="mb-2 sm:mb-0">
-            <p className="text-xs text-slate-500 font-medium">
-              {t('establishment')} 2025 • {t('jxCloud')}
-            </p>
-          </div>
-          <div className="flex flex-wrap justify-center gap-6">
-            <a 
-              href="./TERMS_OF_SERVICE.md" 
-              target="_blank" 
-              className="text-xs text-slate-500 hover:text-[#d4af37] transition-colors font-medium"
-            >
-              {t('termsOfService')}
-            </a>
-            <a 
-              href="./PRIVACY_POLICY.md" 
-              target="_blank" 
-              className="text-xs text-slate-500 hover:text-[#d4af37] transition-colors font-medium"
-            >
-              {t('privacyPolicy')}
-            </a>
-            <a 
-              href="./DISCLAIMER.md" 
-              target="_blank" 
-              className="text-xs text-slate-500 hover:text-[#d4af37] transition-colors font-medium"
-            >
-              {t('disclaimer')}
-            </a>
-          </div>
-        </div>
-      </div>
+      <ConfirmationModal 
+        isOpen={isResetConfirmOpen}
+        title={t('resetSystem')}
+        message={t('resetDesc')}
+        confirmLabel={t('resetSystem')}
+        confirmVariant="danger"
+        onConfirm={handleResetSystem}
+        onCancel={() => setIsResetConfirmOpen(false)}
+        lang={lang}
+      />
     </div>
   );
 };

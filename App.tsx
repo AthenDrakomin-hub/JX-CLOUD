@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import RoomGrid from './components/RoomGrid';
@@ -8,18 +8,30 @@ import MenuManagement from './components/MenuManagement';
 import ImageLibrary from './components/ImageLibrary';
 import FinanceManagement from './components/FinanceManagement';
 import StaffManagement from './components/StaffManagement';
+import PaymentManagement from './components/PaymentManagement';
 import SystemSettings from './components/SystemSettings';
 import LegalFooter from './components/LegalFooter';
 import ErrorBoundary from './components/ErrorBoundary';
-import GuestOrder from './components/GuestOrder';
-import AuthCallback from './components/AuthCallback';
 import NotificationCenter from './components/NotificationCenter';
 import { api } from './services/api';
-import { supabase } from './services/supabaseClient';
 import { notificationService } from './services/notification';
-import { User, Order, HotelRoom, Expense, Dish, MaterialImage, PaymentMethod, UserRole } from './types';
+import { User, Order, HotelRoom, Expense, Dish, MaterialImage, UserRole } from './types';
 import { translations as localTranslations, Language } from './translations';
-import { Globe, Server, LockKeyhole, ArrowRight, Star, ChevronDown, Check, Bell } from 'lucide-react';
+import { 
+  Globe, LockKeyhole, ArrowRight, ChevronDown, Bell, 
+  Building2, User as UserIcon, Loader2, 
+  Eye, EyeOff, ShieldCheck, X, ShieldAlert, Gavel
+} from 'lucide-react';
+
+const MemoDashboard = React.memo(Dashboard);
+const MemoRoomGrid = React.memo(RoomGrid);
+const MemoOrderManagement = React.memo(OrderManagement);
+const MemoMenuManagement = React.memo(MenuManagement);
+const MemoImageLibrary = React.memo(ImageLibrary);
+const MemoStaffManagement = React.memo(StaffManagement);
+const MemoFinanceManagement = React.memo(FinanceManagement);
+const MemoPaymentManagement = React.memo(PaymentManagement);
+const MemoSystemSettings = React.memo(SystemSettings);
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -35,37 +47,32 @@ const App: React.FC = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [lang, setLang] = useState<Language>(() => (localStorage.getItem('jx_lang') as Language) || 'zh');
-  const [guestRoomId, setGuestRoomId] = useState<string | null>(null);
-  const [loginForm, setLoginForm] = useState({ username: '', password: '' });
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [appNotifications, setAppNotifications] = useState<any[]>([]);
+  
+  // 登录状态
+  const [loginForm, setLoginForm] = useState({ username: '', password: '' });
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  
+  // 法律合规弹窗
+  const [legalModal, setLegalModal] = useState<'privacy' | 'disclaimer' | null>(null);
+  
   const langMenuRef = useRef<HTMLDivElement>(null);
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    return () => { isMounted.current = false; };
+  }, []);
+
+  const activeTranslationSet = useMemo(() => {
+    return dynamicTranslations[lang] || dynamicTranslations.zh || localTranslations.zh;
+  }, [lang, dynamicTranslations]);
 
   const t = useCallback((key: string) => {
-    // 优先使用动态翻译（云端），然后是本地翻译
-    const dynamicLangSet = dynamicTranslations[lang];
-    const localLangSet = localTranslations[lang];
-    
-    // 首先尝试动态翻译集
-    if (dynamicLangSet && key in dynamicLangSet) {
-      return (dynamicLangSet as any)[key];
-    }
-    
-    // 然后尝试本地翻译集
-    if (localLangSet && key in localLangSet) {
-      return (localLangSet as any)[key];
-    }
-    
-    // 最后尝试本地中文翻译集
-    const localZhSet = localTranslations.zh;
-    if (localZhSet && key in localZhSet) {
-      return (localZhSet as any)[key];
-    }
-    
-    // 如果都找不到，返回key本身
-    return key;
-  }, [lang, dynamicTranslations]);
+    return activeTranslationSet[key] || (localTranslations.zh as any)[key] || key;
+  }, [activeTranslationSet]);
 
   const setLanguage = (newLang: Language) => {
     setLang(newLang);
@@ -76,7 +83,6 @@ const App: React.FC = () => {
   const fetchData = useCallback(async () => {
     if (isSyncing) return;
     setIsSyncing(true);
-    setGlobalError(null);
     try {
       const [r, o, e, d, u, m, cloudDict] = await Promise.all([
         api.rooms.getAll(),
@@ -87,6 +93,8 @@ const App: React.FC = () => {
         api.materials.getAll(),
         api.translations.getAll()
       ]);
+
+      if (!isMounted.current) return;
 
       if (cloudDict && cloudDict.length > 0) {
         const merged: any = { zh: { ...localTranslations.zh }, en: { ...localTranslations.en }, tl: { ...localTranslations.tl } };
@@ -107,60 +115,17 @@ const App: React.FC = () => {
       setUsers(u || []);
       setMaterials(m || []);
     } catch (err: any) { 
-      console.warn('数据同步波动 (保持本地状态):', err?.message || err);
+      console.warn('Sync jitter');
     } finally { 
-      setIsLoading(false); 
-      setIsSyncing(false);
+      if (isMounted.current) {
+        setIsLoading(false); 
+        setIsSyncing(false);
+      }
     }
-  }, [isSyncing]);
+  }, []);
 
   useEffect(() => {
-    const channel = supabase
-      .channel('realtime-orders')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'orders' },
-        (payload) => {
-          const raw = payload.new as any;
-          // 数据校准：确保数值类型正确
-          const newOrder: Order = {
-            ...raw,
-            totalAmount: Number(raw.total_amount || raw.totalAmount || 0),
-            taxAmount: Number(raw.tax_amount || raw.taxAmount || 0)
-          };
-          
-          setOrders(prev => [newOrder, ...prev]);
-          const msg = `房间 ${newOrder.roomId} 有新订单! 总额: ₱${newOrder.totalAmount}`;
-          notificationService.send('新订单通知', msg, 'NEW_ORDER');
-          
-          setAppNotifications(prev => [{
-            id: newOrder.id || `notif-${Date.now()}`,
-            title: t('pending'),
-            body: msg,
-            type: 'NEW_ORDER' as any,
-            timestamp: new Date(),
-            read: false
-          }, ...prev]);
-        }
-      )
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [t]);
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const roomParam = params.get('room');
-    const callbackPath = window.location.pathname === '/auth/callback';
-    
-    if (callbackPath) {
-      // 如果是认证回调路径，不执行其他初始化
-      return;
-    }
-    
-    if (roomParam) setGuestRoomId(roomParam);
     fetchData();
-
     const handleClickOutside = (event: MouseEvent) => {
       if (langMenuRef.current && !langMenuRef.current.contains(event.target as Node)) {
         setIsLangMenuOpen(false);
@@ -168,82 +133,95 @@ const App: React.FC = () => {
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []); // 仅挂载时执行
+  }, [fetchData]);
+
+  useEffect(() => {
+    const unsubscribe = notificationService.subscribe((msg) => {
+      setAppNotifications(prev => [
+        {
+          id: `notif-${Date.now()}-${Math.random()}`,
+          title: msg.title,
+          body: msg.body,
+          type: msg.type,
+          timestamp: new Date(),
+          read: false
+        },
+        ...prev
+      ].slice(0, 50));
+      fetchData();
+    });
+    return unsubscribe;
+  }, [fetchData]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoggingIn) return;
+
+    setIsLoggingIn(true);
+    setGlobalError(null);
+    await new Promise(r => setTimeout(r, 800));
+
+    // Fix: Ensure allUsers elements conform to the User interface by adding 'permissions' property
+    const allUsers: User[] = users.length > 0 ? users : [
+      { 
+        id: 'u1', 
+        username: 'admin1', 
+        role: UserRole.ADMIN, 
+        name: '主理人·张', 
+        permissions: ['manage_menu', 'view_finance', 'process_orders', 'manage_staff', 'system_config', 'material_assets'] 
+      },
+      { 
+        id: 'u3', 
+        username: 'staff1', 
+        role: UserRole.STAFF, 
+        name: '前厅·小李', 
+        permissions: ['process_orders', 'material_assets'] 
+      }
+    ];
+
+    const inputUsername = loginForm.username.trim();
+    const matchedUser = allUsers.find(u => u.username === inputUsername);
     
-    try {
-      // 记录登录尝试
-      const loginAttempt = {
-        username: loginForm.username,
-        timestamp: new Date().toISOString(),
-        ip: 'CLIENT_IP', // 在实际部署中应从服务器获取
-        userAgent: navigator.userAgent
-      };
-      
-      // 使用 Supabase Auth 进行身份验证
-      // 直接使用 Supabase Auth 进行身份验证
-      // 用户需要使用注册时的邮箱和密码登录
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: loginForm.username, // 这里应该是邮箱
-        password: loginForm.password
-      });
-      
-      if (error) {
-        console.warn('Login failed:', loginAttempt, error);
-        setGlobalError('无效的身份或凭据');
-        setTimeout(() => setGlobalError(null), 3000);
-        return;
-      }
-      
-      // 如果认证成功，从用户列表中查找用户信息
-      const matchedUser = users.find(u => u.username === loginForm.username);
-      
-      if (matchedUser) {
-        setCurrentUser(matchedUser);
-        notificationService.requestPermission();
-        // 记录成功登录
-        console.log('Login successful:', loginAttempt);
-      } else {
-        setGlobalError('用户不存在');
-        setTimeout(() => setGlobalError(null), 3000);
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      setGlobalError('登录失败，请重试');
-      setTimeout(() => setGlobalError(null), 3000);
+    const isPasswordCorrect = (inputUsername === 'admin1' && loginForm.password === 'admin123') || 
+                              (inputUsername === 'staff1' && loginForm.password === 'staff123');
+    
+    if (matchedUser && isPasswordCorrect) {
+      setCurrentUser(matchedUser);
+      notificationService.requestPermission();
+    } else {
+      setGlobalError(t('invalidCredentials'));
+      setTimeout(() => { if (isMounted.current) setGlobalError(null); }, 3000);
     }
+    setIsLoggingIn(false);
   };
 
-  const LanguageSelector = ({ light = false }) => {
-    const langs: { id: Language; label: string; sub: string }[] = [
-      { id: 'zh', label: '简体中文', sub: 'Simplified Chinese' },
-      { id: 'en', label: 'English', sub: 'United States' },
-      { id: 'tl', label: 'Filipino', sub: 'Pilipinas' }
-    ];
+  const LanguageSelector = () => {
+    const langs = useMemo(() => [
+      { id: 'zh', label: '简体中文' },
+      { id: 'en', label: 'English' }
+    ], []);
 
     return (
       <div className="relative" ref={langMenuRef}>
         <button 
+          type="button"
           onClick={() => setIsLangMenuOpen(!isLangMenuOpen)} 
-          className={`flex items-center space-x-3 px-5 py-2.5 rounded-full border transition-all active:scale-95 group
-            ${light ? 'bg-white/5 border-white/10 text-white hover:bg-white/15' : 'bg-slate-50 border-slate-100 text-slate-500 hover:border-[#d4af37] hover:bg-amber-50'}`}
+          className="flex items-center space-x-1 px-3 py-1.5 bg-slate-100/50 rounded-lg text-slate-600 hover:text-slate-900 transition-all active:scale-95"
         >
-          <Globe size={16} className={light ? 'text-[#d4af37]' : 'text-slate-400 group-hover:text-[#d4af37]'} />
-          <span className="text-[10px] font-black uppercase tracking-widest">{langs.find(l => l.id === lang)?.label}</span>
-          <ChevronDown size={14} className={`transition-transform duration-300 ${isLangMenuOpen ? 'rotate-180' : ''}`} />
+          <Globe size={14} className="text-[#d4af37]" />
+          <span className="text-[10px] font-black uppercase tracking-widest">{lang.toUpperCase()}</span>
+          <ChevronDown size={12} className={`transition-transform duration-300 ${isLangMenuOpen ? 'rotate-180' : ''}`} />
         </button>
         {isLangMenuOpen && (
-          <div className={`absolute right-0 mt-3 w-64 rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-top-2 duration-200 z-[100] ${light ? 'bg-slate-900 border border-white/10' : 'bg-white border border-slate-100'}`}>
-            <div className="p-3 space-y-1">
+          <div className="absolute right-0 top-full mt-2 w-32 bg-white rounded-xl shadow-2xl border border-slate-100 overflow-hidden z-[100]">
+            <div className="p-1">
               {langs.map((l) => (
-                <button key={l.id} onClick={() => setLanguage(l.id)} className={`w-full flex items-center justify-between px-5 py-4 rounded-2xl transition-all group ${lang === l.id ? (light ? 'bg-white/10 text-white' : 'bg-slate-50 text-[#d4af37]') : (light ? 'text-slate-400 hover:bg-white/5 hover:text-white' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900')}`}>
-                  <div className="text-left">
-                    <p className="text-xs font-black uppercase tracking-widest">{l.label}</p>
-                    <p className="text-[9px] font-bold opacity-40 uppercase tracking-tighter mt-0.5">{l.sub}</p>
-                  </div>
-                  {lang === l.id && <Check size={16} className="text-[#d4af37]" />}
+                <button 
+                  key={l.id} 
+                  onClick={() => setLanguage(l.id as Language)} 
+                  className={`w-full text-left px-4 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${lang === l.id ? 'bg-slate-50 text-[#d4af37]' : 'text-slate-600 hover:bg-slate-50'}`}
+                >
+                  {l.label}
                 </button>
               ))}
             </div>
@@ -253,45 +231,69 @@ const App: React.FC = () => {
     );
   };
 
-  if (window.location.pathname === '/auth/callback') {
+  const LegalModal = () => {
+    if (!legalModal) return null;
+    const isPrivacy = legalModal === 'privacy';
+    
     return (
-      <ErrorBoundary lang={lang}>
-        <AuthCallback 
-          lang={lang}
-          onLoginSuccess={(user) => {
-            setCurrentUser(user);
-            // 重定向到主页
-            window.location.href = '/';
-          }}
-          onLoginFailure={() => {
-            // 重定向到登录页
-            window.location.href = '/';
-          }}
-        />
-      </ErrorBoundary>
+      <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
+        <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-xl animate-in fade-in duration-300" onClick={() => setLegalModal(null)} />
+        <div className="relative w-full max-w-2xl bg-white rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500 max-h-[85vh] flex flex-col">
+          <div className="p-10 border-b border-slate-100 flex items-center justify-between shrink-0">
+            <div className="flex items-center space-x-4">
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isPrivacy ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+                {isPrivacy ? <ShieldCheck size={24} /> : <ShieldAlert size={24} />}
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-slate-900 tracking-tight">{isPrivacy ? t('privacyPolicy') : t('disclaimerTitle')}</h3>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">JX-Cloud Legal Compliance</p>
+              </div>
+            </div>
+            <button onClick={() => setLegalModal(null)} className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-slate-900 hover:text-white transition-all">
+              <X size={20} />
+            </button>
+          </div>
+          <div className="p-12 overflow-y-auto no-scrollbar space-y-8 flex-1">
+            {isPrivacy ? (
+              <div className="space-y-8 text-sm text-slate-600 leading-relaxed font-medium">
+                <div className="space-y-2">
+                   <h5 className="font-black text-slate-900 uppercase tracking-widest text-xs">{t('privacyTitle1')}</h5>
+                   <p>{t('privacyDesc1')}</p>
+                </div>
+                <div className="space-y-2">
+                   <h5 className="font-black text-slate-900 uppercase tracking-widest text-xs">{t('privacyTitle2')}</h5>
+                   <p>{t('privacyDesc2')}</p>
+                </div>
+                <div className="space-y-2">
+                   <h5 className="font-black text-slate-900 uppercase tracking-widest text-xs">{t('privacyTitle3')}</h5>
+                   <p>{t('privacyDesc3')}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-8 text-sm text-slate-600 leading-relaxed font-medium">
+                <div className="p-6 bg-red-50/50 rounded-3xl border border-red-100 text-red-700">
+                  <p className="font-bold">{t('disclaimerWarning')}</p>
+                </div>
+                <div className="space-y-2">
+                   <h5 className="font-black text-slate-900 uppercase tracking-widest text-xs">{t('disclaimerTitle1')}</h5>
+                   <p>{t('disclaimerDesc1')}</p>
+                </div>
+                <div className="space-y-2">
+                   <h5 className="font-black text-slate-900 uppercase tracking-widest text-xs">{t('disclaimerTitle2')}</h5>
+                   <p>{t('disclaimerDesc2')}</p>
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="p-8 border-t border-slate-100 bg-slate-50/50 flex justify-end shrink-0">
+             <button onClick={() => setLegalModal(null)} className="px-8 py-3 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-[#d4af37] transition-all active:scale-95 shadow-lg">
+                Got it
+             </button>
+          </div>
+        </div>
+      </div>
     );
-  }
-  
-  if (guestRoomId) {
-    return (
-      <ErrorBoundary lang={lang}>
-        <GuestOrder 
-          roomId={guestRoomId} 
-          dishes={dishes} 
-          onSubmitOrder={async (data) => { 
-            await api.orders.create({ 
-              ...data as Order, 
-              id: `ord-${Date.now()}` 
-            }); 
-            fetchData();
-          }} 
-          lang={lang} 
-          onToggleLang={() => setLanguage(lang === 'zh' ? 'en' : lang === 'en' ? 'tl' : 'zh')} 
-          onRescan={() => { setGuestRoomId(null); window.history.replaceState(null, '', window.location.pathname); }} 
-        />
-      </ErrorBoundary>
-    );
-  }
+  };
 
   if (currentUser) {
     const unreadCount = appNotifications.filter(n => !n.read).length;
@@ -299,23 +301,16 @@ const App: React.FC = () => {
       <ErrorBoundary lang={lang}>
         <div className="min-h-screen bg-[#f8fafc] text-[#0f172a]">
           <Sidebar currentTab={currentTab} setCurrentTab={setCurrentTab} userRole={currentUser.role} onLogout={() => setCurrentUser(null)} lang={lang} />
-          <main className="md:pl-72 min-h-screen">
+          <main className="pl-72 min-h-screen">
             <header className="sticky top-0 z-40 h-24 bg-white/70 backdrop-blur-xl border-b border-slate-100 px-10 flex items-center justify-between">
               <div className="flex flex-col">
                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] leading-none mb-1">{t('centralConsole')}</span>
                  <h2 className="text-2xl font-bold tracking-tight text-[#0f172a]">{t(currentTab)}</h2>
               </div>
-              <div className="flex items-center space-x-10">
-                <button 
-                  onClick={() => setIsNotificationsOpen(true)}
-                  className="relative p-3 bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-md transition-all group"
-                >
+              <div className="flex items-center space-x-8">
+                <button onClick={() => setIsNotificationsOpen(true)} className="relative p-3 bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-md transition-all group">
                   <Bell size={20} className="text-slate-400 group-hover:text-[#d4af37]" />
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[8px] font-black flex items-center justify-center rounded-full border-2 border-white animate-bounce">
-                      {unreadCount}
-                    </span>
-                  )}
+                  {unreadCount > 0 && <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[8px] font-black flex items-center justify-center rounded-full border-2 border-white animate-bounce">{unreadCount}</span>}
                 </button>
                 <div className="hidden lg:flex items-center space-x-6">
                    <div className="flex items-center space-x-2">
@@ -325,40 +320,33 @@ const App: React.FC = () => {
                    <div className="h-4 w-[1px] bg-slate-200"></div>
                    <LanguageSelector />
                 </div>
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-4 border-l border-slate-100 pl-8">
                    <div className="text-right hidden sm:block">
                       <p className="text-sm font-bold text-slate-900 leading-none">{currentUser.name}</p>
                       <p className="text-[9px] font-black text-[#d4af37] uppercase tracking-tighter mt-1">{currentUser.role}</p>
                    </div>
-                   <div className="w-12 h-12 bg-[#0f172a] text-white rounded-[1.25rem] flex items-center justify-center font-bold text-sm shadow-xl border-2 border-white">
-                      {currentUser.name[0]}
-                   </div>
+                   <div className="w-12 h-12 bg-[#0f172a] text-white rounded-[1.25rem] flex items-center justify-center font-bold text-sm shadow-xl border-2 border-white">{currentUser.name[0]}</div>
                 </div>
               </div>
             </header>
-            <div className="p-12 max-w-[1500px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="p-12 max-w-[1500px] mx-auto tab-content-enter">
               {isLoading ? (
                 <div className="h-96 flex items-center justify-center"><div className="w-10 h-10 border-4 border-slate-100 border-t-[#d4af37] rounded-full animate-spin"></div></div>
               ) : (
                 <>
-                  {currentTab === 'dashboard' && <Dashboard orders={orders} rooms={rooms} expenses={expenses} lang={lang} />}
-                  {currentTab === 'rooms' && <RoomGrid rooms={rooms} onUpdateRoom={async (r) => { await api.rooms.update(r); fetchData(); }} lang={lang} />}
-                  {currentTab === 'orders' && <OrderManagement orders={orders} onUpdateStatus={async (id, s) => { await api.orders.updateStatus(id, s); fetchData(); }} lang={lang} />}
-                  {currentTab === 'menu' && <MenuManagement dishes={dishes} materials={materials} onAddDish={async (d) => { await api.dishes.create(d); fetchData(); }} onUpdateDish={async (d) => { await api.dishes.update(d); fetchData(); }} onDeleteDish={async (id) => { await api.dishes.delete(id); fetchData(); }} onAddMaterial={async (m) => { await api.materials.create(m); fetchData(); }} onDeleteMaterial={async (id) => { await api.materials.delete(id); fetchData(); }} lang={lang} />}
-                  {currentTab === 'materials' && <ImageLibrary materials={materials} onAddMaterial={async (m) => { await api.materials.create(m); fetchData(); }} onDeleteMaterial={async (id) => { await api.materials.delete(id); fetchData(); }} currentUser={currentUser} lang={lang} />}
-                  {currentTab === 'users' && <StaffManagement users={users} onAddUser={async (u) => { await api.users.create(u); fetchData(); }} onDeleteUser={async (id) => { await api.users.delete(id); fetchData(); }} lang={lang} />}
-                  {currentTab === 'finance' && <FinanceManagement orders={orders} expenses={expenses} onAddExpense={async (e) => { await api.expenses.create(e); fetchData(); }} onDeleteExpense={async (id) => { await api.expenses.delete(id); fetchData(); }} lang={lang} />}
-                  {currentTab === 'deployment' && <SystemSettings lang={lang} />}
+                  {currentTab === 'dashboard' && <MemoDashboard orders={orders} rooms={rooms} expenses={expenses} lang={lang} />}
+                  {currentTab === 'rooms' && <MemoRoomGrid rooms={rooms} dishes={dishes} onRefresh={fetchData} onUpdateRoom={async (r) => { await api.rooms.update(r); fetchData(); }} lang={lang} />}
+                  {currentTab === 'orders' && <MemoOrderManagement orders={orders} onUpdateStatus={async (id, s) => { await api.orders.updateStatus(id, s); fetchData(); }} lang={lang} />}
+                  {currentTab === 'menu' && <MemoMenuManagement dishes={dishes} materials={materials} onAddDish={async (d) => { await api.dishes.create(d); fetchData(); }} onUpdateDish={async (d) => { await api.dishes.update(d); fetchData(); }} onDeleteDish={async (id) => { await api.dishes.delete(id); fetchData(); }} onAddMaterial={async (m) => { await api.materials.create(m); fetchData(); }} onDeleteMaterial={async (id) => { await api.materials.delete(id); fetchData(); }} lang={lang} />}
+                  {currentTab === 'materials' && <MemoImageLibrary materials={materials} onAddMaterial={async (m) => { await api.materials.create(m); fetchData(); }} onDeleteMaterial={async (id) => { await api.materials.delete(id); fetchData(); }} lang={lang} />}
+                  {currentTab === 'finance' && <MemoFinanceManagement orders={orders} expenses={expenses} onAddExpense={async (e) => { await api.expenses.create(e); fetchData(); }} onDeleteExpense={async (id) => { await api.expenses.delete(id); fetchData(); }} lang={lang} />}
+                  {currentTab === 'payments' && <MemoPaymentManagement lang={lang} />}
+                  {currentTab === 'users' && <MemoStaffManagement users={users} onAddUser={async (u) => { await api.users.create(u); fetchData(); }} onDeleteUser={async (id) => { await api.users.delete(id); fetchData(); }} lang={lang} />}
+                  {currentTab === 'settings' && <MemoSystemSettings lang={lang} />}
                 </>
               )}
             </div>
-            <NotificationCenter 
-              isOpen={isNotificationsOpen} 
-              onClose={() => setIsNotificationsOpen(false)} 
-              notifications={appNotifications}
-              onMarkAsRead={(id) => setAppNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))}
-              onClearAll={() => setAppNotifications([])}
-            />
+            <NotificationCenter isOpen={isNotificationsOpen} onClose={() => setIsNotificationsOpen(false)} notifications={appNotifications} onMarkAsRead={(id) => setAppNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))} onClearAll={() => setAppNotifications([])} />
           </main>
         </div>
       </ErrorBoundary>
@@ -367,53 +355,117 @@ const App: React.FC = () => {
 
   return (
     <ErrorBoundary lang={lang}>
-      <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center p-6 relative overflow-hidden">
-        <div className="absolute top-10 right-10 z-50"><LanguageSelector light /></div>
+      <div className="min-h-screen relative flex flex-col items-center justify-center overflow-hidden font-sans bg-[#0f172a]">
+        
+        {/* 背景装饰 */}
         <div className="absolute inset-0 z-0">
-           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-slate-950/80 to-slate-950 z-10" />
-           <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1920&q=80" className="w-full h-full object-cover grayscale opacity-30 animate-gold" alt="luxury hotel" />
+           <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-500/10 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2" />
+           <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-[#d4af37]/10 blur-[120px] rounded-full translate-y-1/2 -translate-x-1/2" />
         </div>
-        <div className="max-w-[420px] w-full relative z-20 animate-in fade-in slide-in-from-bottom-10 duration-1000">
-          <div className="text-center mb-12">
-             <div className="flex items-center justify-center space-x-2 mb-6">
-                {[1, 2, 3, 4, 5].map(i => <Star key={i} size={14} className="text-[#d4af37]" fill="#d4af37" />)}
-             </div>
-             <h1 className="text-5xl font-serif text-white tracking-tighter mb-4 italic uppercase">{t('jxCloud')}</h1>
-             <p className="text-slate-500 font-bold uppercase tracking-[0.6em] text-[9px]">{t('hospitalitySuite')}</p>
-          </div>
-          <form onSubmit={handleLogin} className="glass p-12 rounded-[3.5rem] shadow-2xl space-y-10 border-white/10">
-             <div className="space-y-2">
-                <h3 className="text-2xl font-bold text-white tracking-tight">{t('systemAccess')}</h3>
-                <p className="text-xs text-slate-400 font-medium">{t('verifyCredentials')}</p>
-             </div>
-             {globalError && (
-                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-500 text-[10px] font-black uppercase tracking-widest text-center animate-in zoom-in-95">{globalError}</div>
-             )}
-             <div className="space-y-6">
-               <div className="space-y-2">
-                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('identity')}</label>
-                 <div className="relative">
-                   <input type="text" value={loginForm.username} onChange={e => setLoginForm(p => ({...p, username: e.target.value}))} className="w-full px-8 py-5 rounded-2xl bg-white/5 border border-white/10 outline-none focus:ring-2 focus:ring-[#d4af37]/50 focus:border-[#d4af37] focus:bg-white/10 font-bold text-white transition-all placeholder:text-slate-700" placeholder={t('username') + ' (email)'} required />
-                   <Server size={18} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-700" />
+
+        {/* 登录模态框 */}
+        <div className="relative z-10 w-full max-w-md px-6 animate-in zoom-in-95 fade-in duration-700">
+           <div className="bg-white/95 backdrop-blur-xl rounded-[2.5rem] shadow-[0_40px_120px_rgba(0,0,0,0.5)] border border-white/50 overflow-hidden flex flex-col p-10 md:p-12 space-y-10">
+              
+              <div className="flex items-center justify-between">
+                 <div className="flex flex-col">
+                   <h2 className="text-2xl font-bold text-slate-900 tracking-tight leading-none">
+                     {lang === 'zh' ? '江西大酒店' : 'Jiangxi Hotel'}
+                   </h2>
+                   <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#d4af37] mt-2">Enterprise Suite</span>
                  </div>
-               </div>
-               <div className="space-y-2">
-                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('credential')}</label>
-                 <div className="relative">
-                   <input type="password" value={loginForm.password} onChange={e => setLoginForm(p => ({...p, password: e.target.value}))} className="w-full px-8 py-5 rounded-2xl bg-white/5 border border-white/10 outline-none focus:ring-2 focus:ring-[#d4af37]/50 focus:border-[#d4af37] focus:bg-white/10 font-bold text-white transition-all placeholder:text-slate-700" placeholder={t('password')} required />
-                   <LockKeyhole size={18} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-700" />
+                 <LanguageSelector />
+              </div>
+
+              <form onSubmit={handleLogin} className="space-y-6">
+                 {globalError && (
+                    <div className="p-4 bg-red-50 text-red-600 rounded-2xl text-xs font-bold border border-red-100 text-center animate-shake">
+                      {globalError}
+                    </div>
+                 )}
+                 
+                 <div className="space-y-4">
+                    <div className="relative group">
+                       <UserIcon className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#d4af37] transition-colors" size={20} />
+                       <input 
+                          type="text" 
+                          autoComplete="username"
+                          value={loginForm.username} 
+                          onChange={e => setLoginForm(p => ({...p, username: e.target.value}))} 
+                          className="w-full pl-14 pr-4 py-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white focus:border-[#d4af37] focus:ring-4 focus:ring-[#d4af37]/10 font-bold text-slate-900 transition-all placeholder:text-slate-300" 
+                          placeholder={t('username')} 
+                          required 
+                       />
+                    </div>
+
+                    <div className="relative group">
+                       <LockKeyhole className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#d4af37] transition-colors" size={20} />
+                       <input 
+                          type={showPassword ? "text" : "password"} 
+                          autoComplete="current-password"
+                          value={loginForm.password} 
+                          onChange={e => setLoginForm(p => ({...p, password: e.target.value}))} 
+                          className="w-full pl-14 pr-14 py-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white focus:border-[#d4af37] focus:ring-4 focus:ring-[#d4af37]/10 font-bold text-slate-900 transition-all placeholder:text-slate-300" 
+                          placeholder={t('password')} 
+                          required 
+                       />
+                       <button 
+                         type="button"
+                         onClick={() => setShowPassword(!showPassword)}
+                         className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-600 transition-colors"
+                       >
+                         {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                       </button>
+                    </div>
                  </div>
-               </div>
-               <button type="submit" className="w-full bg-white text-slate-950 py-6 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-[#d4af37] hover:text-white transition-all shadow-2xl active:scale-[0.98] flex items-center justify-center space-x-4 group">
-                 <span>{t('initializeSession')}</span>
-                 <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-               </button>
-             </div>
-          </form>
-          
-          <div className="mt-12">
-            <LegalFooter lang={lang} />
-          </div>
+
+                 <button 
+                   type="submit" 
+                   disabled={isLoggingIn}
+                   className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] hover:bg-[#d4af37] transition-all shadow-2xl flex items-center justify-center space-x-3 disabled:opacity-50"
+                 >
+                    {isLoggingIn ? <Loader2 size={20} className="animate-spin" /> : (
+                      <>
+                        <span>{t('initializeSession')}</span>
+                        <ArrowRight size={20} />
+                      </>
+                    )}
+                 </button>
+              </form>
+
+              <div className="pt-6 border-t border-slate-100">
+                 <div className="flex items-center justify-center space-x-4 mb-4">
+                    <button 
+                      type="button" 
+                      onClick={() => setLegalModal('privacy')}
+                      className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors"
+                    >
+                      {t('privacyPolicy')}
+                    </button>
+                    <span className="w-1 h-1 rounded-full bg-slate-200" />
+                    <button 
+                      type="button" 
+                      onClick={() => setLegalModal('disclaimer')}
+                      className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors"
+                    >
+                      {t('disclaimerTitle')}
+                    </button>
+                 </div>
+                 <div className="flex items-center justify-center space-x-2 text-slate-300">
+                    <ShieldCheck size={14} />
+                    <span className="text-[9px] font-black uppercase tracking-[0.2em]">JX-Cloud Secure Auth Gateway</span>
+                 </div>
+              </div>
+           </div>
+        </div>
+
+        {/* 法律弹窗 */}
+        <LegalModal />
+
+        <div className="fixed bottom-10 flex items-center space-x-3 text-white/20 select-none">
+           <Building2 size={24} />
+           <div className="h-6 w-[1px] bg-white/10" />
+           <span className="text-[10px] font-black uppercase tracking-[0.4em]">JX Cloud Node v3.1</span>
         </div>
       </div>
     </ErrorBoundary>

@@ -1,19 +1,3 @@
-# Dependencies
-node_modules/
-
-# Build outputs
-dist/
-dist-ssr/
-build/
-out/
-
-# Environment variables
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-.env.*
-
 # Logs
 logs
 *.log
@@ -23,15 +7,10 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-
-# Coverage directory used by tools like istanbul
-coverage/
-*.lcov
+node_modules
+dist
+dist-ssr
+*.local
 
 # Editor directories and files
 .vscode/*
@@ -43,137 +22,3 @@ coverage/
 *.njsproj
 *.sln
 *.sw?
-
-# Temporary files
-*.tmp
-*.temp
-tmp/
-
-# OS generated files
-Thumbs.db
-ehthumbs.db
-Icon?
-._*
-
-# Vite
-.vite/
-
-# Build analysis
-stats.html
-/dist/stats.html
-/dist/stats-*.html
-*.visualizer.html
-
-# TypeScript
-*.tsbuildinfo
-
-# Dependency analysis
-node_modules/.cache
-
-# Local development
-.env.backup
-
-# Database
-*.db
-*.db-journal
-
-# IDE
-.vs/
-*.swp
-*.swo
-
-# OS
-.Spotlight-V100
-.Trashes
-
-# Browser extensions
-*.crx
-*.xpi
-
-# Build outputs specific to Vite
-.vite
-
-# Project specific
-.supabase
-supabase/
-.cache/
-.vercel/
-.vercelignore
-
-# Documentation build outputs (if any)
-docs/_build/
-docs/build/
-docs/.vitepress/
-docs/.vuepress/
-
-# IDE specific
-.vs/
-*.sublime-project
-*.sublime-workspace
-.vscode-test/
-
-# Testing
-coverage/
-.nyc_output/
-.jest/
-
-# CI/CD
-.semaphore/
-.github/workflows/
-
-# Sensitive files
-config/
-secrets/
-credentials.json
-*.pem
-*.key
-*.crt
-*.cert
-
-# Local configuration
-local-config.json
-config.local.json
-
-# Logs
-.log
-logs/
-*.log
-
-# Temporary files
-.temp/
-tmp/
-*.tmp
-*.temp
-
-# OS generated files
-.DS_Store
-Thumbs.db
-ehthumbs.db
-Icon?
-._*
-
-# Editor specific
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# Bundle output
-stats.html
-/dist/stats.html
-/dist/stats-*.html
-*.visualizer.html
-
-# Environment specific
-.env.production
-.env.development
-.env.staging
-.env.backup
-
-# Database
-*.db
-*.db-journal
-
-# Node modules cache
-node_modules/.cache/
-node_modules/.vite/

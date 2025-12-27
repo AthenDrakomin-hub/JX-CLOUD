@@ -4,7 +4,7 @@ import { AlertTriangle, RefreshCcw, ShieldAlert, Sparkles } from 'lucide-react';
 import { translations, Language } from '../translations';
 
 interface Props {
-  children: ReactNode;
+  children?: ReactNode;
   lang?: Language;
 }
 
@@ -13,10 +13,17 @@ interface State {
   error?: Error;
 }
 
-// Fixed: Added constructor and destructured props/state in render to resolve property access issues in TypeScript.
+// Error Boundary component to catch rendering errors and display a fallback UI
 class ErrorBoundary extends Component<Props, State> {
+  // Fix: Explicitly declare state and props to resolve type visibility issues in strict environments
+  // Removed 'override' keyword as it was causing issues in the build environment
+  public state: State;
+  public props: Props;
+
+  // Use constructor for state initialization to ensure proper TypeScript property visibility
   constructor(props: Props) {
     super(props);
+    this.props = props;
     this.state = {
       hasError: false
     };
@@ -28,7 +35,6 @@ class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Uncaught error:', error, errorInfo);
-    // In a real app, send to Sentry here
   }
 
   private handleReset = () => {
@@ -36,13 +42,14 @@ class ErrorBoundary extends Component<Props, State> {
   };
 
   public render() {
-    // Destructuring this.state and this.props to ensure property visibility to the compiler
+    // Fix: Correctly accessing state and props from 'this' in class component
     const { hasError, error } = this.state;
     const { children, lang: propsLang } = this.props;
 
     if (hasError) {
       const lang = propsLang || 'zh';
-      const t = (key: keyof typeof translations.zh) => translations[lang][key] || key;
+      const t = (key: keyof typeof translations.zh) => 
+        (translations[lang] as any)[key] || (translations.zh as any)[key] || key;
 
       return (
         <div className="min-h-screen bg-[#020617] flex items-center justify-center p-6 relative overflow-hidden">

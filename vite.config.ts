@@ -1,55 +1,23 @@
-import { defineConfig } from 'vite';
+import path from 'path';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
-import { visualizer } from 'rollup-plugin-visualizer';
 
 export default defineConfig(({ mode }) => {
-  return {
-    plugins: [
-      react(),
-      // 只在分析模式下生成bundle分析文件
-      mode === 'analyze' && visualizer({
-        filename: './dist/stats.html',
-        open: false,
-        gzipSize: true,
-        brotliSize: true
-      })
-    ].filter(Boolean),
-    build: {
-      outDir: 'dist',
-      sourcemap: false, // 生产环境不生成源码映射
-      minify: 'terser', // 使用terser进行更高级的压缩
-      cssCodeSplit: true,
-      chunkSizeWarningLimit: 1000, // 增加到1000KB以暂时解决警告
-      rollupOptions: {
-        output: {
-          // 添加代码分割以进一步优化
-          manualChunks(id) {
-            if (id.includes('node_modules')) {
-              if (id.includes('react') || id.includes('react-dom')) {
-                return 'react-core';
-              }
-              if (id.includes('@supabase')) {
-                return 'supabase';
-              }
-              if (id.includes('lucide-react')) {
-                return 'icons';
-              }
-              if (id.includes('recharts')) {
-                return 'charts';
-              }
-              if (id.includes('qrcode.react')) {
-                return 'qrcode';
-              }
-              // 将其他大型依赖分离
-              return 'vendor';
-            }
-          },
-          // 优化chunk文件名，便于调试
-          entryFileNames: `assets/[name]-[hash].js`,
-          chunkFileNames: `assets/[name]-[hash].js`,
-          assetFileNames: `assets/[name]-[hash].[ext]`
+    const env = loadEnv(mode, '.', '');
+    return {
+      server: {
+        port: 3000,
+        host: '0.0.0.0',
+      },
+      plugins: [react()],
+      define: {
+        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
+      },
+      resolve: {
+        alias: {
+          '@': path.resolve(__dirname, '.'),
         }
       }
-    }
-  };
+    };
 });
