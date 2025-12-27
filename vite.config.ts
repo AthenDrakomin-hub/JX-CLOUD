@@ -14,29 +14,18 @@ export default defineConfig({
   ],
   build: {
     outDir: 'dist',
-    sourcemap: false,
+    sourcemap: false, // 生产环境不生成源码映射
+    minify: 'terser', // 使用terser进行更高级的压缩
+    cssCodeSplit: true,
     chunkSizeWarningLimit: 1000, // 增加到1000KB以暂时解决警告
     rollupOptions: {
       output: {
-        manualChunks: {
-          // 分离React核心库
-          'react-core': ['react', 'react-dom'],
-          // 分离Supabase相关
-          'supabase': ['@supabase/supabase-js'],
-          // 分离图标库
-          'icons': ['lucide-react'],
-          // 分离图表库
-          'charts': ['recharts'],
-          // 分离二维码库
-          'qrcode': ['qrcode.react'],
-          // 分离工具库
-          'utils': ['recharts', 'lucide-react'],
-          // 分离组件库
-          'components': ['@supabase/supabase-js', 'recharts']
-        },
         // 添加代码分割以进一步优化
         manualChunks(id) {
           if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'react-core';
+            }
             if (id.includes('@supabase')) {
               return 'supabase';
             }
@@ -49,10 +38,14 @@ export default defineConfig({
             if (id.includes('qrcode.react')) {
               return 'qrcode';
             }
-            // 将大型依赖分离
+            // 将其他大型依赖分离
             return 'vendor';
           }
-        }
+        },
+        // 优化chunk文件名，便于调试
+        entryFileNames: `assets/[name]-[hash].js`,
+        chunkFileNames: `assets/[name]-[hash].js`,
+        assetFileNames: `assets/[name]-[hash].[ext]`
       }
     }
   }

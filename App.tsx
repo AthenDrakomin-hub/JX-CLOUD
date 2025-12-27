@@ -12,6 +12,7 @@ import DeploymentChecklist from './components/DeploymentChecklist';
 import LegalFooter from './components/LegalFooter';
 import ErrorBoundary from './components/ErrorBoundary';
 import GuestOrder from './components/GuestOrder';
+import AuthCallback from './components/AuthCallback';
 import NotificationCenter from './components/NotificationCenter';
 import { api } from './services/api';
 import { supabase } from './services/supabaseClient';
@@ -42,8 +43,28 @@ const App: React.FC = () => {
   const langMenuRef = useRef<HTMLDivElement>(null);
 
   const t = useCallback((key: string) => {
-    const langSet = dynamicTranslations[lang] || dynamicTranslations.zh || localTranslations.zh;
-    return langSet[key] || (localTranslations.zh as any)[key] || key;
+    // 优先使用动态翻译（云端），然后是本地翻译
+    const dynamicLangSet = dynamicTranslations[lang];
+    const localLangSet = localTranslations[lang];
+    
+    // 首先尝试动态翻译集
+    if (dynamicLangSet && key in dynamicLangSet) {
+      return (dynamicLangSet as any)[key];
+    }
+    
+    // 然后尝试本地翻译集
+    if (localLangSet && key in localLangSet) {
+      return (localLangSet as any)[key];
+    }
+    
+    // 最后尝试本地中文翻译集
+    const localZhSet = localTranslations.zh;
+    if (localZhSet && key in localZhSet) {
+      return (localZhSet as any)[key];
+    }
+    
+    // 如果都找不到，返回key本身
+    return key;
   }, [lang, dynamicTranslations]);
 
   const setLanguage = (newLang: Language) => {
@@ -130,6 +151,13 @@ const App: React.FC = () => {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const roomParam = params.get('room');
+    const callbackPath = window.location.pathname === '/auth/callback';
+    
+    if (callbackPath) {
+      // 如果是认证回调路径，不执行其他初始化
+      return;
+    }
+    
     if (roomParam) setGuestRoomId(roomParam);
     fetchData();
 
@@ -142,18 +170,48 @@ const App: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []); // 仅挂载时执行
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const matchedUser = users.find(u => u.username === loginForm.username && (loginForm.password === 'admin123' || loginForm.password === 'staff123'));
     
-    if (matchedUser) {
-      setCurrentUser(matchedUser);
-      notificationService.requestPermission();
-    } else if (loginForm.username === 'admin' && loginForm.password === 'admin123') {
-      setCurrentUser({ id: 'demo-admin', username: 'admin', name: 'Demo Admin', role: UserRole.ADMIN });
-      notificationService.requestPermission();
-    } else {
-      setGlobalError('无效的身份或凭据');
+    try {
+      // 记录登录尝试
+      const loginAttempt = {
+        username: loginForm.username,
+        timestamp: new Date().toISOString(),
+        ip: 'CLIENT_IP', // 在实际部署中应从服务器获取
+        userAgent: navigator.userAgent
+      };
+      
+      // 使用 Supabase Auth 进行身份验证
+      // 直接使用 Supabase Auth 进行身份验证
+      // 用户需要使用注册时的邮箱和密码登录
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: loginForm.username, // 这里应该是邮箱
+        password: loginForm.password
+      });
+      
+      if (error) {
+        console.warn('Login failed:', loginAttempt, error);
+        setGlobalError('无效的身份或凭据');
+        setTimeout(() => setGlobalError(null), 3000);
+        return;
+      }
+      
+      // 如果认证成功，从用户列表中查找用户信息
+      const matchedUser = users.find(u => u.username === loginForm.username);
+      
+      if (matchedUser) {
+        setCurrentUser(matchedUser);
+        notificationService.requestPermission();
+        // 记录成功登录
+        console.log('Login successful:', loginAttempt);
+      } else {
+        setGlobalError('用户不存在');
+        setTimeout(() => setGlobalError(null), 3000);
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setGlobalError('登录失败，请重试');
       setTimeout(() => setGlobalError(null), 3000);
     }
   };
@@ -195,6 +253,25 @@ const App: React.FC = () => {
     );
   };
 
+  if (window.location.pathname === '/auth/callback') {
+    return (
+      <ErrorBoundary lang={lang}>
+        <AuthCallback 
+          lang={lang}
+          onLoginSuccess={(user) => {
+            setCurrentUser(user);
+            // 重定向到主页
+            window.location.href = '/';
+          }}
+          onLoginFailure={() => {
+            // 重定向到登录页
+            window.location.href = '/';
+          }}
+        />
+      </ErrorBoundary>
+    );
+  }
+  
   if (guestRoomId) {
     return (
       <ErrorBoundary lang={lang}>
@@ -209,7 +286,7 @@ const App: React.FC = () => {
             fetchData();
           }} 
           lang={lang} 
-          onToggleLang={() => setLanguage(lang === 'zh' ? 'en' : 'zh')} 
+          onToggleLang={() => setLanguage(lang === 'zh' ? 'en' : lang === 'en' ? 'tl' : 'zh')} 
           onRescan={() => { setGuestRoomId(null); window.history.replaceState(null, '', window.location.pathname); }} 
         />
       </ErrorBoundary>
@@ -316,7 +393,7 @@ const App: React.FC = () => {
                <div className="space-y-2">
                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('identity')}</label>
                  <div className="relative">
-                   <input type="text" value={loginForm.username} onChange={e => setLoginForm(p => ({...p, username: e.target.value}))} className="w-full px-8 py-5 rounded-2xl bg-white/5 border border-white/10 outline-none focus:ring-2 focus:ring-[#d4af37]/50 focus:border-[#d4af37] focus:bg-white/10 font-bold text-white transition-all placeholder:text-slate-700" placeholder={t('username')} required />
+                   <input type="text" value={loginForm.username} onChange={e => setLoginForm(p => ({...p, username: e.target.value}))} className="w-full px-8 py-5 rounded-2xl bg-white/5 border border-white/10 outline-none focus:ring-2 focus:ring-[#d4af37]/50 focus:border-[#d4af37] focus:bg-white/10 font-bold text-white transition-all placeholder:text-slate-700" placeholder={t('username') + ' (email)'} required />
                    <Server size={18} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-700" />
                  </div>
                </div>

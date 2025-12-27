@@ -109,5 +109,18 @@ ON CONFLICT (username) DO NOTHING;
 2. **Realtime 订阅**：请在 Supabase Dashboard 的 **Database -> Replication** 中，确保 `orders` 表已启用 **Realtime** 选项。
 3. **依赖冲突 (核心修复)**：本项目使用 React 19。由于部分第三方库（如 `qrcode.react`）尚未更新 Peer Deps，系统已内置 `.npmrc` 文件配置 `legacy-peer-deps=true`。如果手动构建，请确保使用 `npm install --legacy-peer-deps`。
 4. **存储桶配置**：如需使用图片素材库功能，请在 Supabase Dashboard 的 **Storage** 中创建名为 `materials` 的存储桶，并运行 `supabase_storage_public_config.sql` 中的SQL脚本来设置正确的访问策略。
+5. **自定义域名**：系统已成功部署到自定义域名 https://www.jiangxijiudian.store/ 。
+6. **身份验证**：生产环境中，用户认证通过 Supabase Auth 进行，不再使用硬编码密码。
+7. **OAuth 配置**：如需启用 OAuth 提供商（如 Google、GitHub 等），请在 Supabase 仪表板的 Authentication 设置中配置提供商，并将回调 URL 设置为 `https://yourdomain.com/auth/callback`。
+8. **电子邮件提供商登录**：支持直接使用电子邮件地址登录。用户可以使用注册时的电子邮件地址和密码进行登录。
+9. **RLS 安全策略**：请在 Supabase 仪表板的 SQL 编辑器中运行 `enable_rls.sql` 脚本，为 `security_logs` 和 `rooms` 表启用行级安全 (RLS) 策略。
+10. **房间二维码点餐**：在房间管理页面中，每个房间都有对应的二维码，客人可以扫描二维码直接进入点餐页面。二维码链接格式为 `?room=房间号`。
+11. **用户账号配置**：系统预设 2 个管理员账号和 3 个员工账号，已禁用用户注册功能。管理员账号需要绑定真实邮箱，员工账号可使用虚拟邮箱。
+
+## 🌐 系统访问
+
+- **生产环境**：https://www.jiangxijiudian.store/
+- **开发环境**：https://[project-name].vercel.app/
+- **Supabase Dashboard**：https://app.supabase.com/project/[project-id]
 
 **江西云厨系统研发部 &copy; 2025**

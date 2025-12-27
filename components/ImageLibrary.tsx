@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useMemo } from 'react';
-import { MaterialImage } from '../types';
+import { MaterialImage, User } from '../types';
 import { translations, Language } from '../translations';
 import { 
   Plus, Trash2, Copy, Search, X, 
@@ -13,10 +13,11 @@ interface ImageLibraryProps {
   materials: MaterialImage[];
   onAddMaterial: (image: MaterialImage) => void;
   onDeleteMaterial: (id: string) => void;
+  currentUser?: User; // 添加当前用户信息用于所有权验证
   lang: Language;
 }
 
-const ImageLibrary: React.FC<ImageLibraryProps> = ({ materials, onAddMaterial, onDeleteMaterial, lang }) => {
+const ImageLibrary: React.FC<ImageLibraryProps> = ({ materials, onAddMaterial, onDeleteMaterial, currentUser, lang }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -51,16 +52,22 @@ const ImageLibrary: React.FC<ImageLibraryProps> = ({ materials, onAddMaterial, o
       return;
     }
 
+    // 检查用户是否已认证
+    if (!currentUser) {
+      setUploadError('请先登录以上传文件');
+      return;
+    }
+
     setIsUploading(true);
     setUploadError(null);
 
     try {
-      // 生成唯一的文件名
+      // 生成唯一的文件名，包含用户ID以避免冲突
       const fileExtension = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-      const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExtension}`;
+      const uniqueFileName = `${currentUser.id}/${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExtension}`;
       
-      // 上传文件到Supabase存储桶
-      await uploadFile(file, uniqueFileName);
+      // 上传文件到Supabase存储桶，使用当前用户ID设置所有权
+      await uploadFile(file, uniqueFileName, currentUser?.id);
       
       // 获取公开URL
       const publicUrl = getPublicUrl(uniqueFileName);

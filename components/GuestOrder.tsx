@@ -119,6 +119,7 @@ const GuestOrder: React.FC<GuestOrderProps> = ({ roomId, dishes, onSubmitOrder, 
             {roomId}
           </div>
           <h1 className="text-2xl font-serif italic tracking-tighter text-slate-900">{lang === 'zh' ? '云厨点餐' : 'JX Kitchen'}</h1>
+          <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{lang === 'zh' ? `房间: ${roomId}` : `Room: ${roomId}`}</div>
         </div>
         <button onClick={onToggleLang} className="p-3 bg-slate-50 rounded-2xl border border-slate-100 flex items-center space-x-2">
           <Globe size={16} className="text-slate-400" />

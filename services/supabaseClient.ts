@@ -8,7 +8,7 @@ const getEnv = (key: string) => {
   if (typeof process !== 'undefined' && process.env?.[key]) return process.env[key];
   if (typeof window !== 'undefined' && (window as any)._env_?.[key]) return (window as any)._env_[key];
   // 生产环境 VITE_ 前缀环境变量通过 import.meta.env 获取
-  if (typeof import.meta !== 'undefined' && import.meta.env?.[key]) return import.meta.env[key];
+  if (typeof window !== 'undefined' && (window as any).__ENV__?.[key]) return (window as any).__ENV__[key];
   return '';
 };
 
@@ -28,7 +28,12 @@ const finalUrl = isPlaceholder ? 'https://placeholder-project.supabase.co' : sup
 const finalKey = isPlaceholder ? 'placeholder-anon-key' : supabaseAnonKey;
 
 // 创建客户端
-export const supabase = createClient(finalUrl, finalKey);
+export const supabase = createClient(finalUrl, finalKey, {
+  auth: {
+    flowType: 'pkce',
+    persistSession: false
+  }
+});
 
 // 部署状态自检
 if (isPlaceholder) {

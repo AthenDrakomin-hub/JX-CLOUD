@@ -16,10 +16,10 @@
       -webkit-tap-highlight-color: transparent; 
       overscroll-behavior-y: contain;
       background-color: #f8fafc;
-      color: #0f172a; /* 更深的颜色以提高可读性 */
+      color: #0f172a; /* 更深的颜色以提高可读�?*/
       margin: 0;
-      font-weight: 450; /* 稍微加粗以提高可读性 */
-      line-height: 1.6; /* 增加行高以提高可读性 */
+      font-weight: 450; /* 稍微加粗以提高可读�?*/
+      line-height: 1.6; /* 增加行高以提高可读�?*/
     }
     .font-serif { font-family: 'Playfair Display', Georgia, 'Times New Roman', serif; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -56,16 +56,87 @@
       font-weight: 450;
     }
     
-    /* 为小字体元素提供更好的可读性 */
+    /* 为小字体元素提供更好的可读�?*/
     .text-xs, .text-sm {
       letter-spacing: -0.01em; /* 微调字母间距 */
     }
     
-    /* 确保对比度 */
+    /* 确保对比�?*/
     .text-slate-500 { color: #64748b !important; }
     .text-slate-400 { color: #94a3b8 !important; }
     .text-slate-900 { color: #0f172a !important; }
+    
+    /* 禁用右键菜单 */
+    body {
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      -khtml-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
+    
+    /* 允许在输入框和文本域中选择文本 */
+    input, textarea {
+      -webkit-user-select: text;
+      -khtml-user-select: text;
+      -moz-user-select: text;
+      -ms-user-select: text;
+      user-select: text;
+    }
   </style>
+  <script>
+    // 禁用右键菜单
+    document.addEventListener('contextmenu', function(e) {
+      if (!(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) {
+        e.preventDefault();
+      }
+    });
+    
+    // 禁用F12开发者工具和Ctrl+Shift+I/J/K等组合键
+    document.addEventListener('keydown', function(e) {
+      // 禁用F12
+      if (e.key === 'F12') {
+        e.preventDefault();
+        return false;
+      }
+      // 禁用Ctrl+Shift+I/J/K/C/U
+      if (e.ctrlKey && e.shiftKey && ['I', 'J', 'K', 'C', 'U'].includes(e.key.toUpperCase())) {
+        e.preventDefault();
+        return false;
+      }
+      // 禁用Ctrl+U（查看页面源代码�?      if (e.ctrlKey && e.key === 'u') {
+        e.preventDefault();
+        return false;
+      }
+      // 禁用Ctrl+Shift+A (Firefox)
+      if (e.ctrlKey && e.shiftKey && e.key === 'A') {
+        e.preventDefault();
+        return false;
+      }
+    });
+    
+    // 防抖函数
+    function debounce(func, wait) {
+      let timeout;
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+      };
+    }
+    
+    // 应用防抖到窗口大小调整事�?    window.addEventListener('resize', debounce(function() {
+      // 在这里可以添加窗口大小调整时需要防抖的逻辑
+    }, 250));
+    
+    // 应用防抖到滚动事�?    window.addEventListener('scroll', debounce(function() {
+      // 在这里可以添加滚动时需要防抖的逻辑
+    }, 100));
+  </script>
 <link rel="stylesheet" href="/index.css">
 </head>
 <body>
