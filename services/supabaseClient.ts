@@ -1,5 +1,4 @@
-
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
+import { createClient } from '@supabase/supabase-js';
 
 /**
  * 跨环境获取环境变量
@@ -8,6 +7,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 const getEnv = (key: string) => {
   if (typeof process !== 'undefined' && process.env?.[key]) return process.env[key];
   if (typeof window !== 'undefined' && (window as any)._env_?.[key]) return (window as any)._env_[key];
+  // 生产环境 VITE_ 前缀环境变量通过 import.meta.env 获取
+  if (typeof import.meta !== 'undefined' && import.meta.env?.[key]) return import.meta.env[key];
   return '';
 };
 
@@ -26,13 +27,8 @@ export const isDemoMode = isPlaceholder;
 const finalUrl = isPlaceholder ? 'https://placeholder-project.supabase.co' : supabaseUrl;
 const finalKey = isPlaceholder ? 'placeholder-anon-key' : supabaseAnonKey;
 
-// 创建客户端，并配置全局错误捕获
-export const supabase = createClient(finalUrl, finalKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true
-  }
-});
+// 创建客户端
+export const supabase = createClient(finalUrl, finalKey);
 
 // 部署状态自检
 if (isPlaceholder) {
