@@ -83,3 +83,4 @@ Run the SQL script from README.md in Supabase SQL Editor to initialize all table
 - Production system deployed at https://www.jiangxijiudian.store/
 - Enhanced font readability with improved color contrast and font stack
 - Fixed mobile responsiveness issues with responsive sidebar and viewport settings
+- Further optimized chunk sizes with enhanced manualChunks configuration to address build warnings
