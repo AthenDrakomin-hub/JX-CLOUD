@@ -13,8 +13,10 @@ import { translations as localTranslations, Language } from './translations';
 import { 
   Globe, LockKeyhole, ArrowRight, ChevronDown, Bell, 
   Building2, User as UserIcon, Loader2, 
-  Eye, EyeOff, ShieldCheck, X, ShieldAlert, Gavel
+  Eye, EyeOff, ShieldCheck, X, ShieldAlert, Gavel, Menu
 } from 'lucide-react';
+import useResponsiveEnhanced from './services/useResponsiveEnhanced';
+import { getConfigForScreen } from './services/responsiveConfig';
 
 // 懒加载组件以实现代码分割
 const Dashboard = lazy(() => import('./components/Dashboard'));
@@ -61,6 +63,18 @@ const App: React.FC = () => {
     };
   }, []);
   
+  // 使用增强版响应式 Hook
+  const {
+    isMobile,
+    isTablet,
+    isDesktop,
+    isTouchDevice,
+    isLandscape,
+    isPortrait,
+    getFontScale,
+    dimensions
+  } = useResponsiveEnhanced();
+  
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [currentTab, setCurrentTab] = useState('dashboard');
   const [rooms, setRooms] = useState<HotelRoom[]>([]);
@@ -85,6 +99,7 @@ const App: React.FC = () => {
   
   // 法律合规弹窗
   const [legalModal, setLegalModal] = useState<'privacy' | 'disclaimer' | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   const langMenuRef = useRef<HTMLDivElement>(null);
   const isMounted = useRef(true);
@@ -329,16 +344,24 @@ const App: React.FC = () => {
     return (
       <ErrorBoundary lang={lang}>
         <div className="min-h-screen bg-slate-100 text-slate-900">
-          <Sidebar currentTab={currentTab} setCurrentTab={setCurrentTab} userRole={currentUser.role} onLogout={() => setCurrentUser(null)} lang={lang} />
-          <main className="pl-72 min-h-screen">
-            <header className="sticky top-0 z-40 h-24 bg-white/80 backdrop-blur-xl border-b border-slate-400 px-10 flex items-center justify-between">
-              <div className="flex flex-col">
-                 <span className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em] leading-none mb-1">{t('centralConsole')}</span>
-                 <h2 className="text-2xl font-bold tracking-tight text-slate-900">{t(currentTab)}</h2>
+          <Sidebar currentTab={currentTab} setCurrentTab={setCurrentTab} userRole={currentUser.role} onLogout={() => setCurrentUser(null)} lang={lang} isOpen={isSidebarOpen} />
+          <main className={`min-h-screen transition-all duration-500 ${isMobile ? 'pl-0' : 'lg:pl-72'}`}>
+            <header className={`sticky top-0 z-40 ${isMobile ? 'h-16 px-4' : 'h-24 px-10'} bg-white/80 backdrop-blur-xl border-b border-slate-400 flex items-center justify-between`}>
+              <div className="flex items-center space-x-4">
+                <button 
+                  onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
+                  className="p-2 -ml-2 text-slate-500 hover:text-slate-900 lg:hidden"
+                >
+                  <Menu size={isMobile ? 20 : 24} />
+                </button>
+                <div className="flex flex-col">
+                   <span className={`text-[10px] font-black text-slate-600 uppercase tracking-[0.3em] leading-none mb-1 ${isMobile ? 'text-[8px]' : ''}`}>{t('centralConsole')}</span>
+                   <h2 className={`font-bold tracking-tight text-slate-900 ${isMobile ? 'text-lg' : 'text-2xl'}`}>{t(currentTab)}</h2>
+                </div>
               </div>
-              <div className="flex items-center space-x-8">
-                <button onClick={() => setIsNotificationsOpen(true)} className="relative p-3 bg-white border border-slate-300 rounded-2xl shadow-sm hover:shadow-md transition-all group">
-                  <Bell size={20} className="text-slate-400 group-hover:text-[#d4af37]" />
+              <div className="flex items-center space-x-4 md:space-x-8">
+                <button onClick={() => setIsNotificationsOpen(true)} className="relative p-2.5 md:p-3 bg-white border border-slate-300 rounded-2xl shadow-sm hover:shadow-md transition-all group">
+                  <Bell size={isMobile ? 16 : 20} className="text-slate-400 group-hover:text-[#d4af37]" />
                   {unreadCount > 0 && <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[8px] font-black flex items-center justify-center rounded-full border-2 border-white animate-bounce">{unreadCount}</span>}
                 </button>
                 <div className="hidden lg:flex items-center space-x-6">
@@ -349,16 +372,16 @@ const App: React.FC = () => {
                    <div className="h-4 w-[1px] bg-slate-500"></div>
                    <LanguageSelector />
                 </div>
-                <div className="flex items-center space-x-4 border-l border-slate-400 pl-8">
+                <div className="flex items-center space-x-2 sm:space-x-4 border-l border-slate-400 pl-2 sm:pl-8">
                    <div className="text-right hidden sm:block">
                       <p className="text-sm font-bold text-slate-900 leading-none">{currentUser.name}</p>
                       <p className="text-[9px] font-black text-[#d4af37] uppercase tracking-tighter mt-1">{currentUser.role}</p>
                    </div>
-                   <div className="w-12 h-12 bg-[#0f172a] text-white rounded-[1.25rem] flex items-center justify-center font-bold text-sm shadow-xl border-2 border-white">{currentUser.name[0]}</div>
+                   <div className={`${isMobile ? 'w-8 h-8 text-xs' : 'w-12 h-12 text-sm'} bg-[#0f172a] text-white rounded-[1.25rem] flex items-center justify-center font-bold shadow-xl border-2 border-white`}>{currentUser.name[0]}</div>
                 </div>
               </div>
             </header>
-            <div className="p-12 max-w-[1500px] mx-auto tab-content-enter">
+            <div className={`${isMobile ? 'p-4 max-w-full' : 'p-12 max-w-[1500px]'} mx-auto tab-content-enter`}>
               {isLoading ? (
                 <div className="h-96 flex items-center justify-center"><div className="w-10 h-10 border-4 border-slate-100 border-t-[#d4af37] rounded-full animate-spin"></div></div>
               ) : (
@@ -429,7 +452,7 @@ const App: React.FC = () => {
         </div>
 
         {/* 登录模态框 */}
-        <div className="relative z-10 w-full max-w-md px-6 animate-in zoom-in-95 fade-in duration-700">
+        <div className={`relative z-10 w-full ${isMobile ? 'max-w-[95%] px-4' : 'max-w-md px-6'} animate-in zoom-in-95 fade-in duration-700`}>
            <div className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] shadow-[0_40px_120px_rgba(0,0,0,0.3)] border border-slate-200 overflow-hidden flex flex-col p-10 md:p-12 space-y-10">
               
               <div className="flex items-center justify-between">

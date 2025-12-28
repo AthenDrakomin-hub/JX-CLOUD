@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { 
   LayoutDashboard, MapPin, UtensilsCrossed, ChefHat, Wallet, LogOut,
@@ -13,9 +12,10 @@ interface SidebarProps {
   userRole: UserRole;
   onLogout: () => void;
   lang: Language;
+  isOpen?: boolean;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab, userRole, onLogout, lang }) => {
+const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab, userRole, onLogout, lang, isOpen = true }) => {
   const t = (key: keyof typeof translations.zh) => (translations[lang] as any)[key] || key;
 
   const menuItems = [
@@ -33,7 +33,9 @@ const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab, userRole, 
   const filteredItems = menuItems.filter(item => item.roles.includes(userRole));
 
   return (
-    <div className="w-72 bg-slate-900 text-white flex flex-col h-screen fixed left-0 top-0 z-50 border-r border-slate-700 shadow-[20px_0_60px_rgba(0,0,0,0.5)]">
+    <div className={`fixed left-0 top-0 z-50 h-screen transition-all duration-500 ease-in-out lg:translate-x-0
+      ${isOpen ? 'translate-x-0 w-72' : '-translate-x-full w-0 lg:w-72 lg:pl-0'} 
+      bg-slate-900 text-white flex flex-col border-r border-slate-700 shadow-[20px_0_60px_rgba(0,0,0,0.5)]`}>
       <div className="p-12">
         <div className="flex flex-col space-y-2 group">
            <div className="flex items-center space-x-2 text-[#d4af37]">

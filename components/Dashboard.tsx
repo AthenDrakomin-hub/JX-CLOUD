@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { 
   PieChart, Pie, Cell, ResponsiveContainer, CartesianGrid, XAxis, YAxis, Tooltip, BarChart, Bar
@@ -6,6 +5,7 @@ import {
 import { Order, RoomStatus, HotelRoom, Expense, OrderStatus } from '../types';
 import { translations, Language } from '../translations';
 import { TrendingUp, ShoppingBag, DollarSign, Utensils, Activity, Sparkles, ShieldCheck } from 'lucide-react';
+import useResponsiveEnhanced from '../services/useResponsiveEnhanced';
 
 // Added DashboardProps interface to fix "Cannot find name 'DashboardProps'" error
 interface DashboardProps {
@@ -31,6 +31,9 @@ const StatCard: React.FC<{ title: string; value: string | number; icon: any; col
 
 const Dashboard: React.FC<DashboardProps> = ({ orders, rooms, expenses, lang }) => {
   const t = (key: keyof typeof translations.zh) => translations[lang][key] || key;
+  
+  // 使用增强版响应式 Hook
+  const { isMobile, isTablet, isDesktop, getGridCols, getPadding, getBorderRadius } = useResponsiveEnhanced();
 
   const stats = useMemo(() => {
     const completedOrders = orders.filter(o => o.status === OrderStatus.COMPLETED);
@@ -58,7 +61,7 @@ const Dashboard: React.FC<DashboardProps> = ({ orders, rooms, expenses, lang }) 
 
   return (
     <div className="space-y-12">
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
+      <div className={`flex flex-col ${isMobile ? 'items-center' : 'lg:flex-row lg:items-end'} justify-between gap-8`}>
         <div className="space-y-2">
            <div className="flex items-center space-x-2 text-[#d4af37]">
               <Sparkles size={14} />
@@ -78,15 +81,15 @@ const Dashboard: React.FC<DashboardProps> = ({ orders, rooms, expenses, lang }) 
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div className={`grid gap-8 ${getGridCols(4) === 1 ? 'grid-cols-1' : getGridCols(4) === 2 ? 'grid-cols-2' : getGridCols(4) === 3 ? 'grid-cols-3' : 'grid-cols-4'}`}>
         <StatCard title={t('revenue')} value={`₱${stats.revenue.toLocaleString()}`} icon={DollarSign} color="text-emerald-700" bgColor="bg-emerald-50" />
         <StatCard title={t('expenses')} value={`₱${stats.cost.toLocaleString()}`} icon={TrendingUp} color="text-red-700" bgColor="bg-red-50" />
         <StatCard title={t('activeGuests')} value={stats.pendingOrders} icon={ShoppingBag} color="text-blue-700" bgColor="bg-blue-50" />
         <StatCard title={t('occupancy')} value={`${stats.orderRate}%`} icon={Utensils} color="text-amber-700" bgColor="bg-amber-50" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        <div className="lg:col-span-2 bg-white p-12 rounded-[4rem] shadow-[0_10px_40px_rgba(0,0,0,0.03)] border border-slate-100 min-h-[500px]">
+      <div className={`grid gap-10 ${isMobile ? 'grid-cols-1' : 'lg:grid-cols-3'}`}>
+        <div className={`bg-white p-${getPadding(12)} rounded-[${getBorderRadius(4)}rem] shadow-[0_10px_40px_rgba(0,0,0,0.03)] border border-slate-100 min-h-[500px] ${isMobile ? 'lg:col-span-3' : 'lg:col-span-2'}`}>
           <div className="mb-16">
              <h3 className="text-2xl font-bold text-slate-900 tracking-tight">{t('peakTraffic')}</h3>
              <p className="text-xs text-slate-500 font-bold mt-1 uppercase tracking-[0.3em]">{t('kitchenLoad')}</p>
@@ -98,13 +101,13 @@ const Dashboard: React.FC<DashboardProps> = ({ orders, rooms, expenses, lang }) 
                 <XAxis dataKey="hour" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 11, fontWeight: 800}} dy={20} />
                 <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 11, fontWeight: 800}} dx={-10} />
                 <Tooltip cursor={{fill: '#f1f5f9'}} contentStyle={{backgroundColor: '#0f172a', borderRadius: '24px', border: 'none', color: '#fff', padding: '20px'}} />
-                <Bar dataKey="load" fill="#d4af37" radius={[20, 20, 0, 0]} barSize={40} />
+                <Bar dataKey="load" fill="#d4af37" radius={[20, 20, 0, 0]} barSize={isMobile ? 20 : 40} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="bg-[#0f172a] p-12 rounded-[4rem] shadow-2xl text-white min-h-[500px] flex flex-col justify-between">
+        <div className={`bg-[#0f172a] p-${getPadding(12)} rounded-[${getBorderRadius(4)}rem] shadow-2xl text-white min-h-[500px] flex flex-col justify-between ${isMobile ? 'lg:col-span-3' : ''}`}>
           <div>
             <h3 className="text-2xl font-bold tracking-tight mb-2 relative z-10">{t('marketShare')}</h3>
             <p className="text-xs text-slate-400 font-bold uppercase tracking-[0.3em] mb-12 relative z-10">{t('revByCategory')}</p>
@@ -113,7 +116,7 @@ const Dashboard: React.FC<DashboardProps> = ({ orders, rooms, expenses, lang }) 
           <div className="h-64 relative">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={categoryData} cx="50%" cy="50%" innerRadius={80} outerRadius={100} dataKey="value" cornerRadius={10} stroke="none" paddingAngle={5}>
+                <Pie data={categoryData} cx="50%" cy="50%" innerRadius={isMobile ? 60 : 80} outerRadius={isMobile ? 80 : 100} dataKey="value" cornerRadius={10} stroke="none" paddingAngle={5}>
                   {categoryData.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                   ))}

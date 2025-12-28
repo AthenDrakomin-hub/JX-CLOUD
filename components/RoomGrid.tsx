@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { HotelRoom, Dish, Order, OrderStatus, PaymentMethod } from '../types';
 import { 
@@ -10,6 +9,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { api } from '../services/api';
 import QRBatchPrint from './QRBatchPrint';
 import DataSync from './DataSync';
+import useResponsiveEnhanced from '../services/useResponsiveEnhanced';
 
 interface RoomGridProps {
   rooms: HotelRoom[];
@@ -26,13 +26,16 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
   const [showQRBatchPrint, setShowQRBatchPrint] = useState(false);
   const [showDataSync, setShowDataSync] = useState(false);
   
+  // 使用增强版响应式 Hook
+  const { isMobile, isTablet, getGridCols } = useResponsiveEnhanced();
+
   // Manual Ordering State
   const [cart, setCart] = useState<{ [dishId: string]: number }>({});
   const [searchTerm, setSearchTerm] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const t = (key: string) => (translations[lang] as any)[key] || (translations.zh as any)[key] || key;
-  
+
   const floors = useMemo(() => {
     return Array.from(new Set(rooms.map(r => r.id.substring(0, 2)))).sort();
   }, [rooms]);
@@ -113,7 +116,7 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
   return (
     <div className="space-y-16">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 bg-white/40 p-10 rounded-[4rem] border border-white shadow-sm backdrop-blur-sm">
+      <div className={`flex flex-col ${isMobile ? 'items-center' : 'lg:flex-row lg:items-end'} justify-between gap-8 bg-white/40 p-10 rounded-[4rem] border border-white shadow-sm backdrop-blur-sm`}>
         <div className="space-y-3">
            <div className="flex items-center space-x-2 text-[#d4af37]">
               <Sparkles size={16} />
@@ -152,7 +155,7 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
              <div className="h-[1px] flex-1 bg-gradient-to-r from-slate-200 to-transparent" />
           </div>
           
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-8">
+          <div className={`grid gap-8 ${getGridCols(8) === 1 ? 'grid-cols-1' : getGridCols(8) === 2 ? 'grid-cols-2' : getGridCols(8) === 3 ? 'grid-cols-3' : getGridCols(8) === 4 ? 'grid-cols-4' : getGridCols(8) === 5 ? 'grid-cols-5' : getGridCols(8) === 6 ? 'grid-cols-6' : 'grid-cols-8'}`}>
             {rooms.filter(r => r.id.startsWith(floor)).map((room) => (
               <div key={room.id} className="group relative">
                 <div
@@ -207,7 +210,7 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
                    </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className={`grid gap-8 ${isMobile ? 'grid-cols-1' : 'md:grid-cols-2'}`}>
                    <button 
                      onClick={() => setViewMode('qr')}
                      className="group flex flex-col items-center p-10 bg-slate-50 rounded-[3rem] border-2 border-transparent hover:border-[#d4af37] hover:bg-white transition-all"
@@ -249,7 +252,7 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
                    Room <span className="font-serif italic text-[#d4af37]">{activeRoom.id}</span>
                 </h3>
                 <div className="relative p-14 bg-slate-50 rounded-[5rem] mb-16 ring-1 ring-slate-100">
-                   <QRCodeSVG value={getQRUrl(activeRoom.id)} size={280} level="H" fgColor="#0f172a" />
+                   <QRCodeSVG value={getQRUrl(activeRoom.id)} size={isMobile ? 200 : 280} level="H" fgColor="#0f172a" />
                 </div>
                 <button onClick={closeModal} className="text-[11px] font-black uppercase tracking-[0.5em] text-slate-300 hover:text-slate-950 transition-colors">Close Terminal</button>
              </div>
@@ -385,25 +388,25 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
           </div>
         </div>
       )}
+      
+      {/* 批量打印二维码模态框 */}
+      {showQRBatchPrint && (
+        <QRBatchPrint 
+          rooms={rooms} 
+          isOpen={showQRBatchPrint} 
+          onClose={() => setShowQRBatchPrint(false)} 
+          lang={lang} 
+        />
+      )}
+      
+      {/* 数据同步模态框 */}
+      {showDataSync && (
+        <DataSync 
+          onRefresh={onRefresh} 
+          lang={lang} 
+        />
+      )}
     </div>
-    
-    {/* 批量打印二维码模态框 */}
-    {showQRBatchPrint && (
-      <QRBatchPrint 
-        rooms={rooms} 
-        isOpen={showQRBatchPrint} 
-        onClose={() => setShowQRBatchPrint(false)} 
-        lang={lang} 
-      />
-    )}
-    
-    {/* 数据同步模态框 */}
-    {showDataSync && (
-      <DataSync 
-        onRefresh={onRefresh} 
-        lang={lang} 
-      />
-    )}
   );
 };
 
