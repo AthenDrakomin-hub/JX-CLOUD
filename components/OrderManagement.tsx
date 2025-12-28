@@ -75,7 +75,7 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ orders, onUpdateStatu
             <strong>ROOM/STATION:</strong> <span style="font-size: 24px;">${order.roomId}</span><br/>
             <strong>ORDER ID:</strong> #${order.id}<br/>
             <strong>TIMESTAMP:</strong> ${new Date(order.createdAt).toLocaleString()}<br/>
-            <div class="payment-badge">PAYMENT: ${order.paymentMethod.toUpperCase()}</div>
+            <div class="payment-badge">PAYMENT: ${(order.paymentMethod || 'N/A').toUpperCase()}</div>
           </div>
           <div class="items">
             <div style="display: flex; justify-content: space-between; font-weight: bold; border-bottom: 1px solid #000; padding-bottom: 5px; margin-bottom: 10px;">

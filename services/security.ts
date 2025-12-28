@@ -199,6 +199,14 @@ export const validateOrderData = (orderData: Partial<Order>): { isValid: boolean
     errors.push('房间号格式不正确');
   }
   
+  // If paymentMethod is provided, validate it
+  if (orderData.paymentMethod !== undefined) {
+    const validPaymentMethods = ['GCash', 'Maya', 'GrabPay', 'Credit/Debit Card', 'Room Charge', 'Cash'];
+    if (!validPaymentMethods.includes(orderData.paymentMethod)) {
+      errors.push('支付方式无效');
+    }
+  }
+  
   return {
     isValid: errors.length === 0,
     errors

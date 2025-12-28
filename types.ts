@@ -101,7 +101,7 @@ export interface Order {
   totalAmount: number;
   pointsEarned: number;
   status: OrderStatus;
-  paymentMethod: PaymentMethod;
+  paymentMethod?: PaymentMethod;
   createdAt: string;
   updatedAt: string;
   estimatedTime?: number;

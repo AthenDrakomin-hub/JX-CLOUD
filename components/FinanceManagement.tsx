@@ -33,7 +33,8 @@ const FinanceManagement: React.FC<FinanceManagementProps> = ({ orders, expenses,
     // Payment Mix Calculation
     const mix: { [key: string]: number } = {};
     completedOrders.forEach(o => {
-      mix[o.paymentMethod] = (mix[o.paymentMethod] || 0) + o.totalAmount;
+      const method = o.paymentMethod || 'Unknown';
+      mix[method] = (mix[method] || 0) + o.totalAmount;
     });
 
     const mixData = Object.entries(mix).map(([name, value]) => ({ name, value }));
@@ -132,8 +133,8 @@ const FinanceManagement: React.FC<FinanceManagementProps> = ({ orders, expenses,
                         <td className="px-10 py-8 text-right font-serif italic text-2xl text-emerald-600">+ {C}{order.totalAmount}</td>
                         <td className="px-10 py-8 text-center">
                            <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-slate-100 text-[9px] font-black uppercase tracking-widest text-slate-700">
-                              {order.paymentMethod === 'GCash' ? <Smartphone size={10} className="text-blue-500" /> : <Wallet size={10} className="text-emerald-500" />}
-                              <span>{order.paymentMethod}</span>
+                              {(order.paymentMethod || '').includes('GCash') ? <Smartphone size={10} className="text-blue-500" /> : <Wallet size={10} className="text-emerald-500" />}
+                              <span>{order.paymentMethod || 'N/A'}</span>
                            </div>
                         </td>
                      </tr>

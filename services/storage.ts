@@ -23,7 +23,9 @@ export const storageService = {
 
     try {
       // 如果没有指定文件路径，则生成一个唯一路径
-      const fileName = filePath || `${Date.now()}-${file.name}`;
+      // 替换文件名中的特殊字符，保留字母、数字、点和连字符
+      const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const fileName = filePath || `${Date.now()}-${sanitizedFileName}`;
       const { data, error } = await supabase.storage
         .from(bucketName)
         .upload(fileName, file, {

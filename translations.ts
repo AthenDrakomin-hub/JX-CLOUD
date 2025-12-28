@@ -55,6 +55,14 @@ export const translations = {
     gatewayName: '网关名称',
     paymentInstructions: '支付指令',
     toggleStatus: '切换状态',
+    paymentMethods: '支付方式',
+    addNew: '新增',
+    iconType: '图标类型',
+    gcash: 'GCash',
+    maya: 'Maya',
+    grabpay: 'GrabPay',
+    creditDebitCard: '信用卡/借记卡',
+    roomCharge: '房间记账',
 
     // 经营看板
     analyticsEngine: '分析引擎',
@@ -307,6 +315,15 @@ export const translations = {
     gatewayName: 'Name',
     paymentInstructions: 'Instructions',
     toggleStatus: 'Toggle Status',
+    paymentMethods: 'Payment Methods',
+    addNew: 'Add New',
+    iconType: 'Icon Type',
+    gcash: 'GCash',
+    maya: 'Maya',
+    grabpay: 'GrabPay',
+    creditDebitCard: 'Credit/Debit Card',
+    roomCharge: 'Room Charge',
+    cash: 'Cash',
     
     // Business Analytics
     analyticsEngine: 'Analytics Engine',
@@ -559,6 +576,15 @@ export const translations = {
     gatewayName: 'Pangalan',
     paymentInstructions: 'Mga Tagubilin',
     toggleStatus: 'I-toggle ang Status',
+    paymentMethods: 'Mga Paraan ng Pagbabayad',
+    addNew: 'Magdagdag',
+    iconType: 'Uri ng Icon',
+    gcash: 'GCash',
+    maya: 'Maya',
+    grabpay: 'GrabPay',
+    creditDebitCard: 'Credit/Debit Card',
+    roomCharge: 'Room Charge',
+    cash: 'Cash',
     
     // Business Analytics
     analyticsEngine: 'Analytics Engine',

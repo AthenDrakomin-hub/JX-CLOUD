@@ -2,7 +2,7 @@
 import { Order, Dish, HotelRoom, Expense, User, OrderStatus, RoomStatus, MaterialImage, SecurityLog, UserRole, PaymentMethod, PaymentMethodConfig, PermissionKey } from '../types';
 import { supabase, isDemoMode } from './supabaseClient';
 import { notificationService } from './notification';
-import { checkDishAvailability, updateDishStock } from './utils';
+
 import { validateOrderData, validateDishData, validateUserData } from './security';
 import { validateOrderForKitchen } from './business';
 import { safeApiCall, handleSupabaseError, NetworkError, requestTracker, NetworkErrorType } from './network';
@@ -43,9 +43,9 @@ export const api = {
       
       try {
         const response = await safeApiCall(() => supabase.from('profiles').select('*'));
-        if (response.success) {
+        if (response.success && response.data) {
           requestTracker.recordRequest(true);
-          return response.data?.data || [];
+          return response.data || [];
         } else {
           requestTracker.recordRequest(false, response.error);
           console.error('获取用户列表失败:', response.error);
@@ -88,7 +88,7 @@ export const api = {
             requestTracker.recordRequest(false, response.error);
             throw new Error(`更新用户失败: ${response.error?.message || '未知错误'}`);
           }
-        } catch (error) {
+        } catch (error: any) {
           requestTracker.recordRequest(false, handleSupabaseError(error));
           throw new Error(`更新用户时发生错误: ${error.message || '未知错误'}`);
         }
@@ -123,7 +123,7 @@ export const api = {
             requestTracker.recordRequest(false, response.error);
             throw new Error(`创建用户失败: ${response.error?.message || '未知错误'}`);
           }
-        } catch (error) {
+        } catch (error: any) {
           requestTracker.recordRequest(false, handleSupabaseError(error));
           throw new Error(`创建用户时发生错误: ${error.message || '未知错误'}`);
         }
@@ -145,7 +145,7 @@ export const api = {
             requestTracker.recordRequest(false, response.error);
             throw new Error(`删除用户失败: ${response.error?.message || '未知错误'}`);
           }
-        } catch (error) {
+        } catch (error: any) {
           requestTracker.recordRequest(false, handleSupabaseError(error));
           throw new Error(`删除用户时发生错误: ${error.message || '未知错误'}`);
         }
@@ -166,9 +166,9 @@ export const api = {
           supabase.from('orders').select('*').order('created_at', { ascending: false })
         );
         
-        if (response.success) {
+        if (response.success && response.data) {
           requestTracker.recordRequest(true);
-          return response.data?.data || [];
+          return response.data || [];
         } else {
           requestTracker.recordRequest(false, response.error);
           console.error('获取订单列表失败:', response.error);
@@ -211,7 +211,7 @@ export const api = {
           requestTracker.recordRequest(false, response.error);
           throw new Error(`创建订单失败: ${response.error?.message || '未知错误'}`);
         }
-      } catch (error) {
+      } catch (error: any) {
         requestTracker.recordRequest(false, handleSupabaseError(error));
         throw new Error(`创建订单时发生错误: ${error.message || '未知错误'}`);
       }
@@ -237,8 +237,9 @@ export const api = {
                 supabase.from('orders').select('room_id').eq('id', orderId).single()
               );
               
-              if (orderResponse.success && orderResponse.data?.data) {
-                await supabase.from('rooms').update({ status: 'ready' }).eq('id', orderResponse.data.data.room_id);
+              if (orderResponse && orderResponse.success && orderResponse.data) {
+                const roomData = orderResponse.data as { room_id: string };
+                await supabase.from('rooms').update({ status: 'ready' }).eq('id', roomData.room_id);
               }
             } catch (roomError) {
               console.error('更新房间状态失败:', roomError);
@@ -263,9 +264,9 @@ export const api = {
           supabase.from('dishes').select('*')
         );
         
-        if (response.success) {
+        if (response.success && response.data) {
           requestTracker.recordRequest(true);
-          return response.data?.data || [];
+          return response.data || [];
         } else {
           requestTracker.recordRequest(false, response.error);
           console.error('获取菜品列表失败:', response.error);
@@ -394,24 +395,65 @@ export const api = {
   // Fix: Added missing payments module
   payments: {
     getAll: async () => {
-      const { data } = await supabase.from('payment_configs').select('*');
-      if ((!data || data.length === 0) && isDemoMode) {
-        return [
-          { id: '1', name: 'GCash', type: PaymentMethod.GCASH, isActive: true, iconType: 'smartphone' },
-          { id: '2', name: 'Maya', type: PaymentMethod.MAYA, isActive: true, iconType: 'wallet' },
-          { id: '3', name: 'GrabPay', type: PaymentMethod.GRABPAY, isActive: true, iconType: 'smartphone' },
-          { id: '4', name: 'Cash', type: PaymentMethod.CASH, isActive: true, iconType: 'banknote' },
-        ];
+      const { data, error } = await supabase.from('payment_configs').select('*');
+      if (error) {
+        console.error('Error fetching payment configs:', error);
+        if (isDemoMode) {
+          return [
+            { id: '1', name: 'GCash', type: PaymentMethod.GCASH, isActive: true, iconType: 'smartphone' },
+            { id: '2', name: 'Maya', type: PaymentMethod.MAYA, isActive: true, iconType: 'wallet' },
+            { id: '3', name: 'GrabPay', type: PaymentMethod.GRABPAY, isActive: true, iconType: 'smartphone' },
+            { id: '4', name: 'Cash', type: PaymentMethod.CASH, isActive: true, iconType: 'banknote' },
+          ];
+        }
+        return [];
       }
       return data || [];
     },
     update: async (payment: PaymentMethodConfig) => {
-      await supabase.from('payment_configs').update(payment).eq('id', payment.id);
+      if (payment.id) {
+        const { error } = await supabase.from('payment_configs').update(payment).eq('id', payment.id);
+        if (error) {
+          console.error('Failed to update payment config:', error);
+          throw error;
+        }
+      } else {
+        // 如果没有ID，说明是新创建的支付方式
+        const newPayment = {
+          ...payment,
+          id: `payment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        };
+        const { error } = await supabase.from('payment_configs').insert([newPayment]);
+        if (error) {
+          console.error('Failed to create payment config:', error);
+          throw error;
+        }
+      }
+    },
+    create: async (payment: Omit<PaymentMethodConfig, 'id'>) => {
+      const newPayment = {
+        ...payment,
+        id: `payment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      };
+      const { error } = await supabase.from('payment_configs').insert([newPayment]);
+      if (error) {
+        console.error('Failed to create payment config:', error);
+        throw error;
+      }
+      return newPayment;
     },
     toggle: async (id: string) => {
-      const { data } = await supabase.from('payment_configs').select('isActive').eq('id', id).single();
+      const { data, error } = await supabase.from('payment_configs').select('isActive').eq('id', id).single();
+      if (error) {
+        console.error('Failed to get payment config status:', error);
+        throw error;
+      }
       if (data) {
-        await supabase.from('payment_configs').update({ isActive: !data.isActive }).eq('id', id);
+        const { error: updateError } = await supabase.from('payment_configs').update({ isActive: !data.isActive }).eq('id', id);
+        if (updateError) {
+          console.error('Failed to toggle payment config status:', updateError);
+          throw updateError;
+        }
       }
     }
   },
