@@ -436,7 +436,7 @@ const App: React.FC = () => {
                  <div className="flex flex-col items-center">
                    <div className="mb-4">
                      <img 
-                       src="/logo.jpg" 
+                       src="/logo.svg" 
                        alt="JX Cloud Hotel Management" 
                        className="h-16 w-auto object-contain"
                      />
