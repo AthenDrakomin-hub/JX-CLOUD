@@ -8,6 +8,8 @@ import {
 import { translations, Language } from '../translations';
 import { QRCodeSVG } from 'qrcode.react';
 import { api } from '../services/api';
+import QRBatchPrint from './QRBatchPrint';
+import DataSync from './DataSync';
 
 interface RoomGridProps {
   rooms: HotelRoom[];
@@ -21,6 +23,8 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
   const [activeRoom, setActiveRoom] = useState<HotelRoom | null>(null);
   const [viewMode, setViewMode] = useState<'options' | 'qr' | 'manualOrder' | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [showQRBatchPrint, setShowQRBatchPrint] = useState(false);
+  const [showDataSync, setShowDataSync] = useState(false);
   
   // Manual Ordering State
   const [cart, setCart] = useState<{ [dishId: string]: number }>({});
@@ -121,11 +125,17 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
            </p>
         </div>
         <div className="flex items-center space-x-4">
-           <button className="flex items-center space-x-4 px-10 py-5 bg-white border border-slate-100 text-slate-900 rounded-[2rem] font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm group">
+           <button 
+              onClick={() => setShowQRBatchPrint(true)}
+              className="flex items-center space-x-4 px-10 py-5 bg-white border border-slate-100 text-slate-900 rounded-[2rem] font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm group"
+            >
               <Printer size={18} className="text-[#d4af37]" />
               <span>{t('bulkPrintQR')}</span>
            </button>
-           <button className="flex items-center space-x-4 px-10 py-5 bg-slate-900 text-white rounded-[2rem] font-black text-xs uppercase tracking-widest hover:bg-[#d4af37] transition-all shadow-2xl group">
+           <button 
+              onClick={() => setShowDataSync(true)}
+              className="flex items-center space-x-4 px-10 py-5 bg-slate-900 text-white rounded-[2rem] font-black text-xs uppercase tracking-widest hover:bg-[#d4af37] transition-all shadow-2xl group"
+           >
               <Download size={18} />
               <span>{t('syncAllData')}</span>
            </button>
@@ -376,6 +386,24 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
         </div>
       )}
     </div>
+    
+    {/* 批量打印二维码模态框 */}
+    {showQRBatchPrint && (
+      <QRBatchPrint 
+        rooms={rooms} 
+        isOpen={showQRBatchPrint} 
+        onClose={() => setShowQRBatchPrint(false)} 
+        lang={lang} 
+      />
+    )}
+    
+    {/* 数据同步模态框 */}
+    {showDataSync && (
+      <DataSync 
+        onRefresh={onRefresh} 
+        lang={lang} 
+      />
+    )}
   );
 };
 
