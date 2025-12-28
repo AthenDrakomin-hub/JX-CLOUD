@@ -395,25 +395,8 @@ export const api = {
   // Fix: Added missing expenses module
   expenses: {
     getAll: async () => {
-      if (isDemoMode) return [];
-      try {
-        const response = await safeApiCall(async () => {
-          const { data, error } = await supabase.from('expenses').select('*');
-          return { data, error };
-        });
-        if (response.success && response.data) {
-          requestTracker.recordRequest(true);
-          return response.data || [];
-        } else {
-          requestTracker.recordRequest(false, response.error);
-          console.error('获取支出列表失败:', response.error);
-          return [];
-        }
-      } catch (error) {
-        requestTracker.recordRequest(false, handleSupabaseError(error));
-        console.error('获取支出列表时发生错误:', error);
-        return [];
-      }
+      const { data } = await supabase.from('expenses').select('*');
+      return data || [];
     },
     create: async (expense: Expense) => {
       const { error } = await supabase.from('expenses').insert(expense);
@@ -428,25 +411,8 @@ export const api = {
   // Fix: Added missing materials module
   materials: {
     getAll: async () => {
-      if (isDemoMode) return [];
-      try {
-        const response = await safeApiCall(async () => {
-          const { data, error } = await supabase.from('materials').select('*');
-          return { data, error };
-        });
-        if (response.success && response.data) {
-          requestTracker.recordRequest(true);
-          return response.data || [];
-        } else {
-          requestTracker.recordRequest(false, response.error);
-          console.error('获取素材列表失败:', response.error);
-          return [];
-        }
-      } catch (error) {
-        requestTracker.recordRequest(false, handleSupabaseError(error));
-        console.error('获取素材列表时发生错误:', error);
-        return [];
-      }
+      const { data } = await supabase.from('materials').select('*');
+      return data || [];
     },
     create: async (material: MaterialImage) => {
       const { error } = await supabase.from('materials').insert(material);

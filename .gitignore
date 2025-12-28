@@ -33,6 +33,9 @@ yarn-debug.log*
 yarn-error.log*
 .nyc_output
 coverage/
+logs
+pnpm-debug.log*
+lerna-debug.log*
 
 # OS
 .DS_Store
@@ -69,3 +72,15 @@ out/
 *~
 *.swp
 *.swo
+
+# Node.js
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+*.suo
+*.ntvs*
+*.njsproj
+*.sln

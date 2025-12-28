@@ -121,6 +121,15 @@ const App: React.FC = () => {
 
       if (!isMounted.current) return;
 
+      // rooms.getAll()直接返回数组，无需额外处理
+      setRooms(Array.isArray(r) ? r : r || []);
+      // 其他API函数通过safeApiCall返回NetworkResponse，需要访问.data属性
+      setOrders(o && 'data' in o ? o.data || [] : []);
+      setExpenses(e && 'data' in e ? e.data || [] : []);
+      setDishes(d && 'data' in d ? d.data || [] : []);
+      setUsers(u && 'data' in u ? u.data || [] : []);
+      setMaterials(m && 'data' in m ? m.data || [] : []);
+
       if (cloudDict && cloudDict.length > 0) {
         const merged: any = { zh: { ...localTranslations.zh }, en: { ...localTranslations.en }, tl: { ...localTranslations.tl } };
         cloudDict.forEach((item: any) => {
@@ -132,15 +141,6 @@ const App: React.FC = () => {
         });
         setDynamicTranslations(merged);
       }
-
-      // rooms.getAll()直接返回数组，无需额外处理
-      setRooms(Array.isArray(r) ? r : r || []);
-      // 其他API函数通过safeApiCall返回NetworkResponse，需要访问.data属性
-      setOrders(o && 'data' in o ? o.data || [] : []);
-      setExpenses(e && 'data' in e ? e.data || [] : []);
-      setDishes(d && 'data' in d ? d.data || [] : []);
-      setUsers(u && 'data' in u ? u.data || [] : []);
-      setMaterials(m && 'data' in m ? m.data || [] : []);
     } catch (err: any) { 
       console.warn('Sync jitter');
     } finally { 
