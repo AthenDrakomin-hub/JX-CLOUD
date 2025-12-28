@@ -433,11 +433,15 @@ const App: React.FC = () => {
            <div className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] shadow-[0_40px_120px_rgba(0,0,0,0.3)] border border-slate-200 overflow-hidden flex flex-col p-10 md:p-12 space-y-10">
               
               <div className="flex items-center justify-between">
-                 <div className="flex flex-col">
-                   <h2 className="text-2xl font-bold text-slate-900 tracking-tight leading-none">
-                     {lang === 'zh' ? '江西大酒店' : 'Jiangxi Hotel'}
-                   </h2>
-                   <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#d4af37] mt-2">Enterprise Suite</span>
+                 <div className="flex flex-col items-center">
+                   <div className="mb-4">
+                     <img 
+                       src="/logo.jpg" 
+                       alt="JX Cloud Hotel Management" 
+                       className="h-16 w-auto object-contain"
+                     />
+                   </div>
+                   <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#d4af37]">Enterprise Suite</span>
                  </div>
                  <LanguageSelector />
               </div>
