@@ -7,6 +7,8 @@ import {
   Check, UploadCloud, Loader2, Sparkles, FileText, Maximize
 } from 'lucide-react';
 import { CATEGORIES } from '../constants';
+import { storageService } from '../services/storage';
+import { api } from '../services/api';
 
 interface ImageLibraryProps {
   materials: MaterialImage[];
@@ -21,7 +23,85 @@ const ImageLibrary: React.FC<ImageLibraryProps> = ({ materials, onAddMaterial, o
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const t = (key: keyof typeof translations.zh) => translations[lang][key] || key;
+
+  // 处理文件选择
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // 验证文件类型
+    if (!storageService.isValidImageFile(file)) {
+      setUploadError('只支持上传图像文件 (JPG, PNG, WEBP, GIF)');
+      return;
+    }
+
+    // 验证文件大小 (最大10MB)
+    if (!storageService.isValidFileSize(file, 10)) {
+      setUploadError('文件大小不能超过10MB');
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadError(null);
+
+    try {
+      // 上传文件到Supabase存储
+      const uploadResult = await storageService.uploadFile(file);
+
+      if (!uploadResult.success) {
+        throw new Error(uploadResult.error || '文件上传失败');
+      }
+
+      // 生成唯一ID
+      const newId = `material-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+      // 创建素材对象
+      const newMaterial: MaterialImage = {
+        id: newId,
+        url: uploadResult.url!,
+        name: file.name,
+        category: selectedCategory === 'All' ? 'General' : selectedCategory,
+        fileSize: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
+        dimensions: '待计算', // 可以通过Image API获取真实尺寸
+        mimeType: file.type
+      };
+
+      // 添加到数据库
+      await api.materials.create(newMaterial);
+      onAddMaterial(newMaterial);
+
+      // 重置文件输入
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (error: any) {
+      console.error('上传处理失败:', error);
+      setUploadError(error.message || '上传处理失败');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // 处理删除素材
+  const handleDeleteMaterial = async (id: string, url: string) => {
+    try {
+      // 从数据库删除记录
+      await api.materials.delete(id);
+      
+      // 从Supabase存储删除文件
+      const filePath = new URL(url).pathname.split('/').slice(3).join('/'); // 提取存储路径
+      await storageService.deleteFile(filePath);
+      
+      // 从UI更新
+      onDeleteMaterial(id);
+    } catch (error) {
+      console.error('删除素材失败:', error);
+      // 即使删除存储失败，也要从UI移除
+      onDeleteMaterial(id);
+    }
+  };
 
   const filteredMaterials = useMemo(() => {
     return materials.filter(m => {
@@ -57,9 +137,9 @@ const ImageLibrary: React.FC<ImageLibraryProps> = ({ materials, onAddMaterial, o
             onClick={() => fileInputRef.current?.click()}
             className="bg-slate-900 text-white p-4 rounded-full hover:bg-[#d4af37] transition-all shadow-2xl active:scale-95"
           >
-            {isUploading ? <Loader2 size={24} className="animate-spin" /> : <Plus size={24} />}
+            {isUploading ? <Loader2 size={24} className="animate-spin" /> : <UploadCloud size={24} />}
           </button>
-          <input type="file" ref={fileInputRef} className="hidden" />
+          <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange} accept="image/*" />
         </div>
       </div>
 
@@ -84,7 +164,7 @@ const ImageLibrary: React.FC<ImageLibraryProps> = ({ materials, onAddMaterial, o
                  <button onClick={() => { navigator.clipboard.writeText(m.url); setCopiedId(m.id); setTimeout(() => setCopiedId(null), 2000); }} className="p-4 bg-white text-slate-900 rounded-2xl hover:bg-[#d4af37] hover:text-white transition-all">
                    {copiedId === m.id ? <Check size={20} className="text-emerald-500" /> : <Copy size={20} />}
                  </button>
-                 <button onClick={() => onDeleteMaterial(m.id)} className="p-4 bg-white text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-all">
+                 <button onClick={() => handleDeleteMaterial(m.id, m.url)} className="p-4 bg-white text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-all">
                    <Trash2 size={20} />
                  </button>
               </div>
@@ -98,17 +178,26 @@ const ImageLibrary: React.FC<ImageLibraryProps> = ({ materials, onAddMaterial, o
                <div className="flex items-center space-x-4 opacity-40">
                   <div className="flex items-center space-x-1">
                      <FileText size={10} />
-                     <span className="text-[9px] font-black uppercase">240 KB</span>
+                     <span className="text-[9px] font-black uppercase">{m.fileSize || '240 KB'}</span>
                   </div>
                   <div className="flex items-center space-x-1">
                      <Maximize size={10} />
-                     <span className="text-[9px] font-black uppercase">1080x1080</span>
+                     <span className="text-[9px] font-black uppercase">{m.dimensions || '1080x1080'}</span>
                   </div>
                </div>
             </div>
           </div>
         ))}
       </div>
+      
+      {uploadError && (
+        <div className="mt-4 p-4 bg-red-50 text-red-600 rounded-xl border border-red-100 text-sm">
+          <div className="flex items-center space-x-2">
+            <X size={18} />
+            <span>{uploadError}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -22,7 +22,7 @@ const LegalSection: React.FC<{ title: string; children: React.ReactNode; icon: a
         className="w-full px-8 py-7 flex items-center justify-between hover:bg-slate-50 transition-colors"
       >
         <div className="flex items-center space-x-5">
-          <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-700 shadow-inner border border-slate-400">
+          <div className="w-12 h-12 bg-slate-300 rounded-2xl flex items-center justify-center text-slate-900 shadow-inner border border-slate-600">
             <Icon size={20} />
           </div>
           <span className="text-sm font-black uppercase tracking-widest text-slate-900">{title}</span>
@@ -104,8 +104,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang }) => {
                    <input 
                       value={config.hotelName}
                       onChange={(e) => setConfig({ ...config, hotelName: e.target.value })}
-                      className="flex-1 max-w-md px-8 py-5 bg-slate-50 rounded-2xl border border-slate-200 font-serif italic text-2xl text-slate-900 shadow-inner outline-none focus:ring-2 focus:ring-[#d4af37]/30 transition-all"
-                   />
+                      className="flex-1 max-w-md px-8 py-5 bg-slate-200 rounded-2xl border border-slate-400 font-serif italic text-2xl text-slate-900 shadow-inner outline-none focus:ring-2 focus:ring-[#d4af37]/30 transition-all" />
                 </div>
                 
                 <div className="flex items-center justify-between">

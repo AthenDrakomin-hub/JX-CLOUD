@@ -299,10 +299,10 @@ const App: React.FC = () => {
     const unreadCount = appNotifications.filter(n => !n.read).length;
     return (
       <ErrorBoundary lang={lang}>
-        <div className="min-h-screen bg-[#f8fafc] text-[#0f172a]">
+        <div className="min-h-screen bg-slate-100 text-slate-900">
           <Sidebar currentTab={currentTab} setCurrentTab={setCurrentTab} userRole={currentUser.role} onLogout={() => setCurrentUser(null)} lang={lang} />
           <main className="pl-72 min-h-screen">
-            <header className="sticky top-0 z-40 h-24 bg-white/70 backdrop-blur-xl border-b border-slate-300 px-10 flex items-center justify-between">
+            <header className="sticky top-0 z-40 h-24 bg-white/80 backdrop-blur-xl border-b border-slate-400 px-10 flex items-center justify-between">
               <div className="flex flex-col">
                  <span className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em] leading-none mb-1">{t('centralConsole')}</span>
                  <h2 className="text-2xl font-bold tracking-tight text-slate-900">{t(currentTab)}</h2>
@@ -355,7 +355,7 @@ const App: React.FC = () => {
 
   return (
     <ErrorBoundary lang={lang}>
-      <div className="min-h-screen relative flex flex-col items-center justify-center overflow-hidden font-sans bg-[#0f172a]">
+      <div className="min-h-screen relative flex flex-col items-center justify-center overflow-hidden font-sans bg-slate-900">
         
         {/* 背景装饰 */}
         <div className="absolute inset-0 z-0">
@@ -365,7 +365,7 @@ const App: React.FC = () => {
 
         {/* 登录模态框 */}
         <div className="relative z-10 w-full max-w-md px-6 animate-in zoom-in-95 fade-in duration-700">
-           <div className="bg-white/95 backdrop-blur-xl rounded-[2.5rem] shadow-[0_40px_120px_rgba(0,0,0,0.5)] border border-slate-300 overflow-hidden flex flex-col p-10 md:p-12 space-y-10">
+           <div className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] shadow-[0_40px_120px_rgba(0,0,0,0.3)] border border-slate-200 overflow-hidden flex flex-col p-10 md:p-12 space-y-10">
               
               <div className="flex items-center justify-between">
                  <div className="flex flex-col">

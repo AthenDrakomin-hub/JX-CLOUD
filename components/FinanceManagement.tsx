@@ -106,8 +106,8 @@ const FinanceManagement: React.FC<FinanceManagementProps> = ({ orders, expenses,
         </div>
       </div>
 
-      <div className="bg-white rounded-[4rem] border border-slate-200 shadow-sm overflow-hidden p-8">
-        <div className="p-8 border-b border-slate-50 flex items-center justify-between">
+      <div className="bg-white rounded-[4rem] border border-slate-400 shadow-sm overflow-hidden p-8">
+        <div className="p-8 border-b border-slate-300 flex items-center justify-between">
            <h3 className="text-2xl font-bold tracking-tight text-slate-900">{t('transHistory')}</h3>
         </div>
         <div className="overflow-x-auto">

@@ -99,7 +99,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ users, onAddUser, onD
   return (
     <div className="space-y-12 pb-20">
       {/* Header Section */}
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 bg-white p-12 rounded-[4rem] border border-slate-300 shadow-sm">
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 bg-white p-12 rounded-[4rem] border border-slate-500 shadow-sm">
         <div className="space-y-2">
            <div className="flex items-center space-x-2 text-[#d4af37]">
               <Fingerprint size={14} />
@@ -136,11 +136,11 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ users, onAddUser, onD
       {viewMode === 'directory' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
           {users.map((user, idx) => (
-            <div key={user.id} className={`bg-white p-8 rounded-[3rem] border border-slate-200 shadow-sm group hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 animate-in fade-in slide-in-from-bottom-10 ${user.isLocked ? 'grayscale opacity-75' : ''}`} style={{ animationDelay: `${idx * 50}ms` }}>
+            <div key={user.id} className={`bg-white p-8 rounded-[3rem] border border-slate-400 shadow-sm group hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 animate-in fade-in slide-in-from-bottom-10 ${user.isLocked ? 'grayscale opacity-75' : ''}`} style={{ animationDelay: `${idx * 50}ms` }}>
                <div className="flex items-start justify-between">
                   <div className="flex items-center space-x-6">
                     <div className="relative">
-                      <div className={`w-20 h-20 rounded-[2rem] bg-slate-950 flex items-center justify-center text-2xl font-black text-[#d4af37] border-2 border-slate-900 shadow-xl`}>
+                      <div className="w-20 h-20 rounded-[2rem] bg-slate-900 flex items-center justify-center text-2xl font-black text-[#d4af37] border-2 border-slate-800 shadow-xl">
                         {user.name[0]}
                       </div>
                       {user.isLocked && (
@@ -184,7 +184,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ users, onAddUser, onD
                  {user.permissions?.length > 3 && <span className="text-[7px] font-bold text-slate-500">+{user.permissions.length - 3} More</span>}
                </div>
                
-               <div className="mt-8 pt-6 border-t border-slate-50 flex items-center justify-between">
+               <div className="mt-8 pt-6 border-t border-slate-400 flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <div className={`w-1.5 h-1.5 rounded-full ${user.isLocked ? 'bg-red-500' : 'bg-emerald-500'}`} />
                     <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">

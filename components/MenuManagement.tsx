@@ -1,13 +1,15 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Dish, MaterialImage } from '../types';
+import { storageService } from '../services/storage';
 import { translations, Language } from '../translations';
 import { 
   Plus, Edit3, Trash2, Search, X, Eye, EyeOff, 
   ImageIcon, Sparkles, Star, Flame, AlertCircle,
   Save, Package, DollarSign, Tag, MoreHorizontal,
   Layers, BarChart3, ChevronRight, Activity,
-  Info, Zap, Minus, Plus as PlusIcon
+  Info, Zap, Minus, Plus as PlusIcon,
+  UploadCloud, Loader2
 } from 'lucide-react';
 import { CATEGORIES } from '../constants';
 import ConfirmationModal from './ConfirmationModal';
@@ -35,6 +37,8 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
   const [editingDish, setEditingDish] = useState<Dish | null>(null);
   const [tempImageUrl, setTempImageUrl] = useState('');
   const [isRecommended, setIsRecommended] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ isOpen: boolean; dishId: string | null }>({ isOpen: false, dishId: null });
   
   const t = (key: keyof typeof translations.zh) => (translations[lang] as any)[key] || (translations.zh as any)[key] || key;
@@ -162,7 +166,7 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
                  src={dish.imageUrl} 
                  alt={dish.name}
                  aspectRatio="h-full w-full"
-                 className={`transition-all duration-1000 group-hover:scale-110 ${dish.isAvailable === false ? 'grayscale blur-[1px]' : ''}`} 
+                 className={`transition-all duration-1000 object-cover group-hover:scale-110 ${dish.isAvailable === false ? 'grayscale blur-[1px]' : ''}`} 
                />
                
                {/* Availability Indicator */}
@@ -266,7 +270,7 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
           <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-2xl animate-in fade-in duration-500" onClick={closeModal} />
           <div className="relative w-full max-w-5xl bg-white rounded-[4rem] shadow-2xl flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-20 duration-700 max-h-[90vh]">
              <div className="md:w-1/2 bg-slate-100">
-                <OptimizedImage src={selectedDish.imageUrl} alt={selectedDish.name} aspectRatio="h-full w-full" className="w-full h-full" />
+                <OptimizedImage src={selectedDish.imageUrl} alt={selectedDish.name} aspectRatio="h-full w-full" className="w-full h-full object-cover" />
              </div>
              <div className="md:w-1/2 p-10 md:p-16 overflow-y-auto no-scrollbar space-y-10">
                 <div className="flex items-start justify-between">
@@ -367,7 +371,7 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
                   src={tempImageUrl || editingDish?.imageUrl || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c'} 
                   alt="Preview" 
                   aspectRatio="h-full w-full" 
-                  className="w-full h-full opacity-60 group-hover:opacity-80 transition-opacity"
+                  className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent flex flex-col justify-end p-20">
                    <div className="space-y-6">
@@ -462,15 +466,86 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
                    {/* Row 4: Asset Control */}
                    <div className="space-y-4">
                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] ml-1">{t('visualAsset')} URL</label>
-                     <div className="relative group">
-                        <ImageIcon className="absolute left-8 top-1/2 -translate-y-1/2 text-slate-300 transition-colors group-focus-within:text-[#d4af37]" size={22} />
-                        <input 
-                          name="imageUrl" 
-                          value={tempImageUrl} 
-                          onChange={(e) => setTempImageUrl(e.target.value)} 
-                          placeholder="https://images.unsplash.com/..." 
-                          className="w-full pl-20 pr-10 py-6 bg-slate-50 border-2 border-transparent rounded-[2.5rem] outline-none focus:bg-white focus:border-[#d4af37] transition-all font-bold text-sm text-slate-600" 
-                        />
+                     <div className="space-y-4">
+                       <div className="relative group">
+                          <ImageIcon className="absolute left-8 top-1/2 -translate-y-1/2 text-slate-300 transition-colors group-focus-within:text-[#d4af37]" size={22} />
+                          <input 
+                            name="imageUrl" 
+                            value={tempImageUrl} 
+                            onChange={(e) => setTempImageUrl(e.target.value)} 
+                            placeholder="https://images.unsplash.com/..." 
+                            className="w-full pl-20 pr-10 py-6 bg-slate-50 border-2 border-transparent rounded-[2.5rem] outline-none focus:bg-white focus:border-[#d4af37] transition-all font-bold text-sm text-slate-600" 
+                          />
+                       </div>
+                       
+                       {/* Upload from file */}
+                       <div className="flex items-center space-x-4">
+                         <label className="flex-1 flex flex-col items-center justify-center px-6 py-8 border-2 border-dashed border-slate-200 rounded-3xl cursor-pointer hover:border-[#d4af37] transition-colors group/file">
+                           <input 
+                             type="file" 
+                             accept="image/*" 
+                             className="hidden" 
+                             onChange={async (e) => {
+                               const file = e.target.files?.[0];
+                               if (!file) return;
+                               
+                               try {
+                                 setIsUploading(true);
+                                 setUploadError(null);
+                                 
+                                 // 验证文件类型
+                                 if (!storageService.isValidImageFile(file)) {
+                                   setUploadError('只支持上传图像文件 (JPG, PNG, WEBP, GIF)');
+                                   setIsUploading(false);
+                                   return;
+                                 }
+                                 
+                                 // 验证文件大小 (最大10MB)
+                                 if (!storageService.isValidFileSize(file, 10)) {
+                                   setUploadError('文件大小不能超过10MB');
+                                   setIsUploading(false);
+                                   return;
+                                 }
+                                 
+                                 // 上传文件到Supabase存储
+                                 const uploadResult = await storageService.uploadFile(file);
+                                 
+                                 if (uploadResult.success && uploadResult.url) {
+                                   setTempImageUrl(uploadResult.url);
+                                   setUploadError(null);
+                                 } else {
+                                   throw new Error(uploadResult.error || '文件上传失败');
+                                 }
+                               } catch (error: any) {
+                                 console.error('图像上传失败:', error);
+                                 setUploadError(error.message || '图像上传失败');
+                               } finally {
+                                 setIsUploading(false);
+                               }
+                             }}
+                           />
+                           <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center mb-4 group-hover/file:text-[#d4af37] transition-colors">
+                             <UploadCloud size={24} />
+                           </div>
+                           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Upload from Device</span>
+                           <p className="text-[9px] text-slate-400 mt-2 text-center">JPG, PNG, WEBP or GIF (Max 10MB)</p>
+                         </label>
+                         
+                         {isUploading && (
+                           <div className="flex items-center justify-center w-16 h-16">
+                             <Loader2 className="w-8 h-8 text-[#d4af37] animate-spin" />
+                           </div>
+                         )}
+                       </div>
+                       
+                       {uploadError && (
+                         <div className="p-4 bg-red-50 text-red-600 rounded-xl border border-red-100 text-sm">
+                           <div className="flex items-center space-x-2">
+                             <X size={18} />
+                             <span>{uploadError}</span>
+                           </div>
+                         </div>
+                       )}
                      </div>
                    </div>
 

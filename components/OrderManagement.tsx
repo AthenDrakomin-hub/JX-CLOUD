@@ -168,7 +168,7 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ orders, onUpdateStatu
 
                 <div className="space-y-4 max-h-48 overflow-y-auto no-scrollbar py-2">
                    {order.items.map((item, i) => (
-                      <div key={i} className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/5">
+                      <div key={i} className="flex justify-between items-center bg-white/20 p-4 rounded-2xl border border-white/20">
                          <div className="flex items-center space-x-4">
                             <span className="w-8 h-8 bg-[#d4af37] text-[#0f172a] rounded-lg flex items-center justify-center font-black text-xs">{item.quantity}</span>
                             <span className="text-sm font-bold text-slate-100">{item.name}</span>
@@ -178,7 +178,7 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ orders, onUpdateStatu
                    ))}
                 </div>
 
-                <div className="flex items-end justify-between pt-6 border-t border-white/10">
+                <div className="flex items-end justify-between pt-6 border-t border-white/30">
                    <div>
                       <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1">{t('totalBill')}</p>
                       <p className="text-3xl font-serif italic text-[#d4af37]">₱{order.totalAmount}</p>
