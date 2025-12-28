@@ -399,7 +399,6 @@ export const translations = {
     total: 'Total',
     payNow: 'Pay Now',
     processSecurePayment: 'Process Secure Payment',
-    cash: 'Cash Payment',
     cashNote: 'Please pay cash at counter or upon delivery',
     
     // Menu
@@ -660,7 +659,6 @@ export const translations = {
     total: 'Kabuuan',
     payNow: 'Magbayad Ngayon',
     processSecurePayment: 'Gawin ang Secure na Pagbabayad',
-    cash: 'Cash Payment',
     cashNote: 'Mangyaring magbayad ng cash sa counter o sa paghahatid',
     
     // Menu
