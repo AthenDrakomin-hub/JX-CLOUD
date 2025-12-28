@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { 
   CheckCircle2, AlertCircle, Clock, Server, ShieldAlert, Zap, 
@@ -35,8 +34,7 @@ const DeploymentChecklist: React.FC<DeploymentChecklistProps> = ({ lang }) => {
       title: t('businessIntegration'),
       items: [
         { label: t('paymentSdkLabel'), status: "pending", desc: t('paymentSdkDesc') },
-        { label: t('cloudPrintLabel'), status: "pending", desc: t('cloudPrintDesc') },
-        { label: t('pointsAlgoLabel'), status: "success", desc: t('pointsAlgoDesc') }
+        { label: t('cloudPrintLabel'), status: "pending", desc: t('cloudPrintDesc') }
       ]
     }
   ];

@@ -4,19 +4,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover">
-  <title>JX CLOUD - 江西云厨 Enterprise Hospitality</title>
+  <title>江西云厨 - JX CLOUD Enterprise Hospitality</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
   <style>
     :root {
       --gold: #d4af37;
-      --obsidian: #0f172a;
+      --obsidian: #020617;
+      --app-bg: #f8fafc;
     }
     body { 
       font-family: 'Plus Jakarta Sans', sans-serif; 
       -webkit-tap-highlight-color: transparent; 
       overscroll-behavior-y: contain;
-      background-color: #f1f5f9;
+      background-color: var(--app-bg);
       color: #0f172a;
       margin: 0;
       overflow-x: hidden;
@@ -30,31 +31,20 @@
 
     .glass {
       background: rgba(255, 255, 255, 0.85);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
     }
 
-    ::selection {
-      background: rgba(212, 175, 55, 0.3);
-      color: #000;
+    .card-shadow {
+      box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.05);
     }
 
-    .tab-content-enter {
-      animation: fadeFast 0.2s ease-out;
+    @keyframes pulse-gold {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); }
+      50% { box-shadow: 0 0 30px 10px rgba(212, 175, 55, 0.1); }
     }
-    @keyframes fadeFast {
-      from { opacity: 0; transform: translateY(4px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* 登录页抖动修正 */
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-4px); }
-      75% { transform: translateX(4px); }
-    }
-    .animate-shake {
-      animation: shake 0.3s ease-in-out;
+    .animate-pulse-gold {
+      animation: pulse-gold 3s infinite;
     }
   </style>
 <script type="importmap">
@@ -67,7 +57,9 @@
     "recharts": "https://esm.sh/recharts@2.15.0?deps=react@19.0.0",
     "lucide-react": "https://esm.sh/lucide-react@0.475.0?deps=react@19.0.0",
     "qrcode.react": "https://esm.sh/qrcode.react@4.0.1?deps=react@19.0.0",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "vite": "https://esm.sh/vite@^7.3.0",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
   }
 }
 </script>

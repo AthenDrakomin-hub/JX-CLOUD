@@ -27,17 +27,16 @@ const FinanceManagement: React.FC<FinanceManagementProps> = ({ orders, expenses,
 
   const summary = useMemo(() => {
     const completedOrders = orders.filter(o => o.status === 'completed');
-    const totalRev = completedOrders.reduce((sum, o) => sum + o.totalAmount, 0);
-    const totalExp = expenses.reduce((sum, e) => sum + e.amount, 0);
+    const totalRev = Math.round(completedOrders.reduce((sum, o) => sum + o.totalAmount, 0));
+    const totalExp = Math.round(expenses.reduce((sum, e) => sum + e.amount, 0));
     
     // Payment Mix Calculation
     const mix: { [key: string]: number } = {};
     completedOrders.forEach(o => {
-      const method = o.paymentMethod || 'Unknown';
-      mix[method] = (mix[method] || 0) + o.totalAmount;
+      mix[o.paymentMethod] = (mix[o.paymentMethod] || 0) + o.totalAmount;
     });
 
-    const mixData = Object.entries(mix).map(([name, value]) => ({ name, value }));
+    const mixData = Object.entries(mix).map(([name, value]) => ({ name, value: Math.round(value) }));
     return { revenue: totalRev, expenses: totalExp, profit: totalRev - totalExp, mixData };
   }, [orders, expenses]);
 
@@ -54,11 +53,11 @@ const FinanceManagement: React.FC<FinanceManagementProps> = ({ orders, expenses,
            <h2 className="text-5xl font-serif italic text-slate-900 tracking-tighter">{t('diningLedger')}</h2>
         </div>
         
-        <div className="flex bg-white p-1.5 rounded-full border border-slate-300 shadow-sm">
+        <div className="flex bg-white p-1.5 rounded-full border border-slate-100 shadow-sm">
           <button onClick={() => setActiveTab('revenue')} className={`px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'revenue' ? 'bg-slate-900 text-white shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}>
             {t('totalRev')}
           </button>
-          <button onClick={() => setActiveTab('expenses')} className={`px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'expenses' ? 'bg-slate-900 text-white shadow-xl' : 'text-slate-600 hover:text-slate-800'}`}>
+          <button onClick={() => setActiveTab('expenses')} className={`px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'expenses' ? 'bg-slate-900 text-white shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}>
             {t('opCosts')}
           </button>
         </div>
@@ -75,7 +74,7 @@ const FinanceManagement: React.FC<FinanceManagementProps> = ({ orders, expenses,
                <div className={`w-14 h-14 rounded-2xl ${item.bg} ${item.color} flex items-center justify-center mb-10 shadow-sm`}>
                   <item.icon size={24} />
                </div>
-               <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-2">{item.label}</p>
+               <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em] mb-2">{item.label}</p>
                <h4 className="text-4xl font-bold text-slate-900 tracking-tighter">{C}{item.value.toLocaleString()}</h4>
             </div>
           ))}
@@ -107,17 +106,17 @@ const FinanceManagement: React.FC<FinanceManagementProps> = ({ orders, expenses,
         </div>
       </div>
 
-      <div className="bg-white rounded-[4rem] border border-slate-400 shadow-sm overflow-hidden p-8">
-        <div className="p-8 border-b border-slate-300 flex items-center justify-between">
+      <div className="bg-white rounded-[4rem] border border-slate-50 shadow-sm overflow-hidden p-8">
+        <div className="p-8 border-b border-slate-50 flex items-center justify-between">
            <h3 className="text-2xl font-bold tracking-tight text-slate-900">{t('transHistory')}</h3>
         </div>
         <div className="overflow-x-auto">
            <table className="w-full text-left">
-              <thead className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em]">
+              <thead className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">
                  <tr>
-                    <th className="px-10 py-8 text-slate-700">{t('refDate')}</th>
-                    <th className="px-10 py-8 text-slate-700">{t('entity')}</th>
-                    <th className="px-10 py-8 text-right text-slate-700">{t('amount')}</th>
+                    <th className="px-10 py-8">{t('refDate')}</th>
+                    <th className="px-10 py-8">{t('entity')}</th>
+                    <th className="px-10 py-8 text-right">{t('amount')}</th>
                     {activeTab === 'revenue' && <th className="px-10 py-8 text-center">Channel</th>}
                  </tr>
               </thead>
@@ -125,16 +124,16 @@ const FinanceManagement: React.FC<FinanceManagementProps> = ({ orders, expenses,
                  {activeTab === 'revenue' ? (
                    orders.filter(o => o.status === 'completed').map(order => (
                      <tr key={order.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-10 py-8 text-xs font-bold text-slate-600">{new Date(order.createdAt).toLocaleDateString()}</td>
+                        <td className="px-10 py-8 text-xs font-bold text-slate-400">{new Date(order.createdAt).toLocaleDateString()}</td>
                         <td className="px-10 py-8">
                            <p className="text-sm font-black text-slate-900">Station #{order.roomId}</p>
-                           <p className="text-[10px] text-slate-600 uppercase tracking-widest mt-1">ID: {order.id.slice(-6)}</p>
+                           <p className="text-[10px] text-slate-400 uppercase tracking-widest mt-1">ID: {order.id.slice(-6)}</p>
                         </td>
-                        <td className="px-10 py-8 text-right font-serif italic text-2xl text-emerald-600">+ {C}{order.totalAmount}</td>
+                        <td className="px-10 py-8 text-right font-serif italic text-2xl text-emerald-600">+ {C}{Math.round(order.totalAmount)}</td>
                         <td className="px-10 py-8 text-center">
-                           <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-slate-100 text-[9px] font-black uppercase tracking-widest text-slate-700">
-                              {(order.paymentMethod || '').includes('GCash') ? <Smartphone size={10} className="text-blue-500" /> : <Wallet size={10} className="text-emerald-500" />}
-                              <span>{order.paymentMethod || 'N/A'}</span>
+                           <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-slate-100 text-[9px] font-black uppercase tracking-widest text-slate-500">
+                              {order.paymentMethod === 'GCash' ? <Smartphone size={10} className="text-blue-500" /> : <Wallet size={10} className="text-emerald-500" />}
+                              <span>{order.paymentMethod}</span>
                            </div>
                         </td>
                      </tr>
@@ -142,9 +141,9 @@ const FinanceManagement: React.FC<FinanceManagementProps> = ({ orders, expenses,
                  ) : (
                    expenses.map(exp => (
                      <tr key={exp.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-10 py-8 text-xs font-bold text-slate-600">{new Date(exp.date).toLocaleDateString()}</td>
+                        <td className="px-10 py-8 text-xs font-bold text-slate-400">{new Date(exp.date).toLocaleDateString()}</td>
                         <td className="px-10 py-8 text-sm font-black text-slate-900">{exp.category}</td>
-                        <td className="px-10 py-8 text-right font-serif italic text-2xl text-red-600">- {C}{exp.amount}</td>
+                        <td className="px-10 py-8 text-right font-serif italic text-2xl text-red-600">- {C}{Math.round(exp.amount)}</td>
                      </tr>
                    ))
                  )}

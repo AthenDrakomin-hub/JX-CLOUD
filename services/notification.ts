@@ -1,5 +1,6 @@
 
 import { supabase, isDemoMode } from './supabaseClient';
+import { Order } from '../types';
 
 export type NotificationType = 'NEW_ORDER' | 'ORDER_UPDATE' | 'SYSTEM_ALERT';
 
@@ -14,38 +15,52 @@ interface BroadcastMessage {
 const channel = new BroadcastChannel('jx_hotel_notifications');
 const listeners: ((msg: BroadcastMessage) => void)[] = [];
 
-// 生产环境监听：如果是正式模式，监听数据库变更
-if (!isDemoMode) {
-  supabase
-    .channel('realtime_orders')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload: any) => {
-      notificationService.triggerLocal(
-        '云端新订单',
-        `房间 ${payload.new.room_id} 刚刚下单了 ₱${payload.new.total_amount}`,
-        'NEW_ORDER'
-      );
-      listeners.forEach(l => l({
-        type: 'NEW_ORDER',
-        title: 'New Cloud Order',
-        body: `Room ${payload.new.room_id} sync completed.`
-      }));
-    })
-    .subscribe();
-}
-
 export const notificationService = {
   requestPermission: async (): Promise<NotificationPermission> => {
     if (!('Notification' in window)) return 'denied';
     return await Notification.requestPermission();
   },
 
+  // 核心：Webhook 推送逻辑
+  triggerWebhook: async (order: Order, webhookUrl?: string) => {
+    if (!webhookUrl) return;
+
+    const payload = {
+      event: 'order.created',
+      timestamp: new Date().toISOString(),
+      source: 'JX_CLOUD_V3',
+      data: {
+        orderId: order.id,
+        room: order.roomId,
+        amount: order.totalAmount,
+        payment: order.paymentMethod,
+        items: order.items.map(i => `${i.name} x${i.quantity}`).join(', ')
+      }
+    };
+
+    try {
+      // 使用 fetch 发送 POST 请求到第三方网关
+      // 注意：在浏览器端可能会受 CORS 限制，生产环境建议通过后端中继
+      await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        mode: 'no-cors' // 演示环境通常使用 no-cors
+      });
+      console.log('Webhook dispatched successfully.');
+    } catch (error) {
+      console.warn('Webhook dispatch failed:', error);
+    }
+  },
+
   send: (
     title: string, 
     body: string, 
     type: NotificationType = 'SYSTEM_ALERT',
-    targetRoles: string[] = ['admin', 'manager', 'staff']
+    targetRoles: string[] = ['admin', 'manager', 'staff'],
+    data?: any
   ) => {
-    const message: BroadcastMessage = { type, title, body, targetRoles };
+    const message: BroadcastMessage = { type, title, body, targetRoles, data };
     channel.postMessage(message);
     listeners.forEach(listener => listener(message));
     notificationService.triggerLocal(title, body, type);
@@ -56,7 +71,8 @@ export const notificationService = {
       new Notification(title, {
         body,
         icon: 'https://cdn-icons-png.flaticon.com/512/3119/3119338.png',
-        tag: type
+        tag: type,
+        silent: false
       });
 
       try {

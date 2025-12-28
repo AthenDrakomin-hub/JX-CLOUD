@@ -1,8 +1,8 @@
 
 export enum UserRole {
-  ADMIN = 'admin',
-  MANAGER = 'manager',
-  STAFF = 'staff'
+  ADMIN = 'admin',      // 系统管理员 (唯一)
+  MANAGER = 'manager',  // 总经理
+  STAFF = 'staff'       // 员工
 }
 
 export enum RoomStatus {
@@ -36,24 +36,27 @@ export interface PaymentMethodConfig {
   iconType: 'smartphone' | 'wallet' | 'banknote' | 'credit-card';
 }
 
-// 细化权限类型
 export type PermissionKey = 
-  | 'manage_menu'      // 菜单管理
-  | 'view_finance'     // 财务查看
-  | 'process_orders'   // 订单处理
-  | 'manage_staff'     // 人员管理
-  | 'system_config'    // 系统配置
-  | 'material_assets'; // 素材资产
+  | 'manage_menu'      
+  | 'view_finance'     
+  | 'process_orders'   
+  | 'manage_staff'     
+  | 'system_config'    
+  | 'material_assets'; 
 
 export interface User {
   id: string;
   username: string;
-  password?: string; // 生产环境仅用于模拟修改逻辑
+  password?: string; 
   role: UserRole;
   name: string;
   lastLogin?: string;
   permissions: PermissionKey[];
   isLocked?: boolean;
+  ipWhitelist?: string[];
+  twoFactorEnabled?: boolean; 
+  mfaSecret?: string;         
+  isOnline?: boolean;         // 新增：在线状态追踪
 }
 
 export interface Dish {
@@ -69,6 +72,16 @@ export interface Dish {
   isAvailable?: boolean;
   calories?: number;
   allergens?: string[];
+}
+
+export interface Ingredient {
+  id: string;
+  name: string;
+  unit: string;
+  stock: number;
+  minStock: number;
+  category: string;
+  lastRestocked?: string;
 }
 
 export interface MaterialImage {
@@ -99,13 +112,13 @@ export interface Order {
   roomId: string;
   items: OrderItem[];
   totalAmount: number;
-  pointsEarned: number;
   status: OrderStatus;
-  paymentMethod?: PaymentMethod;
+  paymentMethod: PaymentMethod;
   createdAt: string;
   updatedAt: string;
   estimatedTime?: number;
   taxAmount: number;
+  serviceCharge?: number;
 }
 
 export interface Expense {
@@ -125,4 +138,14 @@ export interface SecurityLog {
   ip: string;
   location?: string;
   riskLevel?: 'Low' | 'Medium' | 'High';
+}
+
+export interface SystemConfig {
+  hotelName: string;
+  version: string;
+  serviceChargeRate: number; 
+  exchangeRateCNY: number;   
+  exchangeRateUSDT: number;  
+  webhookUrl?: string;        // 新增：Webhook 推送地址
+  isWebhookEnabled?: boolean; // 新增：是否启用推送
 }
