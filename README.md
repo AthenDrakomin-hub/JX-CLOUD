@@ -330,10 +330,11 @@ ON CONFLICT (username) DO NOTHING;
 
 ## 🛠 部署注意事项
 
-1. **环境变量**：在 Vercel 部署面板中，必须配置 `API_KEY` (Gemini) 和 `SUPABASE_URL`。
+1. **环境变量**：在 Vercel 部署面板中，必须配置 `VITE_SUPABASE_URL`、`VITE_SUPABASE_ANON_KEY` 和 `VITE_SENTRY_DSN`。
 2. **Realtime 订阅**：请在 Supabase Dashboard 的 **Database -> Replication** 中，确保 `orders` 表已启用 **Realtime** 选项。
-3. **安全审计**：系统所有敏感操作都会通过 `logAuditAction` 自动记录在 `security_logs` 表中。
-4. **数据库初始化**：部署前请确保在 Supabase 中运行了数据库初始化脚本，以创建必要的表结构和预置数据。
+3. **安全审计**：系统所有敏感操作都会通过 `logAction` 自动记录在 `security_logs` 表中，包含详细元数据。
+4. **错误监控**：系统已集成 Sentry 进行错误监控和性能追踪。
+5. **数据库初始化**：部署前请确保在 Supabase 中运行了数据库初始化脚本，以创建必要的表结构和预置数据。
 
 ---
 

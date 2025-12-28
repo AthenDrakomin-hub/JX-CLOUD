@@ -136,22 +136,7 @@ export const assignRoomToOrder = (roomId: string, orders: Order[]): Order[] => {
   );
 };
 
-// 会员积分函数
-export const calculateLoyaltyPoints = (orderAmount: number): number => {
-  // 每消费1元获得0.1积分
-  return Math.floor(orderAmount * 0.1);
-};
 
-export const applyLoyaltyDiscount = (totalAmount: number, points: number): { discountedAmount: number; remainingPoints: number } => {
-  // 每100积分抵扣1元
-  const maxDiscount = Math.floor(points / 100);
-  const discount = Math.min(maxDiscount, Math.floor(totalAmount * 0.1)); // 最大折扣不超过总额的10%
-  
-  return {
-    discountedAmount: totalAmount - discount,
-    remainingPoints: points - (discount * 100)
-  };
-};
 
 // 营销和促销函数
 export const applyDiscount = (amount: number, discountPercent: number): number => {

@@ -12,7 +12,7 @@ import { safeApiCall, handleSupabaseError, NetworkError, requestTracker, Network
  * 所有的操作都会自动触发审计日志
  */
 
-const logAction = async (action: string, details?: string, risk: 'Low' | 'Medium' | 'High' = 'Low') => {
+const logAction = async (action: string, details?: string, risk: 'Low' | 'Medium' | 'High' = 'Low', metadata?: Record<string, any>) => {
   if (isDemoMode) return;
   
   try {
@@ -23,7 +23,8 @@ const logAction = async (action: string, details?: string, risk: 'Low' | 'Medium
         action,
         details,
         risk_level: risk,
-        ip_address: 'Edge-Client'
+        ip_address: 'Edge-Client',
+        metadata: metadata || null
       })
     );
     
@@ -82,7 +83,8 @@ export const api = {
             await logAction(
               'Staff Profile Modified', 
               `Target: ${user.username}, Role: ${user.role}, Perms: ${user.permissions.join('|')}`, 
-              'High'
+              'High',
+              { userId: user.id, updatedFields: ['name', 'role', 'permissions', 'isLocked'] }
             );
           } else {
             requestTracker.recordRequest(false, response.error);
@@ -118,7 +120,7 @@ export const api = {
           
           if (response.success) {
             requestTracker.recordRequest(true);
-            await logAction('Staff Registered', `User: ${user.username}`, 'High');
+            await logAction('Staff Registered', `User: ${user.username}`, 'High', { userId: user.id, role: user.role });
           } else {
             requestTracker.recordRequest(false, response.error);
             throw new Error(`创建用户失败: ${response.error?.message || '未知错误'}`);
@@ -140,7 +142,7 @@ export const api = {
           
           if (response.success) {
             requestTracker.recordRequest(true);
-            await logAction('Staff Deleted', `ID: ${id}`, 'High');
+            await logAction('Staff Deleted', `ID: ${id}`, 'High', { deletedUserId: id });
           } else {
             requestTracker.recordRequest(false, response.error);
             throw new Error(`删除用户失败: ${response.error?.message || '未知错误'}`);
@@ -206,7 +208,12 @@ export const api = {
           }
           
           // 记录订单创建日志
-          await logAction('Order Created', `OrderID: ${order.id}, Room: ${order.roomId}`, 'Low');
+          await logAction('Order Created', `OrderID: ${order.id}, Room: ${order.roomId}`, 'Low', { 
+            orderId: order.id, 
+            roomId: order.roomId, 
+            totalAmount: (order as Order).totalAmount,
+            itemsCount: (order as Order).items?.length || 0
+          });
         } else {
           requestTracker.recordRequest(false, response.error);
           throw new Error(`创建订单失败: ${response.error?.message || '未知错误'}`);
@@ -227,7 +234,10 @@ export const api = {
           
           // 关联审计：取消订单属于敏感操作
           if (status === 'cancelled') {
-            await logAction('Order Revoked', `OrderID: ${orderId}`, 'Medium');
+            await logAction('Order Revoked', `OrderID: ${orderId}`, 'Medium', { orderId, previousStatus: 'pre-cancelled' });
+          } else {
+            // 记录其他状态变更
+            await logAction('Order Status Updated', `OrderID: ${orderId}, Status: ${status}`, 'Low', { orderId, status });
           }
           
           // 更新房间状态
@@ -249,7 +259,7 @@ export const api = {
           requestTracker.recordRequest(false, response.error);
           throw new Error(`更新订单状态失败: ${response.error?.message || '未知错误'}`);
         }
-      } catch (error) {
+      } catch (error: any) {
         requestTracker.recordRequest(false, handleSupabaseError(error));
         throw new Error(`更新订单状态时发生错误: ${error.message || '未知错误'}`);
       }
@@ -293,12 +303,12 @@ export const api = {
         
         if (response.success) {
           requestTracker.recordRequest(true);
-          await logAction('Menu Item Added', `Dish: ${dish.name}`, 'Low');
+          await logAction('Menu Item Added', `Dish: ${dish.name}`, 'Low', { dishId: dish.id, dishName: dish.name, price: dish.price });
         } else {
           requestTracker.recordRequest(false, response.error);
           throw new Error(`创建菜品失败: ${response.error?.message || '未知错误'}`);
         }
-      } catch (error) {
+      } catch (error: any) {
         requestTracker.recordRequest(false, handleSupabaseError(error));
         throw new Error(`创建菜品时发生错误: ${error.message || '未知错误'}`);
       }
@@ -318,12 +328,12 @@ export const api = {
         
         if (response.success) {
           requestTracker.recordRequest(true);
-          await logAction('Menu Item Updated', `Dish: ${dish.name}, Price: ${dish.price}`, 'Low');
+          await logAction('Menu Item Updated', `Dish: ${dish.name}, Price: ${dish.price}`, 'Low', { dishId: dish.id, dishName: dish.name, price: dish.price, updatedFields: Object.keys(dish) });
         } else {
           requestTracker.recordRequest(false, response.error);
           throw new Error(`更新菜品失败: ${response.error?.message || '未知错误'}`);
         }
-      } catch (error) {
+      } catch (error: any) {
         requestTracker.recordRequest(false, handleSupabaseError(error));
         throw new Error(`更新菜品时发生错误: ${error.message || '未知错误'}`);
       }
@@ -337,12 +347,12 @@ export const api = {
         
         if (response.success) {
           requestTracker.recordRequest(true);
-          await logAction('Menu Item Deleted', `ID: ${id}`, 'Medium');
+          await logAction('Menu Item Deleted', `ID: ${id}`, 'Medium', { deletedDishId: id });
         } else {
           requestTracker.recordRequest(false, response.error);
           throw new Error(`删除菜品失败: ${response.error?.message || '未知错误'}`);
         }
-      } catch (error) {
+      } catch (error: any) {
         requestTracker.recordRequest(false, handleSupabaseError(error));
         throw new Error(`删除菜品时发生错误: ${error.message || '未知错误'}`);
       }
@@ -417,6 +427,13 @@ export const api = {
           console.error('Failed to update payment config:', error);
           throw error;
         }
+        // 记录支付配置更新日志
+        await logAction('Payment Config Updated', `Payment ID: ${payment.id}, Name: ${payment.name}`, 'Low', { 
+          paymentId: payment.id, 
+          paymentName: payment.name, 
+          paymentType: payment.type,
+          updatedFields: Object.keys(payment)
+        });
       } else {
         // 如果没有ID，说明是新创建的支付方式
         const newPayment = {
@@ -428,6 +445,12 @@ export const api = {
           console.error('Failed to create payment config:', error);
           throw error;
         }
+        // 记录支付配置创建日志
+        await logAction('Payment Config Created', `Payment Name: ${newPayment.name}`, 'Low', { 
+          paymentId: newPayment.id, 
+          paymentName: newPayment.name, 
+          paymentType: newPayment.type
+        });
       }
     },
     create: async (payment: Omit<PaymentMethodConfig, 'id'>) => {
@@ -440,10 +463,16 @@ export const api = {
         console.error('Failed to create payment config:', error);
         throw error;
       }
+      // 记录支付配置创建日志
+      await logAction('Payment Config Created', `Payment Name: ${newPayment.name}`, 'Low', { 
+        paymentId: newPayment.id, 
+        paymentName: newPayment.name, 
+        paymentType: newPayment.type
+      });
       return newPayment;
     },
     toggle: async (id: string) => {
-      const { data, error } = await supabase.from('payment_configs').select('isActive').eq('id', id).single();
+      const { data, error } = await supabase.from('payment_configs').select('isActive, name').eq('id', id).single();
       if (error) {
         console.error('Failed to get payment config status:', error);
         throw error;
@@ -454,6 +483,12 @@ export const api = {
           console.error('Failed to toggle payment config status:', updateError);
           throw updateError;
         }
+        // 记录支付配置状态切换日志
+        await logAction('Payment Config Toggled', `Payment ID: ${id}, Name: ${data.name}, New Status: ${!data.isActive ? 'Active' : 'Inactive'}`, 'Low', { 
+          paymentId: id, 
+          paymentName: data.name,
+          newStatus: !data.isActive
+        });
       }
     }
   },
@@ -471,6 +506,78 @@ export const api = {
     getAll: async () => {
       const { data } = await supabase.from('security_logs').select('*').order('timestamp', { ascending: false }).limit(100);
       return data || [];
+    },
+    getFiltered: async (filters: {
+      userId?: string;
+      action?: string;
+      riskLevel?: 'Low' | 'Medium' | 'High';
+      startDate?: string;
+      endDate?: string;
+      limit?: number;
+      offset?: number;
+    }) => {
+      let query = supabase.from('security_logs').select('*');
+      
+      if (filters.userId) {
+        query = query.eq('user_id', filters.userId);
+      }
+      if (filters.action) {
+        query = query.ilike('action', `%${filters.action}%`);
+      }
+      if (filters.riskLevel) {
+        query = query.eq('risk_level', filters.riskLevel);
+      }
+      if (filters.startDate) {
+        query = query.gte('timestamp', filters.startDate);
+      }
+      if (filters.endDate) {
+        query = query.lte('timestamp', filters.endDate);
+      }
+      
+      query = query.order('timestamp', { ascending: false });
+      
+      if (filters.limit) {
+        query = query.limit(filters.limit);
+        if (filters.offset) {
+          query = query.offset(filters.offset);
+        }
+      } else {
+        query = query.limit(100);
+      }
+      
+      const { data, error } = await query;
+      if (error) {
+        console.error('Error fetching filtered security logs:', error);
+        return [];
+      }
+      return data || [];
+    },
+    getStats: async () => {
+      // 获取安全日志统计信息
+      const { count: totalCount, error: totalError } = await supabase
+        .from('security_logs')
+        .select('*', { count: 'exact', head: true });
+      
+      const { count: todayCount, error: todayError } = await supabase
+        .from('security_logs')
+        .select('*', { count: 'exact', head: true })
+        .gte('timestamp', new Date(new Date().setHours(0, 0, 0, 0)).toISOString());
+      
+      const { count: highRiskCount, error: highRiskError } = await supabase
+        .from('security_logs')
+        .select('*', { count: 'exact', head: true })
+        .eq('risk_level', 'High');
+      
+      if (totalError || todayError || highRiskError) {
+        console.error('Error fetching security log stats:', totalError || todayError || highRiskError);
+        return { totalCount: 0, todayCount: 0, highRiskCount: 0 };
+      }
+      
+      return {
+        totalCount: totalCount || 0,
+        todayCount: todayCount || 0,
+        highRiskCount: highRiskCount || 0
+      };
     }
   },
 

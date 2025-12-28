@@ -1,5 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import * as Sentry from '@sentry/react';
+import { performanceMonitor } from './services/performance';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import RoomGrid from './components/RoomGrid';
@@ -33,7 +35,30 @@ const MemoFinanceManagement = React.memo(FinanceManagement);
 const MemoPaymentManagement = React.memo(PaymentManagement);
 const MemoSystemSettings = React.memo(SystemSettings);
 
+// Initialize Sentry for error monitoring
+Sentry.init({
+  dsn: process.env.VITE_SENTRY_DSN || '', // Use environment variable for DSN
+  integrations: [
+    Sentry.browserTracingIntegration(),
+  ],
+  tracesSampleRate: 0.1, // Capture 10% of transactions for performance monitoring
+  environment: process.env.NODE_ENV || 'development',
+});
+
 const App: React.FC = () => {
+  // 初始化性能监控
+  useEffect(() => {
+    performanceMonitor.startMonitoring();
+    
+    // 记录应用启动性能
+    const appStartEvent = performanceMonitor.startEvent('app-initialization');
+    
+    return () => {
+      performanceMonitor.endEvent(appStartEvent);
+      performanceMonitor.stopMonitoring();
+    };
+  }, []);
+  
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [currentTab, setCurrentTab] = useState('dashboard');
   const [rooms, setRooms] = useState<HotelRoom[]>([]);
