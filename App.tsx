@@ -1,17 +1,8 @@
 
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from 'react';
 import * as Sentry from '@sentry/react';
 import { performanceMonitor } from './services/performance';
 import Sidebar from './components/Sidebar';
-import Dashboard from './components/Dashboard';
-import RoomGrid from './components/RoomGrid';
-import OrderManagement from './components/OrderManagement';
-import MenuManagement from './components/MenuManagement';
-import ImageLibrary from './components/ImageLibrary';
-import FinanceManagement from './components/FinanceManagement';
-import StaffManagement from './components/StaffManagement';
-import PaymentManagement from './components/PaymentManagement';
-import SystemSettings from './components/SystemSettings';
 import LegalFooter from './components/LegalFooter';
 import ErrorBoundary from './components/ErrorBoundary';
 import NotificationCenter from './components/NotificationCenter';
@@ -24,6 +15,17 @@ import {
   Building2, User as UserIcon, Loader2, 
   Eye, EyeOff, ShieldCheck, X, ShieldAlert, Gavel
 } from 'lucide-react';
+
+// 懒加载组件以实现代码分割
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const RoomGrid = lazy(() => import('./components/RoomGrid'));
+const OrderManagement = lazy(() => import('./components/OrderManagement'));
+const MenuManagement = lazy(() => import('./components/MenuManagement'));
+const ImageLibrary = lazy(() => import('./components/ImageLibrary'));
+const FinanceManagement = lazy(() => import('./components/FinanceManagement'));
+const StaffManagement = lazy(() => import('./components/StaffManagement'));
+const PaymentManagement = lazy(() => import('./components/PaymentManagement'));
+const SystemSettings = lazy(() => import('./components/SystemSettings'));
 
 const MemoDashboard = React.memo(Dashboard);
 const MemoRoomGrid = React.memo(RoomGrid);
@@ -123,12 +125,12 @@ const App: React.FC = () => {
 
       // rooms.getAll()直接返回数组，无需额外处理
       setRooms(Array.isArray(r) ? r : r || []);
-      // 其他API函数通过safeApiCall返回NetworkResponse，需要访问.data属性
-      setOrders(o && 'data' in o ? o.data || [] : []);
-      setExpenses(e && 'data' in e ? e.data || [] : []);
-      setDishes(d && 'data' in d ? d.data || [] : []);
-      setUsers(u && 'data' in u ? u.data || [] : []);
-      setMaterials(m && 'data' in m ? m.data || [] : []);
+      // 处理API响应，safeApiCall返回NetworkResponse类型
+      setOrders(Array.isArray(o) ? o : []);
+      setExpenses(Array.isArray(e) ? e : []);
+      setDishes(Array.isArray(d) ? d : []);
+      setUsers(Array.isArray(u) ? u : []);
+      setMaterials(Array.isArray(m) ? m : []);
 
       if (cloudDict && cloudDict.length > 0) {
         const merged: any = { zh: { ...localTranslations.zh }, en: { ...localTranslations.en }, tl: { ...localTranslations.tl } };
@@ -361,15 +363,51 @@ const App: React.FC = () => {
                 <div className="h-96 flex items-center justify-center"><div className="w-10 h-10 border-4 border-slate-100 border-t-[#d4af37] rounded-full animate-spin"></div></div>
               ) : (
                 <>
-                  {currentTab === 'dashboard' && <MemoDashboard orders={orders} rooms={rooms} expenses={expenses} lang={lang} />}
-                  {currentTab === 'rooms' && <MemoRoomGrid rooms={rooms} dishes={dishes} onRefresh={fetchData} onUpdateRoom={async (r) => { await api.rooms.update(r); fetchData(); }} lang={lang} />}
-                  {currentTab === 'orders' && <MemoOrderManagement orders={orders} onUpdateStatus={async (id, s) => { await api.orders.updateStatus(id, s); fetchData(); }} lang={lang} />}
-                  {currentTab === 'menu' && <MemoMenuManagement dishes={dishes} materials={materials} onAddDish={async (d) => { await api.dishes.create(d); fetchData(); }} onUpdateDish={async (d) => { await api.dishes.update(d); fetchData(); }} onDeleteDish={async (id) => { await api.dishes.delete(id); fetchData(); }} onAddMaterial={async (m) => { await api.materials.create(m); fetchData(); }} onDeleteMaterial={async (id) => { await api.materials.delete(id); fetchData(); }} lang={lang} />}
-                  {currentTab === 'materials' && <MemoImageLibrary materials={materials} onAddMaterial={async (m) => { await api.materials.create(m); fetchData(); }} onDeleteMaterial={async (id) => { await api.materials.delete(id); fetchData(); }} lang={lang} />}
-                  {currentTab === 'finance' && <MemoFinanceManagement orders={orders} expenses={expenses} onAddExpense={async (e) => { await api.expenses.create(e); fetchData(); }} onDeleteExpense={async (id) => { await api.expenses.delete(id); fetchData(); }} lang={lang} />}
-                  {currentTab === 'payments' && <MemoPaymentManagement lang={lang} />}
-                  {currentTab === 'users' && <MemoStaffManagement users={users} onAddUser={async (u) => { await api.users.create(u); fetchData(); }} onDeleteUser={async (id) => { await api.users.delete(id); fetchData(); }} lang={lang} />}
-                  {currentTab === 'settings' && <MemoSystemSettings lang={lang} />}
+                  {currentTab === 'dashboard' && (
+                    <Suspense fallback={<div className="h-96 flex items-center justify-center"><div className="w-10 h-10 border-4 border-slate-100 border-t-[#d4af37] rounded-full animate-spin"></div></div>}>
+                      <MemoDashboard orders={orders} rooms={rooms} expenses={expenses} lang={lang} />
+                    </Suspense>
+                  )}
+                  {currentTab === 'rooms' && (
+                    <Suspense fallback={<div className="h-96 flex items-center justify-center"><div className="w-10 h-10 border-4 border-slate-100 border-t-[#d4af37] rounded-full animate-spin"></div></div>}>
+                      <MemoRoomGrid rooms={rooms} dishes={dishes} onRefresh={fetchData} onUpdateRoom={async (r) => { await api.rooms.update(r); fetchData(); }} lang={lang} />
+                    </Suspense>
+                  )}
+                  {currentTab === 'orders' && (
+                    <Suspense fallback={<div className="h-96 flex items-center justify-center"><div className="w-10 h-10 border-4 border-slate-100 border-t-[#d4af37] rounded-full animate-spin"></div></div>}>
+                      <MemoOrderManagement orders={orders} onUpdateStatus={async (id, s) => { await api.orders.updateStatus(id, s); fetchData(); }} lang={lang} />
+                    </Suspense>
+                  )}
+                  {currentTab === 'menu' && (
+                    <Suspense fallback={<div className="h-96 flex items-center justify-center"><div className="w-10 h-10 border-4 border-slate-100 border-t-[#d4af37] rounded-full animate-spin"></div></div>}>
+                      <MemoMenuManagement dishes={dishes} materials={materials} onAddDish={async (d) => { await api.dishes.create(d); fetchData(); }} onUpdateDish={async (d) => { await api.dishes.update(d); fetchData(); }} onDeleteDish={async (id) => { await api.dishes.delete(id); fetchData(); }} onAddMaterial={async (m) => { await api.materials.create(m); fetchData(); }} onDeleteMaterial={async (id) => { await api.materials.delete(id); fetchData(); }} lang={lang} />
+                    </Suspense>
+                  )}
+                  {currentTab === 'materials' && (
+                    <Suspense fallback={<div className="h-96 flex items-center justify-center"><div className="w-10 h-10 border-4 border-slate-100 border-t-[#d4af37] rounded-full animate-spin"></div></div>}>
+                      <MemoImageLibrary materials={materials} onAddMaterial={async (m) => { await api.materials.create(m); fetchData(); }} onDeleteMaterial={async (id) => { await api.materials.delete(id); fetchData(); }} lang={lang} />
+                    </Suspense>
+                  )}
+                  {currentTab === 'finance' && (
+                    <Suspense fallback={<div className="h-96 flex items-center justify-center"><div className="w-10 h-10 border-4 border-slate-100 border-t-[#d4af37] rounded-full animate-spin"></div></div>}>
+                      <MemoFinanceManagement orders={orders} expenses={expenses} onAddExpense={async (e) => { await api.expenses.create(e); fetchData(); }} onDeleteExpense={async (id) => { await api.expenses.delete(id); fetchData(); }} lang={lang} />
+                    </Suspense>
+                  )}
+                  {currentTab === 'payments' && (
+                    <Suspense fallback={<div className="h-96 flex items-center justify-center"><div className="w-10 h-10 border-4 border-slate-100 border-t-[#d4af37] rounded-full animate-spin"></div></div>}>
+                      <MemoPaymentManagement lang={lang} />
+                    </Suspense>
+                  )}
+                  {currentTab === 'users' && (
+                    <Suspense fallback={<div className="h-96 flex items-center justify-center"><div className="w-10 h-10 border-4 border-slate-100 border-t-[#d4af37] rounded-full animate-spin"></div></div>}>
+                      <MemoStaffManagement users={users} onAddUser={async (u) => { await api.users.create(u); fetchData(); }} onDeleteUser={async (id) => { await api.users.delete(id); fetchData(); }} lang={lang} />
+                    </Suspense>
+                  )}
+                  {currentTab === 'settings' && (
+                    <Suspense fallback={<div className="h-96 flex items-center justify-center"><div className="w-10 h-10 border-4 border-slate-100 border-t-[#d4af37] rounded-full animate-spin"></div></div>}>
+                      <MemoSystemSettings lang={lang} />
+                    </Suspense>
+                  )}
                 </>
               )}
             </div>
