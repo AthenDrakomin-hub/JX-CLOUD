@@ -37,7 +37,7 @@ const GuestOrder: React.FC<GuestOrderProps> = ({ roomId, dishes, onSubmitOrder, 
 
   const fetchActivePayments = async () => {
     const all = await api.payments.getAll();
-    const active = all.filter(p => p.isActive);
+    const active = all.filter((p: any) => p.isActive);
     setAvailablePayments(active);
     if (active.length > 0) setSelectedPayment(active[0].type);
   };

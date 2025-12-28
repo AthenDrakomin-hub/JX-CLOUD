@@ -21,6 +21,7 @@ export const updateDishStock = (dish: Dish, quantity: number): Dish => {
 };
 
 export const generateRestockRecommendation = (dishes: Dish[], threshold: number = 5): Dish[] => {
+  if (!Array.isArray(dishes)) return [];
   return dishes.filter(dish => (dish.stock || 0) <= threshold);
 };
 
@@ -78,17 +79,19 @@ export const calculateMonthlyRevenue = (orders: Order[], month: string): number 
 export const calculateRevenueByCategory = (orders: Order[], dishes: Dish[]): Record<string, number> => {
   const revenueByCategory: Record<string, number> = {};
   
-  orders
-    .filter(order => order.status === OrderStatus.COMPLETED)
-    .forEach(order => {
-      order.items.forEach(item => {
-        const dish = dishes.find(d => d.id === item.dishId);
-        if (dish) {
-          const category = dish.category || 'Uncategorized';
-          revenueByCategory[category] = (revenueByCategory[category] || 0) + (item.price * item.quantity);
-        }
+  if (Array.isArray(orders)) {
+    orders
+      .filter(order => order.status === OrderStatus.COMPLETED)
+      .forEach(order => {
+        order.items.forEach(item => {
+          const dish = dishes.find(d => d.id === item.dishId);
+          if (dish) {
+            const category = dish.category || 'Uncategorized';
+            revenueByCategory[category] = (revenueByCategory[category] || 0) + (item.price * item.quantity);
+          }
+        });
       });
-    });
+  }
   
   return revenueByCategory;
 };
@@ -113,6 +116,7 @@ export const calculatePopularDishes = (orders: Order[], dishes: Dish[], limit: n
 
 // 房间管理函数
 export const getAvailableRooms = (rooms: { id: string; status?: RoomStatus }[]): string[] => {
+  if (!Array.isArray(rooms)) return [];
   return rooms
     .filter(room => room.status === RoomStatus.READY)
     .map(room => room.id);
@@ -176,13 +180,12 @@ export const checkSpecialOffers = (orders: Order[], dishes: Dish[]): { dishId: s
 
 // 报表生成函数
 export const generateDailyReport = (orders: Order[], expenses: Expense[], date: string) => {
-  const dailyOrders = orders.filter(order => order.createdAt.split('T')[0] === date);
+  const dailyOrders = Array.isArray(orders) ? orders.filter(order => order.createdAt.split('T')[0] === date) : [];
   const completedOrders = dailyOrders.filter(order => order.status === OrderStatus.COMPLETED);
   
   const totalRevenue = completedOrders.reduce((sum, order) => sum + order.totalAmount, 0);
-  const totalExpenses = expenses
-    .filter(expense => expense.date === date)
-    .reduce((sum, expense) => sum + expense.amount, 0);
+  const totalExpenses = Array.isArray(expenses) ? 
+    expenses.filter(expense => expense.date === date).reduce((sum, expense) => sum + expense.amount, 0) : 0;
   
   return {
     date,
@@ -197,13 +200,12 @@ export const generateDailyReport = (orders: Order[], expenses: Expense[], date: 
 };
 
 export const generateMonthlyReport = (orders: Order[], expenses: Expense[], month: string) => {
-  const monthlyOrders = orders.filter(order => order.createdAt.startsWith(month));
+  const monthlyOrders = Array.isArray(orders) ? orders.filter(order => order.createdAt.startsWith(month)) : [];
   const completedOrders = monthlyOrders.filter(order => order.status === OrderStatus.COMPLETED);
   
   const totalRevenue = completedOrders.reduce((sum, order) => sum + order.totalAmount, 0);
-  const totalExpenses = expenses
-    .filter(expense => expense.date.startsWith(month))
-    .reduce((sum, expense) => sum + expense.amount, 0);
+  const totalExpenses = Array.isArray(expenses) ? 
+    expenses.filter(expense => expense.date.startsWith(month)).reduce((sum, expense) => sum + expense.amount, 0) : 0;
   
   const revenueByCategory = calculateRevenueByCategory(completedOrders, []);
   
@@ -223,6 +225,8 @@ export const generateMonthlyReport = (orders: Order[], expenses: Expense[], mont
 // 预测和分析函数
 export const predictDemand = (orders: Order[], dishId: string): number => {
   // 简单预测：基于过去7天的平均销量
+  if (!Array.isArray(orders)) return 0;
+  
   const oneWeekAgo = new Date();
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
   
@@ -283,21 +287,19 @@ export const validateOrderForKitchen = (order: Order, dishes: Dish[]): { isValid
 // 成本控制函数
 export const calculateFoodCostPercentage = (orders: Order[], dishes: Dish[]): number => {
   // 计算食品成本占收入的百分比（假设每道菜的成本是价格的30%）
-  const totalRevenue = orders
-    .filter(order => order.status === OrderStatus.COMPLETED)
-    .reduce((sum, order) => sum + order.totalAmount, 0);
+  const totalRevenue = Array.isArray(orders) ? 
+    orders.filter(order => order.status === OrderStatus.COMPLETED).reduce((sum, order) => sum + order.totalAmount, 0) : 0;
   
   if (totalRevenue === 0) return 0;
   
-  const totalFoodCost = orders
-    .filter(order => order.status === OrderStatus.COMPLETED)
-    .reduce((sum, order) => {
+  const totalFoodCost = Array.isArray(orders) ? 
+    orders.filter(order => order.status === OrderStatus.COMPLETED).reduce((sum, order) => {
       return sum + order.items.reduce((itemSum, item) => {
         const dish = dishes.find(d => d.id === item.dishId);
         const dishCost = dish ? dish.price * 0.3 : item.price * 0.3; // 假设成本是售价的30%
         return itemSum + (dishCost * item.quantity);
       }, 0);
-    }, 0);
+    }, 0) : 0;
   
   return parseFloat(((totalFoodCost / totalRevenue) * 100).toFixed(2));
 };

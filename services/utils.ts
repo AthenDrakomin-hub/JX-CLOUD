@@ -174,18 +174,20 @@ export const generateRoomQRCodeData = (roomId: string): string => {
 
 // 统计函数
 export const calculateOccupancyRate = (rooms: { status?: RoomStatus }[]): number => {
-  if (rooms.length === 0) return 0;
+  if (!Array.isArray(rooms) || rooms.length === 0) return 0;
   const occupiedCount = rooms.filter(room => room.status === RoomStatus.ORDERING).length;
   return parseFloat(((occupiedCount / rooms.length) * 100).toFixed(2));
 };
 
 export const calculateTotalRevenue = (orders: Order[]): number => {
+  if (!Array.isArray(orders)) return 0;
   return orders
     .filter(order => order.status === OrderStatus.COMPLETED)
     .reduce((total, order) => total + order.totalAmount, 0);
 };
 
 export const calculateTotalExpenses = (expenses: Expense[]): number => {
+  if (!Array.isArray(expenses)) return 0;
   return expenses.reduce((total, expense) => total + expense.amount, 0);
 };
 
@@ -197,15 +199,18 @@ export const calculateNetRevenue = (orders: Order[], expenses: Expense[]): numbe
 
 // 搜索和过滤函数
 export const filterDishesByCategory = (dishes: Dish[], category: string): Dish[] => {
+  if (!Array.isArray(dishes)) return [];
   if (!category || category === 'all') return dishes;
   return dishes.filter(dish => dish.category.toLowerCase() === category.toLowerCase());
 };
 
 export const filterDishesByAvailability = (dishes: Dish[], available: boolean): Dish[] => {
+  if (!Array.isArray(dishes)) return [];
   return dishes.filter(dish => (dish.isAvailable ?? true) === available);
 };
 
 export const filterDishesBySearch = (dishes: Dish[], searchTerm: string): Dish[] => {
+  if (!Array.isArray(dishes)) return [];
   if (!searchTerm) return dishes;
   const term = searchTerm.toLowerCase();
   return dishes.filter(dish => 
