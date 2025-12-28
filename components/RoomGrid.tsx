@@ -1,10 +1,10 @@
 
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { HotelRoom, Dish, Order, OrderStatus, PaymentMethod, RoomStatus } from '../types';
 import { 
-  QrCode, Printer, Download, Sparkles, Scan, Copy, Check, ExternalLink, Command, X,
-  ShoppingCart, UtensilsCrossed, ArrowRight, ChevronRight, Plus, Minus, Search, Loader2,
-  Camera, AlertCircle, RefreshCw, ClipboardList
+  QrCode, Printer, Copy, Check, X,
+  ShoppingCart, UtensilsCrossed, ArrowRight, Plus, Minus, Search, Loader2,
+  ClipboardList, Sparkles
 } from 'lucide-react';
 import { translations, Language } from '../translations';
 import { QRCodeSVG } from 'qrcode.react';
@@ -19,21 +19,15 @@ interface RoomGridProps {
   lang: Language;
 }
 
-const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefresh, isSyncing, lang }) => {
+const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefresh, lang }) => {
   const [activeRoom, setActiveRoom] = useState<HotelRoom | null>(null);
-  const [viewMode, setViewMode] = useState<'options' | 'qr' | 'manualOrder' | 'scan' | null>(null);
+  const [viewMode, setViewMode] = useState<'options' | 'qr' | 'manualOrder' | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   
   // Manual Ordering State
   const [cart, setCart] = useState<{ [dishId: string]: number }>({});
   const [searchTerm, setSearchTerm] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Scanner State
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [scannerError, setScannerError] = useState<string | null>(null);
-  const [validationError, setValidationError] = useState<string | null>(null);
-  const [isCameraActive, setIsCameraActive] = useState(false);
 
   const t = (key: string) => (translations[lang] as any)[key] || (translations.zh as any)[key] || key;
   
@@ -71,69 +65,11 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const handleScanInit = (room: HotelRoom, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setActiveRoom(room);
-    setViewMode('scan');
-    startCamera();
-  };
-
-  const startCamera = async () => {
-    setScannerError(null);
-    setValidationError(null);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        setIsCameraActive(true);
-      }
-    } catch (err) {
-      console.error("Camera access failed", err);
-      setScannerError(t('cameraError'));
-    }
-  };
-
-  const stopCamera = () => {
-    if (videoRef.current && videoRef.current.srcObject) {
-      const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
-      tracks.forEach(track => track.stop());
-      videoRef.current.srcObject = null;
-    }
-    setIsCameraActive(false);
-  };
-
   const closeModal = () => {
-    stopCamera();
     setActiveRoom(null);
     setViewMode(null);
     setCart({});
     setSearchTerm('');
-    setScannerError(null);
-    setValidationError(null);
-  };
-
-  const simulateScanSuccess = async () => {
-    if (!activeRoom) return;
-    setIsSubmitting(true);
-    setValidationError(null);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    if (Math.random() < 0.2) {
-      setValidationError(t('invalidQrCode'));
-      setIsSubmitting(false);
-      return;
-    }
-    
-    const updatedRoom: HotelRoom = {
-      ...activeRoom,
-      status: RoomStatus.ORDERING,
-      activeSessionId: `sess-${Date.now()}`
-    };
-    
-    await onUpdateRoom(updatedRoom);
-    setIsSubmitting(false);
-    closeModal();
-    onRefresh();
   };
 
   const handleBulkPrint = () => {
@@ -219,7 +155,6 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
 
   return (
     <div className="space-y-16">
-      {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 bg-white/40 p-10 rounded-[4rem] border border-white shadow-sm backdrop-blur-sm">
         <div className="space-y-3">
            <div className="flex items-center space-x-2 text-[#d4af37]">
@@ -242,7 +177,6 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
         </div>
       </div>
 
-      {/* Grid */}
       {floors.map((floor, floorIdx) => (
         <div key={floor} className="space-y-10 animate-in fade-in slide-in-from-bottom-8 duration-700" style={{ animationDelay: `${floorIdx * 100}ms` }}>
           <div className="flex items-center space-x-8 px-4">
@@ -270,20 +204,12 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
                     >
                       {copiedId === room.id ? <Check size={16} /> : <Copy size={16} />}
                     </button>
-                    {/* Manual Order Shortcut Button */}
                     <button 
                       onClick={(e) => { e.stopPropagation(); setActiveRoom(room); setViewMode('manualOrder'); }}
                       className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg transition-all active:scale-90 bg-white text-slate-400 hover:text-indigo-600"
                       title={lang === 'zh' ? "人工录单" : "Manual Order"}
                     >
                       <ClipboardList size={16} />
-                    </button>
-                    <button 
-                      onClick={(e) => handleScanInit(room, e)}
-                      className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg transition-all active:scale-90 bg-white text-slate-400 hover:text-[#d4af37]"
-                      title={lang === 'zh' ? "扫码激活" : "Scan to Activate"}
-                    >
-                      <Scan size={16} />
                     </button>
                   </div>
 
@@ -298,11 +224,6 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
                       {room.status === 'ordering' ? 'Occupied' : t('station')}
                     </span>
                   </div>
-                  
-                  <div className={`mt-8 flex items-center justify-center transition-colors
-                    ${room.status === 'ordering' ? 'text-amber-300' : 'text-[#d4af37]/20 group-hover:text-[#d4af37]'}`}>
-                     {room.status === 'ordering' ? <UtensilsCrossed size={32} strokeWidth={1} /> : <Scan size={32} strokeWidth={1} />}
-                  </div>
                 </div>
               </div>
             ))}
@@ -310,7 +231,6 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
         </div>
       ))}
 
-      {/* Action Selection Modal */}
       {viewMode === 'options' && activeRoom && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-6">
           <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-3xl animate-in fade-in duration-500" onClick={closeModal} />
@@ -351,7 +271,6 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
         </div>
       )}
 
-      {/* QR Modal - Optimally Sized */}
       {viewMode === 'qr' && activeRoom && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-6">
           <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-3xl animate-in fade-in duration-500" onClick={closeModal} />
@@ -373,67 +292,6 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
         </div>
       )}
 
-      {/* Scan Modal */}
-      {viewMode === 'scan' && activeRoom && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-6">
-          <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-3xl animate-in fade-in duration-500" onClick={closeModal} />
-          <div className="relative w-full max-w-xl bg-white rounded-[4rem] shadow-2xl overflow-hidden animate-in slide-in-from-bottom-20 duration-500 flex flex-col">
-             <div className="p-10 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
-                <div>
-                   <h3 className="text-2xl font-bold text-slate-900">{lang === 'zh' ? '扫码关联' : 'Scan to Associate'}</h3>
-                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Room {activeRoom.id} • Session Link</p>
-                </div>
-                <button onClick={closeModal} className="w-12 h-12 flex items-center justify-center rounded-2xl bg-slate-50 text-slate-400 hover:bg-slate-900 hover:text-white transition-all">
-                   <X size={24} />
-                </button>
-             </div>
-             <div className="flex-1 p-10 flex flex-col items-center justify-center space-y-8 bg-slate-50/50 min-h-[500px]">
-                {scannerError ? (
-                  <div className="flex flex-col items-center text-center space-y-6 py-12 animate-in zoom-in duration-300">
-                     <div className="w-20 h-20 bg-red-50 text-red-500 rounded-3xl flex items-center justify-center shadow-inner border border-red-100"><AlertCircle size={40} /></div>
-                     <div className="space-y-2">
-                        <h4 className="text-lg font-black text-slate-900 uppercase tracking-widest">{lang === 'zh' ? '相机错误' : 'Camera Error'}</h4>
-                        <p className="text-sm font-medium text-slate-500 max-w-xs">{scannerError}</p>
-                     </div>
-                     <button onClick={startCamera} className="px-10 py-4 bg-slate-900 text-white rounded-full text-xs font-black uppercase tracking-widest hover:bg-[#d4af37] transition-all shadow-xl active:scale-95">{lang === 'zh' ? '重新尝试开启相机' : 'Retry Camera Access'}</button>
-                  </div>
-                ) : (
-                  <>
-                    {validationError && (
-                      <div className="w-full p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center space-x-3 text-red-600 animate-shake"><AlertCircle size={18} className="shrink-0" /><span className="text-xs font-bold">{validationError}</span></div>
-                    )}
-                    <div className="relative w-full aspect-square max-w-[320px] bg-black rounded-[4rem] overflow-hidden border-4 border-white shadow-2xl ring-1 ring-slate-200 group">
-                       <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover opacity-80" />
-                       <div className="absolute inset-0 border-[40px] border-black/40 pointer-events-none" />
-                       <div className="absolute inset-[40px] border-2 border-white/20 rounded-3xl flex items-center justify-center">
-                          <div className={`w-48 h-48 border-2 border-dashed rounded-2xl animate-pulse ${validationError ? 'border-red-500' : 'border-[#d4af37]'}`} />
-                       </div>
-                       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center space-x-2 bg-black/60 backdrop-blur-md px-4 py-2 rounded-full border border-white/20">
-                          <Camera size={14} className={validationError ? "text-red-500" : "text-[#d4af37]"} />
-                          <span className="text-[9px] font-black text-white uppercase tracking-widest">{isSubmitting ? (lang === 'zh' ? '正在验证...' : 'Validating...') : (lang === 'zh' ? '正在扫描身份码...' : 'Scanning Identity...')}</span>
-                       </div>
-                    </div>
-                    <div className="text-center space-y-2">
-                       <p className="text-xs font-bold text-slate-500">{lang === 'zh' ? '请将摄像头对准客人的身份二维码' : 'Align camera with guest identity QR'}</p>
-                       <p className="text-[10px] text-slate-400 italic">Enterprise Cloud Validation Active</p>
-                    </div>
-                    <button 
-                      onClick={simulateScanSuccess}
-                      disabled={isSubmitting || !isCameraActive}
-                      className={`w-full h-16 rounded-[1.5rem] font-black text-[11px] uppercase tracking-[0.3em] shadow-xl transition-all flex items-center justify-center space-x-3 disabled:opacity-50 ${validationError ? 'bg-red-600 text-white' : 'bg-slate-900 text-white hover:bg-[#d4af37]'}`}
-                    >
-                       {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : (
-                         <>{validationError ? <RefreshCw size={18} /> : <Check size={18} />}<span>{validationError ? (lang === 'zh' ? '重新扫描' : 'Rescan Code') : (lang === 'zh' ? '手动验证并关联' : 'Manual Validate & Link')}</span></>
-                       )}
-                    </button>
-                  </>
-                )}
-             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Manual Order Modal */}
       {viewMode === 'manualOrder' && activeRoom && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 sm:p-12">
           <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-3xl animate-in fade-in duration-500" onClick={closeModal} />

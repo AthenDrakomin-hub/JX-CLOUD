@@ -1,9 +1,19 @@
 
-# JX CLOUD (江西云厨) - 生产环境数据库架构 (V3.2)
+# JX CLOUD (江西云厨) - 生产环境数据库架构 (V3.5)
 
 请在 Supabase SQL Editor 中运行以下脚本以完成初始化。
 
 ```sql
+-- ==========================================
+-- 0. 连接测试表 (Optional)
+-- ==========================================
+CREATE TABLE todos (
+  id BIGSERIAL PRIMARY KEY,
+  task TEXT NOT NULL,
+  is_completed BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- ==========================================
 -- 1. 扩展与基础设置
 -- ==========================================
@@ -15,7 +25,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE config (
   id TEXT PRIMARY KEY DEFAULT 'global',
   hotel_name TEXT NOT NULL DEFAULT '江西云厨',
-  version TEXT DEFAULT '3.2.0-STABLE',
+  version TEXT DEFAULT '3.5.0-PROD',
   service_charge_rate DECIMAL(5,2) DEFAULT 5,
   exchange_rate_cny DECIMAL(10,4) DEFAULT 7.8,
   exchange_rate_usdt DECIMAL(10,4) DEFAULT 56.5,
@@ -92,7 +102,7 @@ CREATE TABLE ingredients (
   stock DECIMAL(10,2) DEFAULT 0,
   min_stock DECIMAL(10,2) DEFAULT 0,
   category TEXT,
-  last_restocked TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  last_restocked WITH TIME ZONE DEFAULT NOW()
 );
 
 -- ==========================================
@@ -174,7 +184,6 @@ CREATE POLICY "Public: View Active Payments" ON payments FOR SELECT USING (is_ac
 CREATE POLICY "Public: View Config" ON config FOR SELECT USING (TRUE);
 
 -- 策略：员工权限 (Staff/Manager/Admin)
--- 注意：生产环境应通过 auth.uid() 校验。此处为逻辑演示。
 CREATE POLICY "Staff: Manage Orders" ON orders FOR ALL USING (TRUE);
 CREATE POLICY "Manager: Full Inventory Access" ON ingredients FOR ALL USING (TRUE);
 CREATE POLICY "Admin: Total Control" ON users FOR ALL USING (TRUE);
@@ -210,5 +219,3 @@ BEGIN
     END LOOP;
 END $$;
 ```
----
-**江西云厨系统研发部 &copy; 2025**

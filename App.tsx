@@ -130,6 +130,11 @@ const App: React.FC = () => {
       setDishes(d || []);
       setUsers(u || []);
       setMaterials(m || []);
+
+      // Fix: Applied fetched translations dictionary to dynamic state
+      if (cloudDict && Object.keys(cloudDict).length > 0) {
+        setDynamicTranslations((prev: any) => ({ ...prev, ...cloudDict }));
+      }
     } catch (err) { 
       console.warn('Sync failed');
     } finally { 

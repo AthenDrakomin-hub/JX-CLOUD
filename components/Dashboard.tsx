@@ -62,11 +62,12 @@ const Dashboard: React.FC<DashboardProps> = ({ orders, rooms, expenses, lang }) 
 
   const handleOptimize = () => {
     setIsOptimizing(true);
+    // 模拟纯净性能清理：脱敏日志、重排索引
     setTimeout(() => {
       setIsOptimizing(false);
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
-    }, 1500);
+    }, 1200);
   };
 
   return (
@@ -89,7 +90,7 @@ const Dashboard: React.FC<DashboardProps> = ({ orders, rooms, expenses, lang }) 
               {isOptimizing ? <Loader2 size={16} className="animate-spin" /> : showSuccess ? <CheckCircle size={16} /> : <Zap size={16} className="text-[#d4af37]" />}
               <span>{isOptimizing ? t('optimizing') : showSuccess ? t('optimizeSuccess') : t('smartOptimize')}</span>
            </button>
-           <div className="hidden sm:flex items-center space-x-3 bg-emerald-50 text-emerald-700 px-8 py-5 rounded-[2rem] text-[11px] font-black uppercase tracking-[0.2em] border border-emerald-100 shadow-sm">
+           <div className="hidden sm:flex items-center space-x-3 bg-emerald-50 text-emerald-700 px-8 py-5 rounded-[2rem] text-[11px] font-black uppercase tracking-[0.4em] border border-emerald-100 shadow-sm">
               <ShieldCheck size={18} className="animate-pulse" />
               <span>{t('secureCloudActive')}</span>
            </div>

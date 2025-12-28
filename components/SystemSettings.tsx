@@ -7,11 +7,11 @@ import {
   Download, FileText, Printer, CheckCircle, Activity, Server, HardDrive,
   ShoppingBag, UtensilsCrossed, Users, MapPin, Share2, Link2, Send, Terminal,
   Fingerprint, Key, QrCode, Smartphone, CheckCircle2, AlertCircle, X,
-  Loader2, CloudUpload, ArrowRight
+  Loader2, CloudUpload, ArrowRight, Wifi, WifiOff, Link
 } from 'lucide-react';
 import { translations, Language } from '../translations';
 import { api } from '../services/api';
-import { isDemoMode } from '../services/supabaseClient';
+import { isDemoMode, supabaseUrl, supabase } from '../services/supabaseClient';
 import { SystemConfig, OrderStatus, PaymentMethod, User } from '../types';
 import ConfirmationModal from './ConfirmationModal';
 import { notificationService } from '../services/notification';
@@ -34,6 +34,10 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, currentUser, onUp
   const [isSaving, setIsSaving] = useState(false);
   const [isTestingWebhook, setIsTestingWebhook] = useState(false);
   
+  // Cloud Health State
+  const [healthStatus, setHealthStatus] = useState<'testing' | 'online' | 'offline'>('testing');
+  const [latency, setLatency] = useState<number | null>(null);
+
   // Migration State
   const [isMigrating, setIsMigrating] = useState(false);
   const [migrationLog, setMigrationLog] = useState<string[]>([]);
@@ -52,7 +56,28 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, currentUser, onUp
   useEffect(() => {
     api.config.get().then(setConfig);
     refreshDbStats();
+    checkCloudHealth();
   }, []);
+
+  const checkCloudHealth = async () => {
+    if (isDemoMode) {
+      setHealthStatus('offline');
+      return;
+    }
+    setHealthStatus('testing');
+    const start = performance.now();
+    try {
+      // 真实连接 Supabase 进行自检
+      const { error } = await supabase.from('config').select('id').limit(1);
+      const end = performance.now();
+      if (error) throw error;
+      setLatency(Math.round(end - start));
+      setHealthStatus('online');
+    } catch (e) {
+      console.error('Cloud health check failed:', e);
+      setHealthStatus('offline');
+    }
+  };
 
   const refreshDbStats = async () => {
     const stats = await api.db.getStats();
@@ -81,6 +106,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, currentUser, onUp
       setIsMigrating(false);
       setMigrationStep(0);
       refreshDbStats();
+      checkCloudHealth();
       alert('一键迁移成功！本地虚拟数据已与云端完成镜像同步。');
     }, 800);
   };
@@ -141,6 +167,9 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, currentUser, onUp
     onUpdateCurrentUser(updatedUser);
   };
 
+  // 脱敏展示 URL
+  const maskedUrl = supabaseUrl ? `${supabaseUrl.substring(0, 12)}***${supabaseUrl.substring(supabaseUrl.length - 12)}` : '未配置云端终点';
+
   return (
     <div className="space-y-16 pb-24">
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
@@ -164,6 +193,58 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, currentUser, onUp
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
         <div className="lg:col-span-2 space-y-12">
           
+          {/* 新增：云端连接监测枢纽 */}
+          <section className="bg-white rounded-[4rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col relative group">
+             <div className="p-12 border-b border-slate-50 flex items-center justify-between bg-[#020617] text-white">
+                <div className="flex items-center space-x-5">
+                   <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-colors ${healthStatus === 'online' ? 'bg-emerald-500 text-white' : healthStatus === 'testing' ? 'bg-amber-500 animate-pulse' : 'bg-red-500'}`}>
+                      {healthStatus === 'online' ? <Wifi size={24} /> : <WifiOff size={24} />}
+                   </div>
+                   <div>
+                      <h3 className="text-xl font-black uppercase tracking-widest">云端数据库连接监测</h3>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Live Supabase Connectivity</p>
+                   </div>
+                </div>
+                <div className="text-right">
+                   <div className={`text-[10px] font-black uppercase tracking-widest mb-1 ${healthStatus === 'online' ? 'text-emerald-500' : 'text-red-500'}`}>
+                      {healthStatus === 'online' ? `已连接 (延迟 ${latency}ms)` : '离线模式 / 连接异常'}
+                   </div>
+                   <button onClick={checkCloudHealth} className="text-[9px] font-black text-slate-500 hover:text-white uppercase tracking-widest underline decoration-[#d4af37]">重新拨号自检</button>
+                </div>
+             </div>
+             <div className="p-10 space-y-8 bg-slate-50/30">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                   <div className="p-6 bg-white rounded-3xl border border-slate-100 space-y-2 shadow-sm">
+                      <div className="flex items-center space-x-3 text-slate-400 mb-2">
+                         <Link size={14} />
+                         <span className="text-[10px] font-black uppercase tracking-widest">集成终点 (EndPoint)</span>
+                      </div>
+                      <code className="text-[11px] font-mono font-bold text-slate-700 bg-slate-50 px-3 py-1.5 rounded-lg block truncate">{maskedUrl}</code>
+                   </div>
+                   <div className="p-6 bg-white rounded-3xl border border-slate-100 space-y-2 shadow-sm">
+                      <div className="flex items-center space-x-3 text-slate-400 mb-2">
+                         <ShieldCheck size={14} />
+                         <span className="text-[10px] font-black uppercase tracking-widest">鉴权状态</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                         <div className={`w-2 h-2 rounded-full ${healthStatus === 'online' ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
+                         <span className="text-xs font-bold text-slate-900">{healthStatus === 'online' ? '已授权：生产密钥有效' : '未授权：请配置 VITE_SUPABASE_ANON_KEY'}</span>
+                      </div>
+                   </div>
+                </div>
+                
+                {healthStatus !== 'online' && !isDemoMode && (
+                  <div className="p-6 bg-red-50 rounded-3xl border border-red-100 flex items-start space-x-4 animate-in slide-in-from-top-2">
+                     <AlertCircle className="text-red-500 shrink-0 mt-1" size={20} />
+                     <div className="space-y-1">
+                        <p className="text-sm font-bold text-red-700">检测到连接中断</p>
+                        <p className="text-xs text-red-600/70 leading-relaxed">系统无法通过云端终点验证。请检查 Vercel/Vite 环境变量配置是否包含有效的 Supabase URL 及 Anon Key。若无配置，系统将回退至 VirtualDB 本地模拟模式。</p>
+                     </div>
+                  </div>
+                )}
+             </div>
+          </section>
+
           {/* 一键转移控制枢纽 */}
           <section className="bg-white rounded-[4rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col relative group">
              <div className="p-12 border-b border-slate-50 flex items-center justify-between bg-slate-950 text-white">
@@ -201,10 +282,11 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, currentUser, onUp
                     </div>
                     <button 
                       onClick={handleMigration}
-                      className="bg-slate-900 text-white h-24 px-12 rounded-[2.5rem] font-black text-xs uppercase tracking-[0.4em] shadow-2xl hover:bg-[#d4af37] transition-all active:scale-95 shrink-0 flex items-center justify-center space-x-4 group"
+                      disabled={healthStatus !== 'online'}
+                      className="bg-slate-900 text-white h-24 px-12 rounded-[2.5rem] font-black text-xs uppercase tracking-[0.4em] shadow-2xl hover:bg-[#d4af37] disabled:bg-slate-200 disabled:text-slate-400 transition-all active:scale-95 shrink-0 flex items-center justify-center space-x-4 group"
                     >
                        <RefreshCw size={24} className="group-hover:rotate-180 transition-transform duration-700" />
-                       <span>立即开始一键转移</span>
+                       <span>{healthStatus === 'online' ? '立即开始一键转移' : '请先建立云端连接'}</span>
                     </button>
                   </div>
                 )}
@@ -303,11 +385,11 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, currentUser, onUp
            <section className="bg-white rounded-[4rem] p-12 border border-slate-100 shadow-sm space-y-8">
               <div className="flex items-center space-x-3 text-slate-400">
                  <Server size={20} />
-                 <span className="text-xs font-black uppercase tracking-widest">虚拟库统计</span>
+                 <span className="text-xs font-black uppercase tracking-widest">数据库资产统计</span>
               </div>
               <div className="space-y-6">
                  <div className="flex justify-between items-end border-b border-slate-50 pb-4">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">注册房间</span>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">云端/注册房间</span>
                     <span className="text-2xl font-black text-slate-900">{dbStats.rooms}</span>
                  </div>
                  <div className="flex justify-between items-end border-b border-slate-50 pb-4">
@@ -315,7 +397,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, currentUser, onUp
                     <span className="text-2xl font-black text-slate-900">{dbStats.dishes}</span>
                  </div>
                  <div className="flex justify-between items-end border-b border-slate-50 pb-4">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">审计流水</span>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">累计审计流水</span>
                     <span className="text-2xl font-black text-slate-900">{dbStats.orders}</span>
                  </div>
               </div>
@@ -323,7 +405,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, currentUser, onUp
         </div>
       </div>
 
-      {/* 2FA Setup Modal (略 - 保持原样) */}
+      {/* 2FA Setup Modal */}
       {isMfaModalOpen && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-6">
           <div className="absolute inset-0 bg-slate-950/95 backdrop-blur-2xl animate-in fade-in duration-500" onClick={() => setIsMfaModalOpen(false)} />
@@ -357,6 +439,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, currentUser, onUp
                       placeholder="000000"
                       className="w-full py-6 bg-slate-50 border-2 border-slate-100 rounded-[2rem] text-center text-5xl font-black tracking-[0.4em] outline-none focus:border-emerald-500 focus:bg-white transition-all placeholder-slate-200"
                     />
+                    {mfaError && <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest">{mfaError}</p>}
                     <button onClick={verifyMfaSetup} disabled={isMfaVerifying || mfaVerifyCode.length < 6} className="w-full py-6 bg-emerald-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-xl hover:bg-slate-900 transition-all disabled:opacity-50">
                        {isMfaVerifying ? <Loader2 className="animate-spin mx-auto" /> : '激活 2FA 保护'}
                     </button>

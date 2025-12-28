@@ -2,45 +2,40 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 
 /**
- * 江西云厨 - 云端集成引擎
- * 自动检测 Vite 或 Vercel 环境注入的凭据
+ * 江西云厨 - 云端集成引擎 (Vercel & Edge Optimized)
+ * 采用 NEXT_PUBLIC 命名规范，支持 Vercel Environment Variables
  */
 
-// 兼容多种环境变量命名方式
-const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL || (window as any).process?.env?.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || (window as any).process?.env?.VITE_SUPABASE_ANON_KEY || '';
+const getEnv = (key: string) => {
+  return (import.meta as any).env?.[`VITE_${key}`] 
+    || (window as any).process?.env?.[`NEXT_PUBLIC_${key}`]
+    || (window as any).process?.env?.[key];
+};
+
+export const supabaseUrl = getEnv('SUPABASE_URL') || 'https://zlbemopcgjohrnyyiwvs.supabase.co';
+const supabaseAnonKey = getEnv('SUPABASE_ANON_KEY') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpsYmVtb3BjZ2pvaHJueXlpd3ZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU4Njg5MzksImV4cCI6MjA4MTQ0NDkzOX0.vsV-Tkt09tlMN5EmYdRm_x_YI6oNL4otkVwEjqtji6g';
 
 export const isDemoMode = !supabaseUrl || !supabaseAnonKey;
 
-// 初始化 Supabase 客户端
+// 初始化客户端，针对 Vercel Serverless 环境优化 fetch 行为
 export const supabase = isDemoMode 
-  ? {
-      from: (table: string) => ({
-        select: () => ({ 
-          order: () => Promise.resolve({ data: [], error: null }),
-          single: () => Promise.resolve({ data: null, error: null }),
-          limit: () => Promise.resolve({ data: [], error: null })
-        }),
-        insert: (data: any) => Promise.resolve({ data, error: null }),
-        upsert: (data: any) => Promise.resolve({ data, error: null }),
-        update: (data: any) => ({ eq: () => Promise.resolve({ error: null }) }),
-        delete: () => ({ eq: () => Promise.resolve({ error: null }) }),
-        on: () => ({ subscribe: () => {} })
-      }),
+  ? null as any 
+  : createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
-        signInWithPassword: () => Promise.resolve({ data: { user: {} }, error: null }),
-        signOut: () => Promise.resolve({ error: null }),
-        onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } })
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
       },
-      storage: {
-        from: () => ({ upload: () => Promise.resolve({ data: null, error: null }) })
+      global: {
+        headers: { 'x-application-name': 'jx-cloud-v3' }
       },
-      channel: () => ({ on: () => ({ subscribe: () => {} }) })
-    }
-  : createClient(supabaseUrl, supabaseAnonKey);
+      realtime: {
+        params: {
+          eventsPerSecond: 10
+        }
+      }
+    });
 
-if (isDemoMode) {
-  console.warn('⚠️ JX CLOUD: 处于[离线演示模式]，请在 Vercel 环境变量中配置 VITE_SUPABASE_URL。');
-} else {
-  console.log('🚀 JX CLOUD: 已成功连接到 [Supabase 云端生产数据库]。');
+if (!isDemoMode) {
+  console.log('🔗 JX-CLOUD: 已挂载生产级云端路由: zlbemopcgjohrnyyiwvs');
 }
