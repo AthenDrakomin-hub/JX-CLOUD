@@ -1,11 +1,11 @@
 
 import React, { useMemo, useState } from 'react';
 import { 
-  PieChart, Pie, Cell, ResponsiveContainer, CartesianGrid, XAxis, YAxis, Tooltip, BarChart, Bar, AreaChart, Area
+  PieChart, Pie, Cell, ResponsiveContainer, CartesianGrid, XAxis, YAxis, Tooltip, BarChart, Bar
 } from 'recharts';
 import { Order, RoomStatus, HotelRoom, Expense, OrderStatus } from '../types';
 import { translations, Language } from '../translations';
-import { TrendingUp, ShoppingBag, DollarSign, Utensils, Activity, Sparkles, ShieldCheck, Zap, Loader2, CheckCircle, ArrowUpRight } from 'lucide-react';
+import { TrendingUp, ShoppingBag, DollarSign, Utensils, Sparkles, ShieldCheck, Zap, Loader2, CheckCircle, ArrowUpRight } from 'lucide-react';
 
 interface DashboardProps {
   orders: Order[];
@@ -15,15 +15,15 @@ interface DashboardProps {
 }
 
 const StatCard: React.FC<{ title: string; value: string | number; icon: any; color: string; bgColor: string; trend?: string }> = ({ title, value, icon: Icon, color, bgColor, trend }) => (
-  <div className="bg-white p-10 rounded-[3.5rem] shadow-[0_15px_50px_-15px_rgba(0,0,0,0.03)] border border-slate-100 flex flex-col group hover:shadow-[0_30px_70px_-10px_rgba(0,0,0,0.08)] transition-all duration-700 relative overflow-hidden">
+  <div className="bg-white p-8 lg:p-10 rounded-[3rem] shadow-[0_15px_50px_-15px_rgba(0,0,0,0.03)] border border-slate-100 flex flex-col group hover:shadow-[0_30px_70px_-10px_rgba(0,0,0,0.08)] transition-all duration-700 relative overflow-hidden">
     <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-full translate-x-1/2 -translate-y-1/2 group-hover:bg-[#d4af37]/5 transition-colors duration-700" />
-    <div className={`w-14 h-14 rounded-2xl ${bgColor} ${color} flex items-center justify-center mb-10 transition-transform group-hover:scale-110 duration-500 shadow-sm relative z-10`}>
+    <div className={`w-14 h-14 rounded-2xl ${bgColor} ${color} flex items-center justify-center mb-8 lg:mb-10 transition-transform group-hover:scale-110 duration-500 shadow-sm relative z-10`}>
       <Icon size={24} />
     </div>
     <div className="space-y-2 relative z-10">
       <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">{title}</p>
       <div className="flex items-baseline space-x-3">
-        <h4 className="text-4xl font-bold text-slate-900 tracking-tighter leading-none">{value}</h4>
+        <h4 className="text-3xl lg:text-4xl font-bold text-slate-900 tracking-tighter leading-none">{value}</h4>
         {trend && <span className="text-[10px] font-black text-emerald-500 flex items-center bg-emerald-50 px-2 py-1 rounded-lg"><ArrowUpRight size={12} className="mr-0.5" />{trend}</span>}
       </div>
     </div>
@@ -60,12 +60,13 @@ const Dashboard: React.FC<DashboardProps> = ({ orders, rooms, expenses, lang }) 
     { name: 'Snacks', value: 800 },
   ], [lang]);
 
-  const handleOptimize = async () => {
+  const handleOptimize = () => {
     setIsOptimizing(true);
-    await new Promise(r => setTimeout(r, 2000));
-    setIsOptimizing(false);
-    setShowSuccess(true);
-    setTimeout(() => setShowSuccess(false), 3000);
+    setTimeout(() => {
+      setIsOptimizing(false);
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
+    }, 1500);
   };
 
   return (
@@ -76,13 +77,13 @@ const Dashboard: React.FC<DashboardProps> = ({ orders, rooms, expenses, lang }) 
               <div className="w-10 h-[2px] bg-[#d4af37] rounded-full" />
               <span className="text-xs font-black uppercase tracking-[0.4em]">{t('analyticsEngine')}</span>
            </div>
-           <h2 className="text-6xl font-serif italic text-slate-950 tracking-tighter leading-tight">{t('enterpriseIntelligence')}</h2>
+           <h2 className="text-5xl lg:text-6xl font-serif italic text-slate-950 tracking-tighter leading-tight">{t('enterpriseIntelligence')}</h2>
         </div>
         <div className="flex items-center space-x-4">
            <button 
              onClick={handleOptimize}
              disabled={isOptimizing}
-             className={`flex items-center space-x-4 px-10 py-5 rounded-[2rem] text-[11px] font-black uppercase tracking-[0.2em] transition-all shadow-2xl active:scale-95 border
+             className={`flex items-center space-x-4 px-8 lg:px-10 py-5 rounded-[2rem] text-[11px] font-black uppercase tracking-[0.2em] transition-all shadow-2xl active:scale-95 border
                ${showSuccess ? 'bg-emerald-600 text-white border-transparent' : 'bg-slate-950 text-white border-white/10 hover:bg-[#d4af37] hover:text-slate-950'}`}
            >
               {isOptimizing ? <Loader2 size={16} className="animate-spin" /> : showSuccess ? <CheckCircle size={16} /> : <Zap size={16} className="text-[#d4af37]" />}
@@ -103,15 +104,12 @@ const Dashboard: React.FC<DashboardProps> = ({ orders, rooms, expenses, lang }) 
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-        <div className="lg:col-span-2 bg-white p-14 rounded-[4rem] shadow-[0_15px_50px_-15px_rgba(0,0,0,0.03)] border border-slate-100 min-h-[580px] relative overflow-hidden">
+        <div className="lg:col-span-2 bg-white p-10 lg:p-14 rounded-[4rem] shadow-[0_15px_50px_-15px_rgba(0,0,0,0.03)] border border-slate-100 min-h-[580px] relative overflow-hidden">
           <div className="absolute top-0 right-0 w-96 h-96 bg-slate-50/50 rounded-full translate-x-1/2 -translate-y-1/2" />
           <div className="mb-16 flex items-center justify-between relative z-10">
              <div>
                 <h3 className="text-3xl font-bold text-slate-950 tracking-tight">{t('peakTraffic')}</h3>
                 <p className="text-[11px] text-slate-400 font-black mt-2 uppercase tracking-[0.3em]">{t('kitchenLoad')}</p>
-             </div>
-             <div className="flex bg-slate-50 p-1 rounded-xl border border-slate-100">
-                <div className="px-4 py-2 bg-white rounded-lg shadow-sm text-[9px] font-black uppercase tracking-widest text-slate-900">Realtime Feed</div>
              </div>
           </div>
           <div className="h-[400px] relative z-10">
@@ -127,7 +125,7 @@ const Dashboard: React.FC<DashboardProps> = ({ orders, rooms, expenses, lang }) 
           </div>
         </div>
 
-        <div className="bg-[#020617] p-14 rounded-[4rem] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.4)] text-white min-h-[580px] flex flex-col justify-between border border-white/5 overflow-hidden relative group">
+        <div className="bg-[#020617] p-10 lg:p-14 rounded-[4rem] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.4)] text-white min-h-[580px] flex flex-col justify-between border border-white/5 overflow-hidden relative group">
           <div className="absolute top-0 right-0 w-80 h-80 bg-[#d4af37]/10 blur-[100px] rounded-full translate-x-1/2 -translate-y-1/2" />
           <div className="relative z-10">
             <h3 className="text-3xl font-bold tracking-tight mb-2">{t('marketShare')}</h3>
@@ -145,7 +143,7 @@ const Dashboard: React.FC<DashboardProps> = ({ orders, rooms, expenses, lang }) 
               </PieChart>
             </ResponsiveContainer>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-               <span className="text-4xl font-black tracking-tighter">₱{Math.round(categoryData.reduce((a, b) => a + b.value, 0)).toLocaleString()}</span>
+               <span className="text-3xl lg:text-4xl font-black tracking-tighter">₱{Math.round(categoryData.reduce((a, b) => a + b.value, 0)).toLocaleString()}</span>
                <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest mt-2.5">{t('totalYield')}</span>
             </div>
           </div>

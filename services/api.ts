@@ -1,5 +1,5 @@
 
-import { Order, Dish, HotelRoom, Expense, User, OrderStatus, RoomStatus, MaterialImage, SecurityLog, UserRole, PaymentMethod, PaymentMethodConfig, PermissionKey, SystemConfig, Ingredient } from '../types';
+import { Order, Dish, HotelRoom, Expense, User, OrderStatus, RoomStatus, MaterialImage, SecurityLog, UserRole, PaymentMethod, PaymentMethodConfig, SystemConfig, Ingredient } from '../types';
 import { INITIAL_DISHES, ROOM_NUMBERS } from '../constants';
 import { supabase, isDemoMode } from './supabaseClient';
 import { notificationService } from './notification';
@@ -27,7 +27,6 @@ const VirtualDB = {
     localStorage.setItem(key, JSON.stringify(value));
   },
   init: () => {
-    // 强一致性检查：确保 67 个房间物理存在
     const existingRooms = VirtualDB.get<HotelRoom[]>(STORAGE_KEYS.ROOMS, []);
     if (existingRooms.length !== ROOM_NUMBERS.length) {
       const freshRooms = ROOM_NUMBERS.map(id => ({ 
@@ -36,7 +35,6 @@ const VirtualDB = {
         activeSessionId: undefined 
       }));
       VirtualDB.set(STORAGE_KEYS.ROOMS, freshRooms);
-      console.log('JX CLOUD: 67 Rooms Virtual Registry Rebuilt.');
     }
     
     if (!localStorage.getItem(STORAGE_KEYS.DISHES)) VirtualDB.set(STORAGE_KEYS.DISHES, INITIAL_DISHES);
@@ -71,9 +69,6 @@ const VirtualDB = {
         { id: 'p3', name: 'USDT (TRC20)', type: PaymentMethod.GRABPAY, isActive: true, iconType: 'wallet', instructions: '请联系管家获取实时转账地址。' }
       ]);
     }
-    
-    if (!localStorage.getItem(STORAGE_KEYS.LOGS)) VirtualDB.set(STORAGE_KEYS.LOGS, []);
-    if (!localStorage.getItem(STORAGE_KEYS.INGREDIENTS)) VirtualDB.set(STORAGE_KEYS.INGREDIENTS, []);
   }
 };
 
@@ -231,15 +226,15 @@ export const api = {
 
   migration: {
     run: async (onProgress: (msg: string) => void) => {
-      onProgress('建立量子隧道，正在扫描本地镜像...');
-      await new Promise(r => setTimeout(r, 800));
-      onProgress('校验 67 个物理房间的完整性标识...');
+      onProgress('建立量子隧道，扫描本地镜像...');
       await new Promise(r => setTimeout(r, 600));
-      onProgress('打包 3.2.0 版本资产元数据...');
-      await new Promise(r => setTimeout(r, 1200));
-      onProgress('执行 Supabase 云端映射与索引对齐...');
-      await new Promise(r => setTimeout(r, 1000));
-      onProgress('转移成功：当前节点已与全球云网格同步。');
+      onProgress('校验 67 间客房注册码...');
+      await new Promise(r => setTimeout(r, 500));
+      onProgress('正在封装 3.2.0 版本资产...');
+      await new Promise(r => setTimeout(r, 800));
+      onProgress('同步 Supabase 映射索引...');
+      await new Promise(r => setTimeout(r, 600));
+      onProgress('迁移成功：节点同步完成。');
       return { success: true };
     }
   }
