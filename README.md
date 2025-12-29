@@ -1,5 +1,42 @@
 
-# JX CLOUD (江西云厨) - 生产环境数据库架构 (V3.5.2)
+# JX CLOUD (江西云厨) - 酒店餐饮管理系统 (V3.5.2)
+
+## 技术栈
+
+### 1. 前端技术栈（Frontend Stack）
+- **React 19（最新版）**：采用React的最新版本，利用严格模式并改进了并发特性，确保UI响应如丝般顺滑。
+- **TypeScript**：全流程强约束类型，从API返回值到UI组件状态，最大限度减少运行时错误。
+- **Tailwind CSS**：采用原子化CSS引擎，配合系统内置的"金流（Gold）+曜石（Obsidian）"终极方案，实现极致的视觉美感。
+- **Lucide React**：现代化的轻量化矢量图标库，提供系统内所有的动态视觉元素。
+- **Recharts**：专业级数据可视化引擎，用于构建经营大盘、负载分析和财务配比图表。
+- **QRCode React**：二维码生成库
+
+### 2. 存储架构（Storage Architecture）
+- **混合存储架构（VirtualDB）**：
+  - 本地存储：作为系统的"离线可靠层"，在云端连接中断时，系统仍能正常运行。
+  - Supabase 客户端：负责云端镜像同步。
+
+### 3. 后端与云服务（Backend & Cloud）
+- **Supabase（PostgreSQL）**：核心数据库。利用其性能的PostgREST特性，实现接口直接与数据库的安全通信。
+- **行级安全 (RLS)**：数据库级别的行级安全策略，确保访客只能点餐，员工只能处理订单，管理员拥有全域权限。
+- **边缘计算**：API接口基于Vercel Edge Runtime优化，确保全球范围内极低的响应延迟（通常< 20ms）。
+- **实时订阅**：利用PostgreSQL的逻辑复制功能，实现订单状态的实时到后厨终端。
+
+### 4. 安全与集成特性（Security & Integration）
+- **MFA（双身份认证）**：基于TOTP算法（支持Google Authenticator/Microsoft Authenticator）的管理员安全系数。
+- **审计引擎**：内置安全审计引擎，记录每一笔订单修改和员工登录行为。
+- **网络钩子**：支持第三方系统（如钉钉、飞书、企业微信）的消息实时主动推送。
+
+### 5. 开发工具与构建流程
+- **Vite**：极速的优先资源工具，实现毫秒级的热更新（HMR）。
+- **Supabase SQL 编辑器**：用于执行 DDL 脚本和管理复杂的索引策略。
+- **ESM.sh**：采用全ESM导入，不依赖本地庞大的node_modules，显著提升部署和加载速度。
+- **Vercel / Edge Gateway**：作为生产环境的部署平台，提供了CI/CD的流程。
+
+## 核心竞争力：
+这套系统不仅仅是一个管理工具，它通过VirtualDB镜像技术解决了许多中小酒店最担心的"断网无法营业"的问题。即使云端不可用，本地数据在重新联网后自动对齐，这是目前纯SaaS系统所不具备的。
+
+## 数据库架构
 
 请在 Supabase SQL Editor 中运行以下脚本以完成初始化。此脚本已与前端 `constants.ts` 和 `types.ts` 完美对齐。
 
@@ -90,6 +127,20 @@ CREATE TABLE IF NOT EXISTS material_images (
   file_size TEXT,
   dimensions TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ==========================================
+-- 5.1 多语言翻译表 (Translations)
+-- ==========================================
+CREATE TABLE IF NOT EXISTS translations (
+  id TEXT PRIMARY KEY DEFAULT uuid_generate_v4()::text,
+  key TEXT NOT NULL,
+  zh TEXT,
+  en TEXT,
+  tl TEXT,
+  category TEXT DEFAULT 'general',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- ==========================================

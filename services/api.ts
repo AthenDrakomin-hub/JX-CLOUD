@@ -129,7 +129,19 @@ export const api = {
           VirtualDB.queueForSync('INSERT', 'orders', order);
         }
       }
+      
+      // Send notification to kitchen
       notificationService.send('新订单', `房间 ${order.roomId} 发起点餐 ₱${order.totalAmount}`, 'NEW_ORDER');
+      
+      // Trigger webhook if enabled
+      try {
+        const config = await api.config.get();
+        if (config.isWebhookEnabled && config.webhookUrl) {
+          await notificationService.triggerWebhook(order, config.webhookUrl);
+        }
+      } catch (e) {
+        console.warn('Failed to get config or trigger webhook:', e);
+      }
     },
     updateStatus: async (orderId: string, status: OrderStatus) => {
       const orders = VirtualDB.get<Order[]>(STORAGE_KEYS.ORDERS, []);
@@ -146,6 +158,20 @@ export const api = {
         } catch (e) {
           VirtualDB.queueForSync('UPDATE_STATUS', 'orders', { orderId, status });
         }
+      }
+      
+      // Send notification about order status update
+      const order = orders.find(o => o.id === orderId);
+      if (order) {
+        const statusText = {
+          [OrderStatus.PENDING]: '待处理',
+          [OrderStatus.PREPARING]: '制作中',
+          [OrderStatus.DELIVERING]: '配送中',
+          [OrderStatus.COMPLETED]: '已完成',
+          [OrderStatus.CANCELLED]: '已取消'
+        }[status] || status;
+        
+        notificationService.send('订单状态更新', `订单 ${orderId} 状态更新为: ${statusText}`, 'ORDER_UPDATE');
       }
     }
   },
@@ -472,7 +498,30 @@ export const api = {
   },
 
   translations: {
-    getAll: async () => VirtualDB.get<any>(STORAGE_KEYS.TRANSLATIONS, {}),
+    getAll: async () => {
+      if (!isDemoMode) {
+        try {
+          const { data } = await supabase.from('translations').select('*');
+          if (data) {
+            // Convert the database format to the expected translation dictionary format
+            const translationDict: any = { zh: {}, en: {}, tl: {} };
+            
+            data.forEach((row: any) => {
+              if (row.key) {
+                if (row.zh) translationDict.zh[row.key] = row.zh;
+                if (row.en) translationDict.en[row.key] = row.en;
+                if (row.tl) translationDict.tl[row.key] = row.tl;
+              }
+            });
+            
+            return translationDict;
+          }
+        } catch (e) {
+          console.warn('Translations fetch failed, using local storage:', e);
+        }
+      }
+      return VirtualDB.get<any>(STORAGE_KEYS.TRANSLATIONS, {});
+    },
     update: async (dict: any) => VirtualDB.set(STORAGE_KEYS.TRANSLATIONS, dict)
   },
 

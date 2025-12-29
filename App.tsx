@@ -105,8 +105,16 @@ const App: React.FC = () => {
   }, [currentUser, pendingMfaUser]);
 
   const t = useCallback((key: string) => {
-    const set = dynamicTranslations[lang] || dynamicTranslations.zh || localTranslations.zh;
-    return (set as any)[key] || (localTranslations.zh as any)[key] || key;
+    // Prioritize database translations for current language, then fallback to local translations
+    const dbTranslation = dynamicTranslations[lang] && (dynamicTranslations[lang] as any)[key];
+    if (dbTranslation) return dbTranslation;
+    
+    // Then try local translations for current language
+    const localTranslation = (localTranslations[lang] as any)[key];
+    if (localTranslation) return localTranslation;
+    
+    // Finally fallback to Chinese local translation or the key itself
+    return (localTranslations.zh as any)[key] || key;
   }, [lang, dynamicTranslations]);
 
   const fetchData = useCallback(async () => {
@@ -130,9 +138,13 @@ const App: React.FC = () => {
       setUsers(u || []);
       setMaterials(m || []);
 
-      if (cloudDict && Object.keys(cloudDict).length > 0) {
-        setDynamicTranslations((prev: any) => ({ ...prev, ...cloudDict }));
-      }
+      // Merge database translations with local translations, giving priority to database translations
+      const mergedTranslations = {
+        zh: { ...localTranslations.zh, ...cloudDict.zh },
+        en: { ...localTranslations.en, ...cloudDict.en },
+        tl: { ...localTranslations.tl, ...cloudDict.tl }
+      };
+      setDynamicTranslations(mergedTranslations);
     } catch (err) { 
       console.warn('Sync failed');
     } finally { 
@@ -162,10 +174,11 @@ const App: React.FC = () => {
     const isCreatedUserPass = matchedUser && (matchedUser.password || '123456') === loginForm.password;
     
     if (matchedUser && (isDefaultAdminPass || isCreatedUserPass)) {
+      // 检查用户是否已经在其他地方在线，如果是则强制下线其他会话
       if (matchedUser.isOnline) {
-        setGlobalError('访问拒绝：该账号已在其他终端在线。');
-        setIsLoggingIn(false);
-        return;
+        // 强制下线该用户在其他设备上的会话
+        await api.users.setOnlineStatus(matchedUser.id, false);
+        await logAudit('FORCE_OFFLINE', `强制下线该用户之前的会话`, 'Medium', matchedUser.id);
       }
 
       if (matchedUser.isLocked) {
@@ -200,6 +213,15 @@ const App: React.FC = () => {
     await new Promise(r => setTimeout(r, 600));
 
     if (mfaCode === '888888' || mfaCode === '123456') {
+      // 检查用户是否已经在其他地方在线，如果是则强制下线其他会话
+      const latestUsers = await api.users.getAll();
+      const user = latestUsers.find(u => u.id === pendingMfaUser?.id);
+      if (user?.isOnline) {
+        // 强制下线该用户在其他设备上的会话
+        await api.users.setOnlineStatus(pendingMfaUser.id, false);
+        await logAudit('FORCE_OFFLINE', `MFA认证时强制下线该用户之前的会话`, 'Medium', pendingMfaUser.id);
+      }
+      
       await api.users.setOnlineStatus(pendingMfaUser.id, true);
       setCurrentUser({ ...pendingMfaUser, isOnline: true });
       setPendingMfaUser(null);
