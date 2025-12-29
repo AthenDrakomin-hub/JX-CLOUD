@@ -4,11 +4,10 @@ import { Dish, MaterialImage } from '../types';
 import { translations, Language } from '../translations';
 import { 
   Plus, Edit3, Trash2, Search, X, Eye, EyeOff, 
-  ImageIcon, Sparkles, Star, Flame, AlertCircle,
-  Save, Package, DollarSign, Tag, MoreHorizontal,
-  Layers, BarChart3, ChevronRight, Activity,
-  Info, Zap, Minus, Plus as PlusIcon, FileText,
-  Smartphone, Monitor, ExternalLink
+  Star, Flame, Save, Package, ChevronRight, Filter, Smartphone,
+  FileText, Tag, DollarSign, Image as ImageIcon,
+  // Added missing Globe icon
+  Globe
 } from 'lucide-react';
 import { CATEGORIES } from '../constants';
 import ConfirmationModal from './ConfirmationModal';
@@ -30,29 +29,32 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
   dishes, onAddDish, onUpdateDish, onDeleteDish, lang 
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [activeCategory, setActiveCategory] = useState('All');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [selectedDish, setSelectedDish] = useState<Dish | null>(null);
   const [editingDish, setEditingDish] = useState<Dish | null>(null);
   const [tempImageUrl, setTempImageUrl] = useState('');
   const [isRecommended, setIsRecommended] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<{ isOpen: boolean; dishId: string | null }>({ isOpen: false, dishId: null });
   
-  const t = (key: string) => (translations[lang] as any)[key] || key;
-
-  useEffect(() => {
-    const handler = setTimeout(() => setDebouncedSearch(searchTerm), 300);
-    return () => clearTimeout(handler);
-  }, [searchTerm]);
+  const t = (key: string) => (translations[lang] as any)[key] || (translations.zh as any)[key] || key;
 
   const filteredDishes = useMemo(() => {
-    return dishes.filter(d => 
-      d.name.toLowerCase().includes(debouncedSearch.toLowerCase()) || 
-      (d.nameEn || '').toLowerCase().includes(debouncedSearch.toLowerCase())
-    );
-  }, [dishes, debouncedSearch]);
+    return dishes.filter(d => {
+      const matchSearch = d.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          (d.nameEn || '').toLowerCase().includes(searchTerm.toLowerCase());
+      const matchCategory = activeCategory === 'All' || d.category === activeCategory;
+      return matchSearch && matchCategory;
+    });
+  }, [dishes, searchTerm, activeCategory]);
+
+  const categoryCounts = useMemo(() => {
+    const counts: { [key: string]: number } = { All: dishes.length };
+    dishes.forEach(d => {
+      counts[d.category] = (counts[d.category] || 0) + 1;
+    });
+    return counts;
+  }, [dishes]);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -65,8 +67,6 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
       price: Number(formData.get('price')),
       category: formData.get('category') as string,
       stock: Number(formData.get('stock')),
-      calories: Number(formData.get('calories')),
-      allergens: (formData.get('allergens') as string).split(',').map(s => s.trim()).filter(Boolean),
       imageUrl: tempImageUrl || (formData.get('imageUrl') as string) || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c',
       isAvailable: editingDish ? editingDish.isAvailable : true,
       isRecommended: isRecommended,
@@ -93,11 +93,7 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
   const closeModal = () => {
     setIsModalOpen(false);
     setIsPreviewOpen(false);
-    setIsDetailModalOpen(false);
     setEditingDish(null);
-    setSelectedDish(null);
-    setTempImageUrl('');
-    setIsRecommended(false);
   };
 
   return (
@@ -109,9 +105,6 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
               <span className="text-xs font-black uppercase tracking-[0.4em]">{t('curatedMenu')}</span>
            </div>
            <h2 className="text-6xl font-serif italic text-slate-900 tracking-tighter leading-tight">{t('kitchenGallery')}</h2>
-           <p className="text-sm text-slate-400 font-medium tracking-widest max-w-lg leading-relaxed">
-             {t('menuDesc')}
-           </p>
         </div>
 
         <div className="flex flex-col sm:flex-row items-center gap-6">
@@ -120,7 +113,7 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
             className="h-20 px-8 bg-slate-50 border border-slate-200 text-slate-600 rounded-[2.5rem] font-black text-xs uppercase tracking-widest flex items-center justify-center space-x-3 hover:bg-slate-100 transition-all active:scale-95 shadow-sm"
           >
             <Smartphone size={18} />
-            <span>预览访客点餐界面</span>
+            <span>点餐预览</span>
           </button>
           <div className="relative group w-full lg:w-72">
             <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#d4af37] transition-all" size={20} />
@@ -137,162 +130,143 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
             className="bg-[#0f172a] text-white h-20 px-10 rounded-[2.5rem] font-black text-xs uppercase tracking-[0.3em] flex items-center justify-center space-x-4 shadow-2xl hover:bg-[#d4af37] transition-all active:scale-95 group shrink-0"
           >
             <Plus size={20} />
-            <span>新增至菜单</span>
+            <span>新增菜品</span>
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-12">
-        {filteredDishes.map((dish, idx) => (
-          <div 
-            key={dish.id} 
-            className={`group bg-white rounded-[3.5rem] border border-slate-50 shadow-sm hover:shadow-2xl transition-all duration-700 hover:-translate-y-4 cursor-pointer animate-in fade-in slide-in-from-bottom-8 ${dish.isAvailable === false ? 'opacity-60 grayscale' : ''}`}
-            style={{ animationDelay: `${idx * 80}ms` }}
-            onClick={() => { setSelectedDish(dish); setIsDetailModalOpen(true); }}
+      <div className="flex items-center space-x-3 overflow-x-auto no-scrollbar pb-2 px-2 -mx-2">
+        {['All', ...CATEGORIES].map((cat) => (
+          <button
+            key={cat}
+            onClick={() => setActiveCategory(cat)}
+            className={`px-8 py-4 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center space-x-3 shrink-0 border
+              ${activeCategory === cat 
+                ? 'bg-slate-900 text-white border-transparent shadow-xl translate-y-[-2px]' 
+                : 'bg-white text-slate-400 border-slate-100 hover:text-slate-900 hover:border-slate-200 shadow-sm'}`}
           >
-            <div className="relative aspect-[5/4] rounded-t-[3.5rem] overflow-hidden m-2 bg-slate-100">
-               <OptimizedImage src={dish.imageUrl} alt={dish.name} aspectRatio="h-full w-full" className="transition-all duration-1000 group-hover:scale-110" />
-               <div className="absolute top-6 left-6 flex flex-col space-y-2">
-                  <div className="px-4 py-2 bg-slate-900/60 backdrop-blur-md text-white rounded-full text-[8px] font-black uppercase tracking-[0.3em] border border-white/10">{dish.category}</div>
-                  {dish.isRecommended && <div className="px-4 py-2 bg-[#d4af37] text-white rounded-full shadow-lg text-[8px] font-black uppercase tracking-[0.3em] flex items-center space-x-1"><Star size={8} fill="white" /> <span>推荐</span></div>}
-               </div>
-               <div className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 transition-all duration-500 flex items-center justify-center backdrop-blur-sm" onClick={e => e.stopPropagation()}>
-                  <div className="flex space-x-4 translate-y-6 group-hover:translate-y-0 transition-transform duration-500">
-                    <button onClick={() => openModal(dish)} className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-slate-950 shadow-2xl hover:bg-[#d4af37] hover:text-white transition-all"><Edit3 size={20} /></button>
-                    <button onClick={() => onUpdateDish({ ...dish, isAvailable: !dish.isAvailable })} className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xl transition-all ${dish.isAvailable !== false ? 'bg-white text-slate-950' : 'bg-emerald-500 text-white'}`}>{dish.isAvailable !== false ? <EyeOff size={20} /> : <Eye size={20} />}</button>
-                    <button onClick={() => setConfirmDelete({ isOpen: true, dishId: dish.id })} className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-red-500 shadow-2xl hover:bg-red-500 hover:text-white transition-all"><Trash2 size={20} /></button>
-                  </div>
-               </div>
-            </div>
-
-            <div className="p-8 space-y-8">
-               <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <h4 className="text-2xl font-bold text-slate-900 tracking-tight truncate max-w-[150px]">{dish.name}</h4>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">{dish.nameEn}</p>
-                  </div>
-                  <p className="text-2xl font-serif italic text-[#d4af37] tracking-tighter">₱{dish.price}</p>
-               </div>
-
-               <div className="p-5 bg-slate-50 rounded-3xl flex items-center justify-between border border-slate-100">
-                  <div className="flex items-center space-x-3">
-                     <Package size={14} className="text-slate-400" />
-                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">存量</span>
-                  </div>
-                  <span className={`text-sm font-black ${dish.stock < 10 ? 'text-red-500 animate-pulse' : 'text-slate-900'}`}>{dish.stock} 份</span>
-               </div>
-
-               <button onClick={(e) => { e.stopPropagation(); openModal(dish); }} className="w-full py-4 border-2 border-slate-50 rounded-2xl text-[9px] font-black uppercase tracking-[0.4em] text-slate-400 hover:border-[#d4af37] hover:text-[#d4af37] transition-all flex items-center justify-center space-x-2 group/btn">
-                  <span>快速编辑</span>
-                  <ChevronRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
-               </button>
-            </div>
-          </div>
+            <span>{cat === 'All' ? t('allCategories') : cat}</span>
+            <span className={`px-2 py-0.5 rounded-full text-[9px] ${activeCategory === cat ? 'bg-white/20 text-[#d4af37]' : 'bg-slate-50 text-slate-400'}`}>
+              {categoryCounts[cat] || 0}
+            </span>
+          </button>
         ))}
       </div>
 
-      {/* 访客点餐实时预览模态框 */}
-      {isPreviewOpen && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-6">
-          <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-2xl animate-in fade-in duration-500" onClick={closeModal} />
-          <div className="relative w-full max-w-[420px] aspect-[9/19] bg-white rounded-[3.5rem] shadow-[0_0_80px_rgba(0,0,0,0.5)] border-[12px] border-slate-900 overflow-hidden animate-in zoom-in-95 duration-700 flex flex-col">
-             {/* 手机听筒/摄像头遮罩区 */}
-             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-7 bg-slate-900 rounded-b-[1.5rem] z-[160] flex items-center justify-center">
-                <div className="w-12 h-1 bg-slate-800 rounded-full" />
-             </div>
-             
-             <div className="flex-1 overflow-hidden relative">
-                <div className="absolute inset-0 overflow-y-auto no-scrollbar">
-                   <GuestOrder 
-                    roomId="PREVIEW" 
-                    dishes={dishes} 
-                    onSubmitOrder={async () => { alert('预览模式：订单请求已模拟发出。'); }} 
-                    lang={lang} 
-                    onToggleLang={() => {}} 
-                    onRescan={() => {}} 
-                   />
+      {filteredDishes.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-40 bg-white/40 rounded-[4rem] border border-dashed border-slate-200">
+           <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center text-slate-200 mb-6">
+              <Filter size={32} />
+           </div>
+           <p className="text-sm font-black text-slate-400 uppercase tracking-widest">在该分类下未找到匹配菜品</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-12">
+          {filteredDishes.map((dish, idx) => (
+            <div 
+              key={dish.id} 
+              className={`group bg-white rounded-[3.5rem] border border-slate-50 shadow-sm hover:shadow-2xl transition-all duration-700 hover:-translate-y-4 cursor-pointer animate-in fade-in slide-in-from-bottom-8 ${dish.isAvailable === false ? 'opacity-60 grayscale' : ''}`}
+              style={{ animationDelay: `${idx * 80}ms` }}
+              onClick={() => openModal(dish)}
+            >
+              <div className="relative aspect-[5/4] rounded-t-[3.5rem] overflow-hidden m-2 bg-slate-100">
+                <OptimizedImage src={dish.imageUrl} alt={dish.name} aspectRatio="h-full w-full" className="transition-all duration-1000 group-hover:scale-110" />
+                <div className="absolute top-6 left-6 flex flex-col space-y-2">
+                    <div className="px-4 py-2 bg-slate-900/60 backdrop-blur-md text-white rounded-full text-[8px] font-black uppercase tracking-[0.3em] border border-white/10">{dish.category}</div>
+                    {dish.isRecommended && <div className="px-4 py-2 bg-[#d4af37] text-white rounded-full shadow-lg text-[8px] font-black uppercase tracking-[0.3em] flex items-center space-x-1"><Star size={8} fill="white" /> <span>推荐</span></div>}
                 </div>
-             </div>
-             
-             {/* 底部退出按钮（管理端独有） */}
-             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[160]">
-                <button onClick={closeModal} className="px-8 py-3 bg-slate-900/80 backdrop-blur-md text-white rounded-full text-[10px] font-black uppercase tracking-widest border border-white/20 shadow-2xl active:scale-95 transition-all">退出预览模式</button>
-             </div>
-          </div>
+                <div className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 transition-all duration-500 flex items-center justify-center backdrop-blur-sm" onClick={e => e.stopPropagation()}>
+                    <div className="flex space-x-4 translate-y-6 group-hover:translate-y-0 transition-transform duration-500">
+                      <button onClick={() => openModal(dish)} className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-slate-950 shadow-2xl hover:bg-[#d4af37] hover:text-white transition-all"><Edit3 size={20} /></button>
+                      <button onClick={() => onUpdateDish({ ...dish, isAvailable: !dish.isAvailable })} className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xl transition-all ${dish.isAvailable !== false ? 'bg-white text-slate-950' : 'bg-emerald-500 text-white'}`}>{dish.isAvailable !== false ? <EyeOff size={20} /> : <Eye size={20} />}</button>
+                      <button onClick={() => setConfirmDelete({ isOpen: true, dishId: dish.id })} className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-red-500 shadow-2xl hover:bg-red-500 hover:text-white transition-all"><Trash2 size={20} /></button>
+                    </div>
+                </div>
+              </div>
+
+              <div className="p-8 space-y-8">
+                <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <h4 className="text-2xl font-bold text-slate-900 tracking-tight truncate max-w-[150px]">{dish.name}</h4>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">{dish.nameEn}</p>
+                    </div>
+                    <p className="text-2xl font-serif italic text-[#d4af37] tracking-tighter">₱{dish.price}</p>
+                </div>
+
+                <div className="p-5 bg-slate-50 rounded-3xl flex items-center justify-between border border-slate-100">
+                    <div className="flex items-center space-x-3">
+                      <Package size={14} className="text-slate-400" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">存量</span>
+                    </div>
+                    <span className={`text-sm font-black ${dish.stock < 10 ? 'text-red-500 animate-pulse' : 'text-slate-900'}`}>{dish.stock} 份</span>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
-      {/* 详细编辑器模态框 */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-6">
           <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-3xl animate-in fade-in duration-500" onClick={closeModal} />
-          <form onSubmit={handleSubmit} className="relative w-full max-w-5xl bg-white rounded-[4rem] shadow-2xl overflow-hidden flex flex-col lg:flex-row animate-in zoom-in-95 duration-700 max-h-[90vh]">
+          <form onSubmit={handleSubmit} className="relative w-full max-w-5xl bg-white rounded-[4rem] shadow-2xl overflow-hidden flex flex-col lg:flex-row animate-in zoom-in-95 duration-700 max-h-[95vh]">
              <div className="lg:w-1/2 bg-slate-950 relative border-r border-slate-50 hidden lg:block">
-                <OptimizedImage src={tempImageUrl || editingDish?.imageUrl || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c'} alt="Preview" aspectRatio="h-full w-full" className="opacity-40 group-hover:opacity-60 transition-opacity" />
+                <OptimizedImage src={tempImageUrl || editingDish?.imageUrl || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c'} alt="Preview" aspectRatio="h-full w-full" className="opacity-40" />
                 <div className="absolute inset-0 flex flex-col justify-end p-20 text-white">
-                   <div className="space-y-4">
-                      <div className="flex items-center space-x-4">
-                         <div className="px-6 py-2 bg-white/10 backdrop-blur-xl rounded-full text-[10px] font-black uppercase tracking-widest border border-white/20">Kitchen Identity Hub</div>
-                         {isRecommended && <Star className="text-[#d4af37]" fill="currentColor" size={20} />}
-                      </div>
-                      <h4 className="text-6xl font-serif italic tracking-tighter leading-tight">Master Creator</h4>
-                      <p className="text-slate-500 text-xs font-black uppercase tracking-[0.5em]">江西云厨 核心菜单管理终端</p>
-                   </div>
+                   <h4 className="text-6xl font-serif italic tracking-tighter leading-tight">JX Kitchen Hub</h4>
+                   <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.5em] mt-4">江西云厨核心菜单管理</p>
                 </div>
              </div>
-
              <div className="lg:w-1/2 p-12 lg:p-16 space-y-8 overflow-y-auto no-scrollbar bg-white">
                 <div className="flex items-center justify-between">
-                   <h3 className="text-3xl font-bold text-slate-900 tracking-tight">{editingDish ? '编辑菜品资产' : '新增艺术菜品'}</h3>
+                   <h3 className="text-3xl font-bold text-slate-900 tracking-tight">{editingDish ? '编辑菜品资产' : '录入新菜品'}</h3>
                    <button type="button" onClick={closeModal} className="w-12 h-12 flex items-center justify-center rounded-2xl bg-slate-50 text-slate-400 hover:bg-slate-950 hover:text-white transition-all"><X size={24} /></button>
                 </div>
-
+                
                 <div className="space-y-6">
                    <div className="grid grid-cols-2 gap-6">
                       <div className="space-y-3">
-                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">中文名称</label>
+                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2"><Tag size={12}/> 中文名称</label>
                          <input name="name" defaultValue={editingDish?.name} required className="w-full px-6 py-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-[#d4af37] transition-all font-bold" />
                       </div>
                       <div className="space-y-3">
-                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">售价 (PHP)</label>
+                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2"><DollarSign size={12}/> 售价 (PHP)</label>
                          <input name="price" type="number" step="0.01" defaultValue={editingDish?.price} required className="w-full px-6 py-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-[#d4af37] transition-all font-black" />
                       </div>
                    </div>
 
                    <div className="space-y-3">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">英文名称 / International Name</label>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2"><Globe size={12}/> 英文名称 / International Name</label>
                       <input name="nameEn" defaultValue={editingDish?.nameEn} className="w-full px-6 py-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-[#d4af37] transition-all font-bold" />
                    </div>
 
                    <div className="space-y-3">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">详细描述 / Flavor Profile</label>
-                      <textarea name="description" defaultValue={editingDish?.description} rows={3} className="w-full px-6 py-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-[#d4af37] transition-all font-medium no-scrollbar resize-none" placeholder="描述菜品的口感、工艺及特色..." />
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2"><FileText size={12}/> 详细描述 / Flavor Profile</label>
+                      <textarea name="description" defaultValue={editingDish?.description} rows={3} className="w-full px-6 py-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-[#d4af37] transition-all font-medium no-scrollbar resize-none" placeholder="描述菜品的口感、制作工艺或特色..." />
                    </div>
 
                    <div className="grid grid-cols-2 gap-6">
                       <div className="space-y-3">
-                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">所属分类</label>
+                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2"><Filter size={12}/> 所属分类</label>
                          <select name="category" defaultValue={editingDish?.category || CATEGORIES[0]} className="w-full px-6 py-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-[#d4af37] transition-all font-black appearance-none cursor-pointer">
                             {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                          </select>
                       </div>
                       <div className="space-y-3">
-                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">初始库存</label>
+                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2"><Package size={12}/> 初始库存</label>
                          <input name="stock" type="number" defaultValue={editingDish?.stock || 0} required className="w-full px-6 py-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-[#d4af37] transition-all font-black" />
                       </div>
                    </div>
 
                    <div className="space-y-3">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">图片资源链接 (Unsplash / Cloudinary)</label>
-                      <input name="imageUrl" value={tempImageUrl} onChange={e => setTempImageUrl(e.target.value)} placeholder="https://..." className="w-full px-6 py-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-[#d4af37] transition-all font-bold text-xs" />
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2"><ImageIcon size={12}/> 图片资源链接</label>
+                      <input name="imageUrl" value={tempImageUrl} onChange={e => setTempImageUrl(e.target.value)} placeholder="Unsplash 或云端 URL..." className="w-full px-6 py-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-[#d4af37] transition-all font-bold text-xs" />
                    </div>
 
-                   <div className={`p-6 rounded-3xl border-2 flex items-center justify-between transition-all ${isRecommended ? 'bg-amber-50 border-amber-100' : 'bg-slate-50 border-transparent'}`}>
-                      <div className="flex items-center space-x-4">
-                         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${isRecommended ? 'bg-[#d4af37] text-white shadow-lg' : 'bg-white text-slate-300'}`}>
-                            <Flame size={24} />
-                         </div>
-                         <span className="text-sm font-black text-slate-900">设为“主厨推荐”精品</span>
+                   <div className={`p-6 rounded-3xl border-2 flex items-center justify-between transition-all ${isRecommended ? 'bg-amber-50 border-amber-100 shadow-inner' : 'bg-slate-50 border-transparent'}`}>
+                      <div className="flex items-center space-x-3">
+                         <Flame className={isRecommended ? 'text-[#d4af37]' : 'text-slate-300'} size={20} />
+                         <span className="text-sm font-black text-slate-900">设为主厨推荐精品</span>
                       </div>
                       <button type="button" onClick={() => setIsRecommended(!isRecommended)} className={`w-14 h-7 rounded-full relative transition-all ${isRecommended ? 'bg-[#d4af37]' : 'bg-slate-200'}`}>
                          <div className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-md transition-all ${isRecommended ? 'right-1' : 'left-1'}`} />
@@ -301,10 +275,10 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
                 </div>
 
                 <div className="pt-6 border-t border-slate-50 flex items-center space-x-6">
-                   <button type="button" onClick={closeModal} className="text-xs font-black text-slate-400 uppercase tracking-widest px-6 py-4 hover:text-slate-900 transition-colors">取消操作</button>
+                   <button type="button" onClick={closeModal} className="text-xs font-black text-slate-400 uppercase tracking-widest px-4 hover:text-slate-950">取消</button>
                    <button type="submit" className="flex-1 bg-slate-950 text-white py-6 rounded-3xl font-black text-xs uppercase tracking-[0.3em] shadow-2xl hover:bg-[#d4af37] transition-all active:scale-95 flex items-center justify-center space-x-3">
                       <Save size={18} />
-                      <span>{editingDish ? '保存菜品更改' : '录入江西云厨库'}</span>
+                      <span>{editingDish ? '保存菜品更改' : '录入江西云厨'}</span>
                    </button>
                 </div>
              </div>
@@ -315,7 +289,7 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
       <ConfirmationModal 
         isOpen={confirmDelete.isOpen}
         title="清除菜品资产"
-        message="该操作将从前端菜单中永久移除该菜品。历史销售数据将被保留以供财务审计。确定执行？"
+        message="该操作将从前端菜单中永久移除该菜品。历史订单审计数据将被保留。确定执行？"
         confirmVariant="danger"
         onConfirm={() => { if(confirmDelete.dishId) onDeleteDish(confirmDelete.dishId); setConfirmDelete({ isOpen: false, dishId: null }); }}
         onCancel={() => setConfirmDelete({ isOpen: false, dishId: null })}

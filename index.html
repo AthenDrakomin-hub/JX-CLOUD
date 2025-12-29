@@ -1,11 +1,19 @@
+
 <!DOCTYPE html>
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover">
   <title>江西云厨 - JX CLOUD Enterprise Hospitality</title>
+  
+  <!-- Tailwind CDN: 处理所有动态样式 -->
   <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- 字体预加载与加载 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
+  
   <style>
     :root {
       --gold: #d4af37;
@@ -37,6 +45,9 @@
     .card-shadow {
       box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.05);
     }
+    
+    /* 修复 Vite 构建可能产生的闪烁 */
+    [v-cloak] { display: none; }
   </style>
 <script type="importmap">
 {

@@ -90,15 +90,15 @@ const App: React.FC = () => {
     return unsubscribe;
   }, [currentTab]);
 
-  const logAudit = useCallback(async (action: string, details: string, riskLevel: 'Low' | 'Medium' | 'High' = 'Low', overrideUser?: string) => {
+  const logAudit = useCallback(async (action: string, details: string, riskLevel: 'Low' | 'Medium' | 'High' = 'Low', overrideUserId?: string) => {
     const userContext = currentUser || pendingMfaUser;
     const log: SecurityLog = {
       id: `audit-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-      userId: overrideUser || userContext?.username || 'SYSTEM/ANON',
+      userId: overrideUserId || userContext?.id || 'SYSTEM',
       action,
-      details: `${userContext?.name || '系统'} : ${details}`,
+      details: `${userContext?.name || '匿名'} : ${details}`,
       timestamp: new Date().toISOString(),
-      ip: "192.168.1.100", 
+      ip: "127.0.0.1", 
       riskLevel
     };
     await api.logs.add(log);
@@ -177,12 +177,12 @@ const App: React.FC = () => {
       if (matchedUser.twoFactorEnabled && matchedUser.mfaSecret) {
         setPendingMfaUser(matchedUser);
         setIsLoggingIn(false);
-        await logAudit('MFA_CHALLENGE', '主要凭据通过，进入二次验证。', 'Low', matchedUser.username);
+        await logAudit('MFA_CHALLENGE', '主要凭据通过，进入二次验证。', 'Low', matchedUser.id);
       } else {
         await api.users.setOnlineStatus(matchedUser.id, true);
         setCurrentUser({ ...matchedUser, isOnline: true });
         notificationService.requestPermission();
-        await logAudit('AUTH_SUCCESS', '会话建立成功。', 'Low', matchedUser.username);
+        await logAudit('AUTH_SUCCESS', '会话建立成功。', 'Low', matchedUser.id);
         setIsLoggingIn(false);
       }
     } else {
