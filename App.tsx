@@ -414,9 +414,17 @@ const App: React.FC = () => {
   return (
     <ErrorBoundary lang={lang}>
       <div className="min-h-screen relative flex flex-col items-center justify-center overflow-hidden bg-[#020617]">
-        <div className="absolute inset-0 z-0 scale-110">
-          <img src="https://images.unsplash.com/photo-1544644181-1484b3fdfc62?auto=format&fit=crop&q=80&w=2000" className="w-full h-full object-cover blur-[8px] opacity-20" alt="Kitchen" />
-          <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900/80 to-transparent" />
+        <div className="absolute inset-0 z-0 scale-110 bg-[#020617]">
+          <img 
+            src="https://images.unsplash.com/photo-1544644181-1484b3fdfc62?auto=format&fit=crop&q=80&w=2000" 
+            className="w-full h-full object-cover blur-[8px] opacity-20" 
+            alt="Kitchen" 
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+            }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-950/90 via-slate-900/80 to-slate-950/90" />
         </div>
 
         <div className="relative z-10 w-full max-w-[480px] px-6">
@@ -427,8 +435,8 @@ const App: React.FC = () => {
                   <div className="absolute inset-0 bg-gradient-to-tr from-[#d4af37]/20 to-transparent animate-pulse" />
                   <Lock size={32} className="text-[#d4af37] relative z-10" />
                </div>
-               <h1 className="text-4xl font-bold text-white tracking-tighter mb-2">江西云厨</h1>
-               <p className="text-[10px] font-black text-[#d4af37] tracking-[0.5em] uppercase opacity-70">CENTRAL GATEWAY v3.1</p>
+               <h1 className="text-4xl font-bold text-white tracking-tighter mb-2">{t('hotelName')}</h1>
+               <p className="text-[10px] font-black text-[#d4af37] tracking-[0.5em] uppercase opacity-70">{t('centralGateway')}</p>
             </div>
 
             {pendingMfaUser ? (
@@ -437,7 +445,7 @@ const App: React.FC = () => {
                   <Fingerprint size={24} className="text-[#d4af37] shrink-0" />
                   <div className="space-y-1 text-left">
                     <p className="text-xs font-bold text-[#d4af37] uppercase tracking-widest">Identity Protection</p>
-                    <p className="text-[10px] text-slate-400 leading-relaxed">请输入您的验证 App 生成的 6 位动态验证码以完成登录。</p>
+                    <p className="text-[10px] text-slate-400 leading-relaxed">{t('mfaVerificationInstruction')}</p>
                   </div>
                 </div>
                 <input 
@@ -450,9 +458,9 @@ const App: React.FC = () => {
                   required 
                 />
                 <button type="submit" disabled={isLoggingIn} className="w-full py-6 bg-[#d4af37] text-slate-950 rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-2xl hover:scale-105 transition-all flex items-center justify-center space-x-3">
-                  {isLoggingIn ? <Loader2 size={24} className="animate-spin" /> : <><ShieldCheck size={20} /><span>验证并登录系统</span></>}
+                  {isLoggingIn ? <Loader2 size={24} className="animate-spin" /> : <><ShieldCheck size={20} /><span>{t('verifyAndLogin')}</span></>}
                 </button>
-                <button type="button" onClick={() => setPendingMfaUser(null)} className="w-full text-[9px] font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors">返回账号登录</button>
+                <button type="button" onClick={() => setPendingMfaUser(null)} className="w-full text-[9px] font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors">{t('returnToAccountLogin')}</button>
               </form>
             ) : (
               <form onSubmit={handlePrimaryLogin} className="space-y-6">
@@ -469,7 +477,7 @@ const App: React.FC = () => {
                     value={loginForm.username} 
                     onChange={e => setLoginForm(p => ({...p, username: e.target.value}))} 
                     className="w-full px-8 py-5 bg-white/5 border border-white/10 rounded-2xl outline-none focus:bg-white/10 focus:border-[#d4af37]/50 font-bold text-white transition-all text-sm" 
-                    placeholder="管理员账号 / admin" 
+                    placeholder={t('adminAccount')} 
                     required 
                   />
                   <div className="relative group">
@@ -478,7 +486,7 @@ const App: React.FC = () => {
                       value={loginForm.password} 
                       onChange={e => setLoginForm(p => ({...p, password: e.target.value}))} 
                       className="w-full px-8 py-5 bg-white/5 border border-white/10 rounded-2xl outline-none focus:bg-white/10 focus:border-[#d4af37]/50 font-bold text-white transition-all text-sm" 
-                      placeholder="访问密码 / password" 
+                      placeholder={t('accessPassword')} 
                       required 
                     />
                     <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white">
@@ -488,14 +496,22 @@ const App: React.FC = () => {
                 </div>
 
                 <button type="submit" disabled={isLoggingIn} className="w-full py-6 bg-[#d4af37] text-slate-950 rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-2xl hover:scale-[1.02] transition-all flex items-center justify-center disabled:opacity-50 mt-8">
-                  {isLoggingIn ? <Loader2 size={24} className="animate-spin" /> : <span>初始化授权会话</span>}
+                  {isLoggingIn ? <Loader2 size={24} className="animate-spin" /> : <span>{t('initAuthSession')}</span>}
                 </button>
               </form>
             )}
             
             <div className="mt-12 flex items-center justify-between text-[9px] font-black text-slate-600 uppercase tracking-widest px-2">
-               <div className="flex items-center space-x-2"><ShieldCheck size={12} className="text-[#d4af37]" /><span>SSO Protection Active</span></div>
-               <span className="opacity-40">JX_CLOUD_PROD_V3</span>
+               <div className="flex items-center space-x-2"><ShieldCheck size={12} className="text-[#d4af37]" /><span>{t('ssoProtectionActive')}</span></div>
+               <div className="flex items-center space-x-4">
+                 <button onClick={() => {
+                   const next = lang === 'zh' ? 'en' : lang === 'en' ? 'tl' : 'zh';
+                   updateLang(next);
+                 }} className="p-2 bg-white/10 border border-white/20 rounded-xl hover:bg-white/20 transition-all">
+                   <Globe size={12} className="text-white" />
+                 </button>
+                 <span className="opacity-40">JX_CLOUD_PROD_V3</span>
+               </div>
             </div>
           </div>
         </div>
