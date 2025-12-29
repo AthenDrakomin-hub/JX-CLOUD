@@ -1,3 +1,4 @@
+/* Copyright (c) 2025 Jiangxi Star Hotel. 保留所有权利. */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 

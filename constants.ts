@@ -1,3 +1,4 @@
+/* Copyright (c) 2025 Jiangxi Star Hotel. 保留所有权利. */
 
 import { RoomStatus, Dish } from './types';
 

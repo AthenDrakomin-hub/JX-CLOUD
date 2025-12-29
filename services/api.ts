@@ -1,3 +1,4 @@
+/* Copyright (c) 2025 Jiangxi Star Hotel. 保留所有权利. */
 
 import { Order, Dish, HotelRoom, Expense, User, OrderStatus, RoomStatus, MaterialImage, SecurityLog, UserRole, PaymentMethod, PaymentMethodConfig, SystemConfig, Ingredient } from '../types';
 import { INITIAL_DISHES, ROOM_NUMBERS } from '../constants';

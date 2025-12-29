@@ -364,6 +364,35 @@ END $$;
 ### 5. 核心竞争力
 这套系统不仅仅是一个管理工具，它通过VirtualDB镜像技术解决了许多中小酒店最担心的"断网无法营业"的问题。即使云端不可用，本地数据在重新联网后自动对齐，这是目前纯SaaS系统所不具备的。同时，系统提供了完整的多语言支持、IP白名单安全验证、实时订单推送等企业级功能。
 
+## 协议与版权信息
+
+### 版权声明
+Copyright (c) 2025 Jiangxi Star Hotel. 保留所有权利.
+
+### 软件使用条款
+本软件及其相关文档受国际版权法和条约的保护。用户可以：
+- 在授权范围内使用本软件
+- 根据授权协议进行必要的修改
+- 在遵守协议条款的前提下分发软件
+
+### 授权条款
+本项目采用 Apache License 2.0 授权（具体请参见 LICENSE 文件）：
+- 可以自由使用、修改和分发
+- 必须保留原始版权声明和免责声明
+- 修改后的文件需要显著标记变更信息
+
+### 第三方依赖版权信息
+本项目使用了以下开源项目（完整列表见 package.json）：
+- React - MIT License
+- TypeScript - Apache License 2.0
+- Supabase - MIT License
+- Tailwind CSS - MIT License
+- Lucide React - MIT License
+- Recharts - MIT License
+- QRCode React - MIT License
+
+所有第三方库的版权和许可条款均保持不变。
+
 ```sql
 -- ==========================================
 -- 0. 连接测试表 (用于系统设置页面的连通性测试)
@@ -602,3 +631,22 @@ BEGIN
     INSERT INTO rooms (id, status) VALUES ('VIP-000', 'ready') ON CONFLICT (id) DO NOTHING;
 END $$;
 ```
+## 协议与版权声明
+
+本项目采用 Apache License 2.0 许可证。
+
+Copyright (c) 2025 江西云厨 (Jiangxi Star Hotel)
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+本项目为酒店餐饮管理系统，版权归属江西云厨所有。系统包含多语言支持（中文/英文/菲律宾语）、离线优先架构、双因素认证、IP白名单等企业级安全功能。未经许可，不得用于商业用途。

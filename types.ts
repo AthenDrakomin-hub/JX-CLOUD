@@ -1,3 +1,4 @@
+/* Copyright (c) 2025 Jiangxi Star Hotel. 保留所有权利. */
 
 export enum UserRole {
   ADMIN = 'admin',      // 系统管理员 (唯一)
