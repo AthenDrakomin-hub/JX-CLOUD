@@ -316,6 +316,20 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ users, onRefresh, onA
                         </button>
                      </div>
                    )}
+                   
+                   <div className="space-y-3">
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">IP 白名单</label>
+                      <div className="relative">
+                         <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                         <input 
+                            value={ipWhitelistStr}
+                            onChange={(e) => setIpWhitelistStr(e.target.value)}
+                            placeholder="输入IP地址，多个用逗号分隔 (如: 192.168.1.100, 192.168.1.0/24)" 
+                            className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-[#d4af37] transition-all font-bold" 
+                         />
+                      </div>
+                      <p className="text-[7px] text-slate-400 ml-1">支持单个IP (如: 192.168.1.100) 或 IP段 (如: 192.168.1.0/24)</p>
+                   </div>
                 </div>
              </div>
 

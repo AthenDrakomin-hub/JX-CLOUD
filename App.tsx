@@ -104,6 +104,64 @@ const App: React.FC = () => {
     await api.logs.add(log);
   }, [currentUser, pendingMfaUser]);
 
+  // 获取用户IP地址的函数
+  const getUserIP = async (): Promise<string> => {
+    try {
+      // 尝试从各种来源获取IP地址
+      const response = await fetch('https://httpbin.org/ip');
+      const data = await response.json();
+      return data.origin || '127.0.0.1';
+    } catch (error) {
+      // 如果无法获取真实IP，返回本地地址作为默认值
+      // 在实际生产环境中，可以从服务器端API获取真实IP
+      return '127.0.0.1';
+    }
+  };
+
+  // 检查IP是否在白名单中的函数
+  const isIpInWhitelist = (userIp: string, whitelist: string[]): boolean => {
+    if (!userIp || !whitelist || whitelist.length === 0) {
+      return true; // 如果没有白名单，允许访问
+    }
+
+    for (const ipPattern of whitelist) {
+      if (ipPattern.includes('/')) {
+        // CIDR格式检查 (如 192.168.1.0/24)
+        if (isIpInCidrRange(userIp, ipPattern)) {
+          return true;
+        }
+      } else {
+        // 精确IP匹配
+        if (userIp === ipPattern) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
+  // 检查IP是否在CIDR范围内的函数
+  const isIpInCidrRange = (userIp: string, cidr: string): boolean => {
+    try {
+      const [network, prefixStr] = cidr.split('/');
+      const prefix = parseInt(prefixStr);
+      if (isNaN(prefix) || prefix < 0 || prefix > 32) return false;
+
+      const userIpNum = ipToNumber(userIp);
+      const networkIpNum = ipToNumber(network);
+      const mask = ~((1 << (32 - prefix)) - 1);
+
+      return (userIpNum & mask) === (networkIpNum & mask);
+    } catch (e) {
+      return false;
+    }
+  };
+
+  // 将IP地址转换为数字
+  const ipToNumber = (ip: string): number => {
+    return ip.split('.').reduce((acc, octet) => (acc << 8) + parseInt(octet), 0) >>> 0;
+  };
+
   const t = useCallback((key: string) => {
     // Prioritize database translations for current language, then fallback to local translations
     const dbTranslation = dynamicTranslations[lang] && (dynamicTranslations[lang] as any)[key];
@@ -179,6 +237,17 @@ const App: React.FC = () => {
         // 强制下线该用户在其他设备上的会话
         await api.users.setOnlineStatus(matchedUser.id, false);
         await logAudit('FORCE_OFFLINE', `强制下线该用户之前的会话`, 'Medium', matchedUser.id);
+      }
+
+      // 检查IP白名单验证
+      const userIp = await getUserIP();
+      if (matchedUser.ipWhitelist && matchedUser.ipWhitelist.length > 0) {
+        if (!isIpInWhitelist(userIp, matchedUser.ipWhitelist)) {
+          setGlobalError('访问拒绝：您的IP地址未在白名单中。');
+          await logAudit('IP_ACCESS_DENIED', `用户 ${matchedUser.username} 从IP ${userIp} 尝试登录，但IP不在白名单中`, 'High', matchedUser.id);
+          setIsLoggingIn(false);
+          return;
+        }
       }
 
       if (matchedUser.isLocked) {
