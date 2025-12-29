@@ -517,7 +517,7 @@ const App: React.FC = () => {
         </div>
 
         <footer className="absolute bottom-10 w-full px-12 z-10 flex flex-col items-center opacity-30">
-           <p className="text-[9px] font-black uppercase tracking-[0.5em] text-white">江西云厨安全研发部 © 2025</p>
+           <p className="text-[9px] font-black uppercase tracking-[0.5em] text-white">{t('footerText')}</p>
         </footer>
       </div>
     </ErrorBoundary>
