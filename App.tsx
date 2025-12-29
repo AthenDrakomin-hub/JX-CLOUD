@@ -258,10 +258,6 @@ const App: React.FC = () => {
           fetchData(); 
         }} 
         lang={lang} 
-        onToggleLang={() => {
-          const next = lang === 'zh' ? 'en' : 'zh';
-          updateLang(next);
-        }}
         onRescan={() => {
           window.location.href = window.location.origin + window.location.pathname;
         }}
@@ -301,6 +297,12 @@ const App: React.FC = () => {
                 </div>
               </div>
               <div className="flex items-center space-x-3 lg:space-x-8">
+                <button onClick={() => {
+                  const next = lang === 'zh' ? 'en' : lang === 'en' ? 'tl' : 'zh';
+                  updateLang(next);
+                }} className="p-3 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-all group">
+                  <Globe size={20} className="text-slate-500 group-hover:text-[#d4af37]" />
+                </button>
                 <button onClick={() => setIsNotificationsOpen(true)} className="relative p-3 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-all group">
                   <Bell size={20} className="text-slate-500 group-hover:text-[#d4af37]" />
                   {unreadCount > 0 && <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-white text-[9px] font-black flex items-center justify-center rounded-full border-2 border-white shadow-lg animate-bounce">{unreadCount}</span>}

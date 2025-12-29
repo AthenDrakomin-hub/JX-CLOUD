@@ -138,12 +138,6 @@ const GuestOrder: React.FC<GuestOrderProps> = ({ roomId, dishes, onSubmitOrder, 
           </div>
           <h1 className="text-xl font-serif italic tracking-tighter text-slate-900 leading-none">江西云厨</h1>
         </div>
-        <div className="flex items-center space-x-2">
-          <button onClick={onToggleLang} className="p-3 bg-slate-50 rounded-2xl border border-slate-100 flex items-center space-x-2">
-            <Globe size={16} className="text-slate-500" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-700">{lang === 'zh' ? 'EN' : '中'}</span>
-          </button>
-        </div>
       </header>
 
       {!isCheckout ? (

@@ -49,6 +49,7 @@ The application uses Supabase with the following key tables:
 
 - Room-based ordering system (rooms 8201-8232, 8301-8332, VIP rooms)
 - Multi-language support (Chinese/English/Filipino) with database-driven translations
+- Language switcher moved to top navigation bar for better accessibility
 - Role-based access control (admin, manager, staff)
 - Offline-first architecture with sync capabilities
 - Payment processing with multiple methods (GCash, Maya, Cash, etc.)
