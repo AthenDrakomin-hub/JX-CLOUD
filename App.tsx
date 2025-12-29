@@ -62,7 +62,6 @@ const App: React.FC = () => {
   const isMounted = useRef(true);
 
   useEffect(() => {
-    // 检测 URL 中是否带有 room 参数，进入访客点餐模式
     const params = new URLSearchParams(window.location.search);
     const room = params.get('room');
     if (room) setGuestRoomId(room);
@@ -131,7 +130,6 @@ const App: React.FC = () => {
       setUsers(u || []);
       setMaterials(m || []);
 
-      // Fix: Applied fetched translations dictionary to dynamic state
       if (cloudDict && Object.keys(cloudDict).length > 0) {
         setDynamicTranslations((prev: any) => ({ ...prev, ...cloudDict }));
       }
@@ -223,7 +221,11 @@ const App: React.FC = () => {
     }
   };
 
-  // 访客点餐渲染逻辑
+  const updateLang = (newLang: Language) => {
+    setLang(newLang);
+    localStorage.setItem('jx_lang', newLang);
+  };
+
   if (guestRoomId) {
     return (
       <GuestOrder 
@@ -236,8 +238,7 @@ const App: React.FC = () => {
         lang={lang} 
         onToggleLang={() => {
           const next = lang === 'zh' ? 'en' : 'zh';
-          setLang(next);
-          localStorage.setItem('jx_lang', next);
+          updateLang(next);
         }}
         onRescan={() => {
           window.location.href = window.location.origin + window.location.pathname;
@@ -305,7 +306,7 @@ const App: React.FC = () => {
                   {currentTab === 'finance' && <MemoFinanceManagement orders={orders} expenses={expenses} onAddExpense={async (e) => { await api.expenses.create(e); fetchData(); }} onDeleteExpense={async (id) => { await api.expenses.delete(id); fetchData(); }} lang={lang} />}
                   {currentTab === 'payments' && <MemoPaymentManagement lang={lang} />}
                   {currentTab === 'users' && <MemoStaffManagement users={users} onRefresh={fetchData} onAddUser={async (u) => { await api.users.create(u); fetchData(); }} onUpdateUser={async (u) => { await api.users.update(u); fetchData(); }} onDeleteUser={async (id) => { await api.users.delete(id); fetchData(); }} lang={lang} />}
-                  {currentTab === 'settings' && <MemoSystemSettings lang={lang} currentUser={currentUser} onUpdateCurrentUser={(u) => { setCurrentUser(u); fetchData(); }} />}
+                  {currentTab === 'settings' && <MemoSystemSettings lang={lang} onChangeLang={updateLang} currentUser={currentUser} onUpdateCurrentUser={(u) => { setCurrentUser(u); fetchData(); }} />}
                 </div>
               )}
             </div>

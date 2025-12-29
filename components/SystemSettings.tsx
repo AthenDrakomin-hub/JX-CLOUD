@@ -19,11 +19,12 @@ import { QRCodeSVG } from 'qrcode.react';
 
 interface SystemSettingsProps {
   lang: Language;
+  onChangeLang: (lang: Language) => void;
   currentUser?: User;
   onUpdateCurrentUser?: (user: User) => void;
 }
 
-const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, currentUser, onUpdateCurrentUser }) => {
+const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, onChangeLang, currentUser, onUpdateCurrentUser }) => {
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const [config, setConfig] = useState<SystemConfig>({ 
     hotelName: 'JX CLOUD 江西云厨', version: '3.2.0-STABLE',
@@ -34,16 +35,13 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, currentUser, onUp
   const [isSaving, setIsSaving] = useState(false);
   const [isTestingWebhook, setIsTestingWebhook] = useState(false);
   
-  // Cloud Health State
   const [healthStatus, setHealthStatus] = useState<'testing' | 'online' | 'offline'>('testing');
   const [latency, setLatency] = useState<number | null>(null);
 
-  // Migration State
   const [isMigrating, setIsMigrating] = useState(false);
   const [migrationLog, setMigrationLog] = useState<string[]>([]);
   const [migrationStep, setMigrationStep] = useState(0);
 
-  // 2FA Setup State
   const [isMfaModalOpen, setIsMfaModalOpen] = useState(false);
   const [mfaStep, setMfaStep] = useState(1);
   const [mfaSecret, setMfaSecret] = useState('');
@@ -67,7 +65,6 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, currentUser, onUp
     setHealthStatus('testing');
     const start = performance.now();
     try {
-      // 真实连接 Supabase 进行自检
       const { error } = await supabase.from('config').select('id').limit(1);
       const end = performance.now();
       if (error) throw error;
@@ -128,7 +125,6 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, currentUser, onUp
     }, 1000);
   };
 
-  // 2FA Logic
   const startMfaSetup = () => {
     const randomSecret = Array.from({length: 16}, () => "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"[Math.floor(Math.random() * 32)]).join('');
     setMfaSecret(randomSecret);
@@ -167,7 +163,6 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, currentUser, onUp
     onUpdateCurrentUser(updatedUser);
   };
 
-  // 脱敏展示 URL
   const maskedUrl = supabaseUrl ? `${supabaseUrl.substring(0, 12)}***${supabaseUrl.substring(supabaseUrl.length - 12)}` : '未配置云端终点';
 
   return (
@@ -193,7 +188,48 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, currentUser, onUp
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
         <div className="lg:col-span-2 space-y-12">
           
-          {/* 新增：云端连接监测枢纽 */}
+          <section className="bg-white rounded-[4rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col">
+             <div className="p-12 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
+                <div className="flex items-center space-x-5">
+                   <div className="w-14 h-14 bg-slate-950 text-[#d4af37] rounded-2xl flex items-center justify-center shadow-lg">
+                      <Settings size={24} />
+                   </div>
+                   <div>
+                      <h3 className="text-xl font-black uppercase tracking-widest text-slate-900">{t('generalSettings')}</h3>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Localization & Preferences</p>
+                   </div>
+                </div>
+             </div>
+             <div className="p-12 space-y-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                   <div className="space-y-3">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('hotelName')}</label>
+                      <input 
+                        value={config.hotelName} 
+                        onChange={(e) => setConfig({ ...config, hotelName: e.target.value })}
+                        className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-[#d4af37]/10 transition-all font-bold text-slate-900" 
+                      />
+                   </div>
+                   <div className="space-y-3">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">系统显示语言 (System Language)</label>
+                      <div className="relative">
+                        <Globe size={18} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <select 
+                          value={lang} 
+                          onChange={(e) => onChangeLang(e.target.value as Language)}
+                          className="w-full pl-16 pr-8 py-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-[#d4af37]/10 transition-all font-black text-slate-900 appearance-none cursor-pointer"
+                        >
+                           <option value="zh">简体中文 (Simplified Chinese)</option>
+                           <option value="en">English (International)</option>
+                           <option value="tl">Tagalog (Pilipino)</option>
+                        </select>
+                        <ChevronDown size={20} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                      </div>
+                   </div>
+                </div>
+             </div>
+          </section>
+
           <section className="bg-white rounded-[4rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col relative group">
              <div className="p-12 border-b border-slate-50 flex items-center justify-between bg-[#020617] text-white">
                 <div className="flex items-center space-x-5">
@@ -245,7 +281,6 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, currentUser, onUp
              </div>
           </section>
 
-          {/* 一键转移控制枢纽 */}
           <section className="bg-white rounded-[4rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col relative group">
              <div className="p-12 border-b border-slate-50 flex items-center justify-between bg-slate-950 text-white">
                 <div className="flex items-center space-x-5">
@@ -293,7 +328,6 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, currentUser, onUp
              </div>
           </section>
 
-          {/* 账号安全设置 (2FA) */}
           <section className="bg-white rounded-[4rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col">
              <div className="p-12 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
                 <div className="flex items-center space-x-5">
@@ -325,7 +359,6 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, currentUser, onUp
              </div>
           </section>
 
-          {/* Webhook 集成 */}
           <section className="bg-white rounded-[4rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col">
              <div className="p-12 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
                 <div className="flex items-center space-x-5">
@@ -405,7 +438,6 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, currentUser, onUp
         </div>
       </div>
 
-      {/* 2FA Setup Modal */}
       {isMfaModalOpen && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-6">
           <div className="absolute inset-0 bg-slate-950/95 backdrop-blur-2xl animate-in fade-in duration-500" onClick={() => setIsMfaModalOpen(false)} />
