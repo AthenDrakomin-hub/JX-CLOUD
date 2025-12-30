@@ -122,9 +122,9 @@ const GuestOrder: React.FC<GuestOrderProps> = ({ roomId, dishes, onSubmitOrder, 
         <div className="w-24 h-24 bg-emerald-500/20 text-[#d4af37] rounded-[2.5rem] flex items-center justify-center mb-10 shadow-[0_0_50px_rgba(212,175,55,0.4)] animate-bounce border border-[#d4af37]/30">
           <CheckCircle2 size={48} />
         </div>
-        <h2 className="text-4xl font-serif italic text-white mb-4 tracking-tighter">下单成功</h2>
-        <p className="text-slate-300 mb-12">美食正在制作中，房间 {roomId} 将在 30 分钟内送达。</p>
-        <button onClick={() => { setIsSuccess(false); setIsCheckout(false); setCart({}); }} className="px-12 py-5 bg-[#d4af37] text-white rounded-full font-black text-xs uppercase tracking-[0.3em] shadow-2xl">继续点餐</button>
+        <h2 className="text-4xl font-serif italic text-white mb-4 tracking-tighter">{t('orderSuccess')}</h2>
+        <p className="text-slate-300 mb-12">{t('orderProcessing').replace('{roomId}', roomId)}</p>
+        <button onClick={() => { setIsSuccess(false); setIsCheckout(false); setCart({}); }} className="px-12 py-5 bg-[#d4af37] text-white rounded-full font-black text-xs uppercase tracking-[0.3em] shadow-2xl">{t('continueOrdering')}</button>
       </div>
     );
   }
@@ -136,7 +136,7 @@ const GuestOrder: React.FC<GuestOrderProps> = ({ roomId, dishes, onSubmitOrder, 
           <div className="w-12 h-12 bg-slate-950 rounded-2xl flex items-center justify-center text-[#d4af37] shadow-xl font-black text-lg italic font-serif">
             {roomId}
           </div>
-          <h1 className="text-xl font-serif italic tracking-tighter text-slate-900 leading-none">江西云厨</h1>
+          <h1 className="text-xl font-serif italic tracking-tighter text-slate-900 leading-none">{t('jxCloud')}</h1>
         </div>
       </header>
 
@@ -180,7 +180,7 @@ const GuestOrder: React.FC<GuestOrderProps> = ({ roomId, dishes, onSubmitOrder, 
                   {filteredDishes.length === 0 ? (
                     <div className="py-20 flex flex-col items-center justify-center text-slate-300">
                        <Filter size={48} className="opacity-20 mb-4" />
-                       <p className="text-xs font-black uppercase tracking-[0.2em]">暂无相关菜品</p>
+                       <p className="text-xs font-black uppercase tracking-[0.2em]">{t('noRelatedDishes')}</p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 gap-12">
@@ -188,7 +188,7 @@ const GuestOrder: React.FC<GuestOrderProps> = ({ roomId, dishes, onSubmitOrder, 
                         <div key={dish.id} className="group animate-in fade-in slide-in-from-bottom-8" style={{ animationDelay: `${idx * 100}ms` }}>
                           <div className="relative aspect-[4/3] rounded-[3.5rem] overflow-hidden shadow-xl mb-6 bg-slate-100">
                               <img src={dish.imageUrl} className="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-110" alt={dish.name} loading="lazy" />
-                              {dish.isRecommended && <div className="absolute top-8 left-8 bg-slate-950 text-[#d4af37] text-[10px] font-black uppercase px-5 py-2.5 rounded-full shadow-2xl flex items-center border border-white/5 backdrop-blur-md"><Flame size={16} className="mr-2" /> 精选推荐</div>}
+                              {dish.isRecommended && <div className="absolute top-8 left-8 bg-slate-950 text-[#d4af37] text-[10px] font-black uppercase px-5 py-2.5 rounded-full shadow-2xl flex items-center border border-white/5 backdrop-blur-md"><Flame size={16} className="mr-2" /> {t('curatedRecommendation')}</div>}
                           </div>
                           <div className="flex items-center justify-between px-2">
                               <div className="space-y-1">
@@ -230,13 +230,13 @@ const GuestOrder: React.FC<GuestOrderProps> = ({ roomId, dishes, onSubmitOrder, 
              <button onClick={() => setIsCheckout(false)} className="w-12 h-12 flex items-center justify-center bg-slate-100 rounded-2xl text-slate-900">
                <ChevronRight className="rotate-180" size={24} />
              </button>
-             <h2 className="text-3xl font-bold tracking-tighter">确认账单</h2>
+             <h2 className="text-3xl font-bold tracking-tighter">{t('confirmBill')}</h2>
            </div>
            
            <div className="flex-1 space-y-8 overflow-y-auto no-scrollbar pb-32">
               <div className="bg-slate-50 rounded-[3rem] p-10 space-y-4">
                  <div className="flex justify-between items-center text-slate-500">
-                    <span className="text-xs font-black uppercase tracking-widest">小计</span>
+                    <span className="text-xs font-black uppercase tracking-widest">{t('subtotal')}</span>
                     <span className="font-bold">{C}{Math.round(subtotal)}</span>
                  </div>
                  <div className="flex justify-between items-center text-slate-500">
@@ -250,7 +250,7 @@ const GuestOrder: React.FC<GuestOrderProps> = ({ roomId, dishes, onSubmitOrder, 
               </div>
 
               <div className="space-y-6">
-                <p className="text-xs font-black text-slate-500 uppercase tracking-widest ml-2">支付方式</p>
+                <p className="text-xs font-black text-slate-500 uppercase tracking-widest ml-2">{t('paymentMethod')}</p>
                 <div className="grid grid-cols-1 gap-3">
                    {availablePayments.map(method => (
                       <button 

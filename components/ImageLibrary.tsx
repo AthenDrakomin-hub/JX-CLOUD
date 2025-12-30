@@ -89,7 +89,7 @@ const ImageLibrary: React.FC<ImageLibraryProps> = ({ materials, onAddMaterial, o
               <span className="text-[10px] font-black uppercase tracking-[0.4em]">JX Cloud Assets & Stocks</span>
            </div>
            <h2 className="text-5xl font-serif italic text-slate-900 tracking-tighter">
-             {activeTab === 'inventory' ? '食材与物料库存' : '云端视觉资产库'}
+             {activeTab === 'inventory' ? t('ingredientInventory') : t('cloudVisualAssets')}
            </h2>
         </div>
 
@@ -99,14 +99,14 @@ const ImageLibrary: React.FC<ImageLibraryProps> = ({ materials, onAddMaterial, o
              className={`px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center space-x-2 ${activeTab === 'inventory' ? 'bg-slate-900 text-white shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}
            >
              <Box size={14} />
-             <span>物料库存</span>
+             <span>{t('materialInventory')}</span>
            </button>
            <button 
              onClick={() => setActiveTab('images')}
              className={`px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center space-x-2 ${activeTab === 'images' ? 'bg-slate-900 text-white shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}
            >
              <ImageIcon size={14} />
-             <span>视觉素材</span>
+             <span>{t('visualAssets')}</span>
            </button>
         </div>
       </div>
@@ -117,7 +117,7 @@ const ImageLibrary: React.FC<ImageLibraryProps> = ({ materials, onAddMaterial, o
            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#d4af37] transition-colors" size={20} />
            <input 
              type="text" 
-             placeholder={activeTab === 'inventory' ? "搜索食材名称或分类..." : "搜索图片资产名称..."}
+             placeholder={activeTab === 'inventory' ? t('searchIngredients') : t('searchImageAssets')}
              className="w-full pl-16 pr-8 py-5 bg-white border border-slate-100 rounded-[2rem] text-sm font-bold shadow-sm outline-none focus:ring-8 focus:ring-slate-50 transition-all"
              value={searchTerm}
              onChange={(e) => setSearchTerm(e.target.value)}
@@ -131,7 +131,7 @@ const ImageLibrary: React.FC<ImageLibraryProps> = ({ materials, onAddMaterial, o
                className="bg-slate-900 text-white px-10 py-5 rounded-[1.75rem] font-black text-[10px] uppercase tracking-widest hover:bg-[#d4af37] transition-all shadow-xl active:scale-95 flex items-center space-x-3"
              >
                <Plus size={18} />
-               <span>物料入库登记</span>
+               <span>{t('materialStockRegistration')}</span>
              </button>
            ) : (
              <button 
@@ -139,7 +139,7 @@ const ImageLibrary: React.FC<ImageLibraryProps> = ({ materials, onAddMaterial, o
                className="bg-slate-900 text-white px-10 py-5 rounded-[1.75rem] font-black text-[10px] uppercase tracking-widest hover:bg-[#d4af37] transition-all shadow-xl active:scale-95 flex items-center space-x-3"
              >
                {isUploading ? <Loader2 size={18} className="animate-spin" /> : <UploadCloud size={18} />}
-               <span>上传素材至云端</span>
+               <span>{t('uploadAssetsToCloud')}</span>
              </button>
            )}
            <input type="file" ref={fileInputRef} className="hidden" />
@@ -176,13 +176,13 @@ const ImageLibrary: React.FC<ImageLibraryProps> = ({ materials, onAddMaterial, o
 
                   <div className="grid grid-cols-2 gap-6">
                      <div className={`p-6 rounded-[2.5rem] space-y-2 ${isLowStock ? 'bg-red-50 border border-red-100' : 'bg-slate-50'}`}>
-                        <p className={`text-[9px] font-black uppercase tracking-widest ${isLowStock ? 'text-red-600' : 'text-slate-400'}`}>当前库存</p>
+                        <p className={`text-[9px] font-black uppercase tracking-widest ${isLowStock ? 'text-red-600' : 'text-slate-400'}`}>{t('currentInventory')}</p>
                         <p className={`text-4xl font-black tracking-tighter ${isLowStock ? 'text-red-700' : 'text-slate-900'}`}>
                            {ing.stock} <span className="text-sm font-bold opacity-40">{ing.unit}</span>
                         </p>
                      </div>
                      <div className="bg-slate-50 p-6 rounded-[2.5rem] space-y-2 border border-slate-100 shadow-inner">
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">预警阈值</p>
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t('alertThreshold')}</p>
                         <p className="text-4xl font-black text-slate-900 opacity-20">
                            {ing.minStock} <span className="text-sm font-bold">{ing.unit}</span>
                         </p>
@@ -192,10 +192,10 @@ const ImageLibrary: React.FC<ImageLibraryProps> = ({ materials, onAddMaterial, o
                   <div className="mt-8 pt-6 border-t border-slate-50 flex items-center justify-between">
                      <div className="flex items-center space-x-2">
                         <History size={14} className="text-slate-300" />
-                        <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">最近入库: {ing.lastRestocked ? new Date(ing.lastRestocked).toLocaleDateString() : '—'}</span>
+                        <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">{t('recentlyRestocked')}: {ing.lastRestocked ? new Date(ing.lastRestocked).toLocaleDateString() : '—'}</span>
                      </div>
                      <div className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${isLowStock ? 'bg-red-600 text-white border-transparent shadow-[0_0_15px_rgba(239,68,68,0.3)]' : 'bg-emerald-50 border-emerald-100 text-emerald-600'}`}>
-                        {isLowStock ? '库存危急' : '量足安全'}
+                        {isLowStock ? t('inventoryCritical') : t('inventorySafe')}
                      </div>
                   </div>
                </div>
@@ -248,7 +248,7 @@ const ImageLibrary: React.FC<ImageLibraryProps> = ({ materials, onAddMaterial, o
              <div className="p-12 lg:p-16 space-y-10">
                 <div className="flex items-center justify-between">
                    <div className="space-y-1">
-                      <h3 className="text-3xl font-bold text-slate-900 tracking-tight">{editingIng ? '编辑物料信息' : '新物料档案登记'}</h3>
+                      <h3 className="text-3xl font-bold text-slate-900 tracking-tight">{editingIng ? t('editMaterialInfo') : t('newMaterialRegistration')}</h3>
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Inventory Management System</p>
                    </div>
                    <button type="button" onClick={() => setIsModalOpen(false)} className="w-12 h-12 flex items-center justify-center rounded-2xl bg-slate-50 text-slate-400 hover:bg-slate-900 hover:text-white transition-all">
@@ -258,28 +258,28 @@ const ImageLibrary: React.FC<ImageLibraryProps> = ({ materials, onAddMaterial, o
 
                 <div className="space-y-6">
                    <div className="space-y-3">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">物料名称</label>
-                      <input name="name" defaultValue={editingIng?.name} required placeholder="如：特级菜籽油" className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-[#d4af37]/10 transition-all font-bold text-slate-900" />
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('materialName')}</label>
+                      <input name="name" defaultValue={editingIng?.name} required placeholder={t('ingredientPlaceholder')} className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-[#d4af37]/10 transition-all font-bold text-slate-900" />
                    </div>
                    <div className="grid grid-cols-2 gap-6">
                       <div className="space-y-3">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">计量单位</label>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('measurementUnit')}</label>
                         <input name="unit" defaultValue={editingIng?.unit} required placeholder="kg / L / Pcs" className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-[#d4af37]/10 transition-all font-bold text-slate-900" />
                       </div>
                       <div className="space-y-3">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">物料分类</label>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('materialCategory')}</label>
                         <select name="category" defaultValue={editingIng?.category || '主食类'} className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-[#d4af37]/10 transition-all font-black text-slate-900 appearance-none">
-                           <option value="主食类">主食类</option>
-                           <option value="油脂类">油脂类</option>
-                           <option value="水产类">水产类</option>
-                           <option value="调味类">调味类</option>
-                           <option value="蔬果类">蔬果类</option>
+                           <option value={t('stapleFood')}>{t('stapleFood')}</option>
+                           <option value={t('oilFat')}>{t('oilFat')}</option>
+                           <option value={t('seafood')}>{t('seafood')}</option>
+                           <option value={t('seasoning')}>{t('seasoning')}</option>
+                           <option value={t('vegetableFruit')}>{t('vegetableFruit')}</option>
                         </select>
                       </div>
                    </div>
                    <div className="grid grid-cols-2 gap-6">
                       <div className="space-y-3">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">当前库存量</label>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('currentInventory')}</label>
                         <div className="relative">
                            <input name="stock" type="number" step="0.01" defaultValue={editingIng?.stock || 0} required className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-[#d4af37]/10 transition-all font-black text-slate-900" />
                            <Package className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-200" size={18} />
@@ -297,7 +297,7 @@ const ImageLibrary: React.FC<ImageLibraryProps> = ({ materials, onAddMaterial, o
 
                 <button type="submit" className="w-full py-6 bg-slate-900 text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.3em] shadow-2xl hover:bg-[#d4af37] transition-all flex items-center justify-center space-x-3 group">
                    <Save size={18} className="group-hover:rotate-12 transition-transform" />
-                   <span>{editingIng ? '保存物料修改' : '确认并录入资产库'}</span>
+                   <span>{editingIng ? t('saveMaterialChanges') : t('confirmAndRegisterAssets')}</span>
                 </button>
              </div>
           </form>

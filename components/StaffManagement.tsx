@@ -154,7 +154,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ users, onRefresh, onA
           <div className="flex bg-slate-100 p-1 rounded-full border border-slate-200 shadow-inner">
             <button onClick={() => setViewMode('directory')} className={`px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center space-x-2 ${viewMode === 'directory' ? 'bg-white text-slate-900 shadow-md' : 'text-slate-400'}`}>
               <Users size={14} />
-              <span>员工名录</span>
+              <span>{t('staffDirectory')}</span>
             </button>
             <button onClick={() => setViewMode('audit')} className={`px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center space-x-2 ${viewMode === 'audit' ? 'bg-white text-slate-900 shadow-md' : 'text-slate-400'}`}>
               <Terminal size={14} />
@@ -166,7 +166,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ users, onRefresh, onA
             className="bg-slate-900 text-white px-8 h-14 rounded-full flex items-center justify-center space-x-3 hover:bg-[#d4af37] transition-all shadow-xl active:scale-95"
           >
             <UserPlus size={18} />
-            <span className="text-[10px] font-black uppercase tracking-widest">注册新账号</span>
+            <span className="text-[10px] font-black uppercase tracking-widest">{t('registerNewAccount')}</span>
           </button>
         </div>
       </div>
@@ -212,13 +212,13 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ users, onRefresh, onA
 
                <div className={`p-6 rounded-[2.5rem] border transition-all duration-700 space-y-4 ${user.isOnline ? 'bg-emerald-50/30 border-emerald-100 shadow-inner' : 'bg-slate-50 border-slate-100'}`}>
                   <div className="flex items-center justify-between">
-                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">会话状态记录</span>
+                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('sessionStatusLog')}</span>
                      <Monitor size={12} className={user.isOnline ? "text-emerald-500" : "text-slate-300"} />
                   </div>
                   <div className="flex items-center space-x-3">
                      <div className={`w-2 h-2 rounded-full ${user.isOnline ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' : 'bg-slate-300'}`} />
                      <p className={`text-[10px] font-black uppercase tracking-widest ${user.isOnline ? 'text-emerald-600' : 'text-slate-400'}`}>
-                       {user.isOnline ? '单设备活动会话中' : '全终端处于离线'}
+                       {user.isOnline ? t('singleDeviceActive') : t('allTerminalsOffline')}
                      </p>
                   </div>
                </div>
@@ -237,7 +237,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ users, onRefresh, onA
         <div className="space-y-6">
            <div className="flex items-center space-x-4 bg-white/40 p-4 rounded-[2.5rem] border border-white shadow-sm backdrop-blur-md">
               <Search className="text-slate-300 ml-6" size={20} />
-              <input value={logSearch} onChange={e => setLogSearch(e.target.value)} placeholder="全局检索：行为详情、账号 UID 或异常等级..." className="bg-transparent border-none outline-none font-bold text-sm w-full py-2" />
+              <input value={logSearch} onChange={e => setLogSearch(e.target.value)} placeholder={t('globalSearchPlaceholder')} className="bg-transparent border-none outline-none font-bold text-sm w-full py-2" />
            </div>
 
            <div className="bg-slate-950 rounded-[4rem] p-10 shadow-2xl overflow-hidden border border-white/5">
@@ -290,7 +290,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ users, onRefresh, onA
                       <input name="name" defaultValue={editingUser?.name} required className="w-full px-6 py-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-[#d4af37] transition-all font-bold" />
                    </div>
                    <div className="space-y-3">
-                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">登录账号</label>
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('loginAccount')}</label>
                       <input name="username" defaultValue={editingUser?.username} required className="w-full px-6 py-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-[#d4af37] transition-all font-bold" />
                    </div>
                    
@@ -324,7 +324,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ users, onRefresh, onA
                          <input 
                             value={ipWhitelistStr}
                             onChange={(e) => setIpWhitelistStr(e.target.value)}
-                            placeholder="输入IP地址，多个用逗号分隔 (如: 192.168.1.100, 192.168.1.0/24)" 
+                            placeholder={t('ipAddressPlaceholder')} 
                             className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-[#d4af37] transition-all font-bold" 
                          />
                       </div>
@@ -345,9 +345,9 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ users, onRefresh, onA
                 <div className="space-y-10">
                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       {[
-                        { role: UserRole.ADMIN, label: '系统管理员', desc: '全域根控制 (含 2FA)' },
-                        { role: UserRole.MANAGER, label: '总经理', desc: '业务全权限' },
-                        { role: UserRole.STAFF, label: '基础员工', desc: '有限操作权' }
+                        { role: UserRole.ADMIN, label: t('systemAdmin'), desc: t('adminDesc') },
+                        { role: UserRole.MANAGER, label: t('generalManager'), desc: t('businessFullRights') },
+                        { role: UserRole.STAFF, label: t('basicStaff'), desc: t('staffDesc') }
                       ].map((r) => (
                         <label key={r.role} className={`relative p-6 rounded-3xl border-2 transition-all cursor-pointer ${hasAdmin && r.role === UserRole.ADMIN && (!editingUser || editingUser.role !== UserRole.ADMIN) ? 'opacity-40 grayscale pointer-events-none' : 'hover:bg-white hover:shadow-xl'} group`}>
                            <input type="radio" name="role" value={r.role} defaultChecked={editingUser?.role === r.role || (!editingUser && r.role === UserRole.STAFF)} className="absolute top-4 right-4 h-4 w-4 text-[#d4af37]" />
@@ -369,7 +369,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ users, onRefresh, onA
 
                 <button type="submit" className="w-full bg-slate-950 text-white py-6 rounded-[2rem] font-black text-xs uppercase tracking-[0.4em] shadow-2xl hover:bg-[#d4af37] hover:text-slate-950 transition-all flex items-center justify-center space-x-4">
                    {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-                   <span>部署安全组策略</span>
+                   <span>{t('deploySecurityPolicy')}</span>
                 </button>
              </div>
           </form>
@@ -379,9 +379,9 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ users, onRefresh, onA
       {/* 确认模态框 */}
       <ConfirmationModal 
         isOpen={confirmKick.isOpen}
-        title="强制清除在线状态"
-        message="该操作将立刻重置目标账号的在线状态位。如果目标用户正在操作，其下次交互将被拦截。这通常用于解决账号卡死或异常多端登录问题。"
-        confirmLabel="确认踢出"
+        title={t('forceClearOnline')}
+        message={t('forceClearMessage')}
+        confirmLabel={t('confirmKick')}
         confirmVariant="danger"
         onConfirm={() => confirmKick.userId && handleForceOffline(confirmKick.userId)}
         onCancel={() => setConfirmKick({ isOpen: false, userId: null })}
@@ -390,9 +390,9 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ users, onRefresh, onA
 
       <ConfirmationModal 
         isOpen={confirmDelete.isOpen}
-        title="销毁授权"
-        message="此操作将永久吊销该员工的身份凭据，注销过程将被完整审计。确定执行？"
-        confirmLabel="强制注销"
+        title={t('destroyAuth')}
+        message={t('destroyAuthMessage')}
+        confirmLabel={t('forceLogout')}
         confirmVariant="danger"
         onConfirm={async () => { if (confirmDelete.userId) await onDeleteUser(confirmDelete.userId); setConfirmDelete({ isOpen: false, userId: null }); }}
         onCancel={() => setConfirmDelete({ isOpen: false, userId: null })}

@@ -30,6 +30,12 @@ export const translations = {
     allCategories: '全部菜品',
     filterByCategory: '按分类筛选',
     itemsCount: '项',
+    mainCategory: '主菜',
+    seafoodCategory: '海鲜',
+    stapleCategory: '主食',
+    soupCategory: '汤品',
+    drinkCategory: '饮品',
+    dessertCategory: '甜品',
 
     // 菜单
     curatedMenu: '精选菜单',
@@ -169,6 +175,12 @@ export const translations = {
     allCategories: 'All Items',
     filterByCategory: 'Filter by Category',
     itemsCount: 'Items',
+    mainCategory: 'Main',
+    seafoodCategory: 'Seafood',
+    stapleCategory: 'Staple',
+    soupCategory: 'Soup',
+    drinkCategory: 'Drink',
+    dessertCategory: 'Dessert',
 
     curatedMenu: 'Curated Menu',
     kitchenGallery: 'Gallery',
@@ -303,6 +315,12 @@ export const translations = {
     
     allCategories: 'Lahat ng Pagkain',
     filterByCategory: 'I-filter ayon sa Kategorya',
+    mainCategory: 'Pangunahing Uri',
+    seafoodCategory: 'Seafood',
+    stapleCategory: 'Pangunahing Pagkain',
+    soupCategory: 'Sopas',
+    drinkCategory: 'Inumin',
+    dessertCategory: 'Panghimagas',
     
     addToCart: 'Idagdag sa Cart',
     systemLanguage: 'Wika ng System',

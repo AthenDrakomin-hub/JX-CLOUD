@@ -211,7 +211,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, onChangeLang, cur
                       />
                    </div>
                    <div className="space-y-3">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">系统显示语言 (System Language)</label>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('systemDisplayLanguage')}</label>
                       <div className="relative">
                         <Globe size={18} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" />
                         <select 
@@ -219,7 +219,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, onChangeLang, cur
                           onChange={(e) => onChangeLang(e.target.value as Language)}
                           className="w-full pl-16 pr-8 py-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-[#d4af37]/10 transition-all font-black text-slate-900 appearance-none cursor-pointer"
                         >
-                           <option value="zh">简体中文 (Simplified Chinese)</option>
+                           <option value="zh">{t('simplifiedChinese')}</option>
                            <option value="en">English (International)</option>
                            <option value="tl">Tagalog (Pilipino)</option>
                         </select>
@@ -260,7 +260,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, onChangeLang, cur
                    <div className="p-6 bg-white rounded-3xl border border-slate-100 space-y-2 shadow-sm">
                       <div className="flex items-center space-x-3 text-slate-400 mb-2">
                          <ShieldCheck size={14} />
-                         <span className="text-[10px] font-black uppercase tracking-widest">鉴权状态</span>
+                         <span className="text-[10px] font-black uppercase tracking-widest">{t('authStatus')}</span>
                       </div>
                       <div className="flex items-center space-x-2">
                          <div className={`w-2 h-2 rounded-full ${healthStatus === 'online' ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
@@ -288,13 +288,13 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, onChangeLang, cur
                       <CloudUpload size={24} />
                    </div>
                    <div>
-                      <h3 className="text-xl font-black uppercase tracking-widest">数据资产迁移枢纽</h3>
+                      <h3 className="text-xl font-black uppercase tracking-widest">{t('dataMigrationHub')}</h3>
                       <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Virtual to Cloud Migration</p>
                    </div>
                 </div>
                 <div className="flex flex-col items-end">
-                   <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500 mb-1">系统状态: {dbStats.status}</span>
-                   <span className="text-[9px] font-black uppercase tracking-widest text-slate-600">67 房间结构就绪</span>
+                   <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500 mb-1">{t('systemStatus')}: {dbStats.status}</span>
+                   <span className="text-[9px] font-black uppercase tracking-widest text-slate-600">{t('roomsReady')}</span>
                 </div>
              </div>
              <div className="p-12 space-y-8">
@@ -312,7 +312,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, onChangeLang, cur
                     <div className="space-y-4">
                        <h4 className="text-2xl font-bold text-slate-900 tracking-tight">一键同步至生产数据库</h4>
                        <p className="text-sm text-slate-400 leading-relaxed max-w-sm">
-                         将本地 localStorage 中的虚拟数据（包含 67 个房间配置、订单历史及菜单资产）一键封装并同步至 Supabase 云端实例。
+                         {t('localStorageMigration')}
                        </p>
                     </div>
                     <button 
@@ -347,13 +347,13 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, onChangeLang, cur
              <div className="p-12 space-y-8">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                    <div className="space-y-2">
-                      <h4 className="text-lg font-bold text-slate-900">Authenticator 安全防护</h4>
-                      <p className="text-xs text-slate-500 leading-relaxed max-w-md">开启后，登录时需额外提供 6 位动态验证码。增强管理端访问安全性。</p>
+                      <h4 className="text-lg font-bold text-slate-900">{t('authenticatorSecurity')}</h4>
+                      <p className="text-xs text-slate-500 leading-relaxed max-w-md">{t('authenticatorDesc')}</p>
                    </div>
                    {currentUser?.twoFactorEnabled ? (
-                      <button onClick={disableMfa} className="px-8 py-4 border-2 border-red-100 text-red-500 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all">停用防护</button>
+                      <button onClick={disableMfa} className="px-8 py-4 border-2 border-red-100 text-red-500 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all">{t('disableProtection')}</button>
                    ) : (
-                      <button onClick={startMfaSetup} className="px-10 py-5 bg-emerald-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl hover:bg-slate-900 transition-all">扫码绑定并开启</button>
+                      <button onClick={startMfaSetup} className="px-10 py-5 bg-emerald-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl hover:bg-slate-900 transition-all">{t('scanAndEnable')}</button>
                    )}
                 </div>
              </div>
@@ -406,12 +406,12 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, onChangeLang, cur
                  <span className="text-xs font-black uppercase tracking-widest">危险隔离区</span>
               </div>
               <h3 className="text-2xl font-serif italic mb-6">初始化系统存储</h3>
-              <p className="text-xs text-slate-400 mb-10 leading-relaxed">重置浏览器本地缓存（VirtualDB）。此操作将物理删除当前终端所有未同步的离线数据，并恢复 67 个房间的初始状态。</p>
+              <p className="text-xs text-slate-400 mb-10 leading-relaxed">{t('resetLocalCache')}</p>
               <button 
                 onClick={() => setIsResetConfirmOpen(true)}
                 className="w-full py-5 bg-red-600 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-white hover:text-red-600 transition-all shadow-xl"
               >
-                立即销毁本地缓存
+                {t('clearLocalCache')}
               </button>
            </section>
            
@@ -422,11 +422,11 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, onChangeLang, cur
               </div>
               <div className="space-y-6">
                  <div className="flex justify-between items-end border-b border-slate-50 pb-4">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">云端/注册房间</span>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('cloudRegisteredRooms')}</span>
                     <span className="text-2xl font-black text-slate-900">{dbStats.rooms}</span>
                  </div>
                  <div className="flex justify-between items-end border-b border-slate-50 pb-4">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">菜单资产</span>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('menuAssets')}</span>
                     <span className="text-2xl font-black text-slate-900">{dbStats.dishes}</span>
                  </div>
                  <div className="flex justify-between items-end border-b border-slate-50 pb-4">
@@ -453,15 +453,15 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, onChangeLang, cur
                     <div className="p-8 bg-slate-50 rounded-[3rem] inline-block border border-slate-100 shadow-inner">
                        <QRCodeSVG value={`otpauth://totp/JXCloud:${currentUser?.username}?secret=${mfaSecret}&issuer=JXCloud`} size={180} level="H" />
                     </div>
-                    <button onClick={() => setMfaStep(2)} className="w-full py-6 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-xl hover:bg-emerald-600 transition-all">下一步验证</button>
+                    <button onClick={() => setMfaStep(2)} className="w-full py-6 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-xl hover:bg-emerald-600 transition-all">{t('nextStepVerification')}</button>
                   </>
                 )}
                 {mfaStep === 2 && (
                   <>
                     <div className="flex justify-center"><div className="w-20 h-20 bg-amber-50 text-amber-500 rounded-[2rem] flex items-center justify-center shadow-inner"><Smartphone size={40} /></div></div>
                     <div className="space-y-2">
-                       <h3 className="text-2xl font-bold text-slate-900">2. 激活验证码</h3>
-                       <p className="text-xs text-slate-400 px-4">请输入 App 中显示的 6 位验证码以确认绑定。</p>
+                       <h3 className="text-2xl font-bold text-slate-900">2. {t('activateVerificationCode')}</h3>
+                       <p className="text-xs text-slate-400 px-4">{t('enterSixDigitCode')}</p>
                     </div>
                     <input 
                       type="text" 
@@ -480,8 +480,8 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, onChangeLang, cur
                 {mfaStep === 3 && (
                   <div className="py-8 text-center">
                     <div className="flex justify-center mb-10"><div className="w-28 h-28 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center shadow-lg"><CheckCircle2 size={64} /></div></div>
-                    <h3 className="text-3xl font-bold text-slate-900 mb-4 tracking-tight">开启成功</h3>
-                    <button onClick={() => setIsMfaModalOpen(false)} className="w-full py-6 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-xl hover:bg-[#d4af37] transition-all">完成设置</button>
+                    <h3 className="text-3xl font-bold text-slate-900 mb-4 tracking-tight">{t('activationSuccess')}</h3>
+                    <button onClick={() => setIsMfaModalOpen(false)} className="w-full py-6 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-xl hover:bg-[#d4af37] transition-all">{t('completeSetup')}</button>
                   </div>
                 )}
              </div>
@@ -491,9 +491,9 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, onChangeLang, cur
 
       <ConfirmationModal 
         isOpen={isResetConfirmOpen}
-        title="初始化系统存储"
-        message="此操作将强行清空浏览器本地缓存。确定执行？"
-        confirmLabel="确认清空"
+        title={t('initializeSystemStorage')}
+        message={t('confirmClearCache')}
+        confirmLabel={t('confirmClear')}
         confirmVariant="danger"
         onConfirm={() => { localStorage.clear(); window.location.reload(); }}
         onCancel={() => setIsResetConfirmOpen(false)}

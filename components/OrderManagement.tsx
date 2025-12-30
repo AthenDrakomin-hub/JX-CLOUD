@@ -58,10 +58,10 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ orders, onUpdateStatu
   const getStatusLabel = (status: OrderStatus) => {
     const labels: Record<string, string> = {
       [OrderStatus.PENDING]: t('filterPending'),
-      [OrderStatus.PREPARING]: lang === 'zh' ? '制作中' : 'Preparing',
-      [OrderStatus.DELIVERING]: lang === 'zh' ? '配送中' : 'Delivering',
-      [OrderStatus.COMPLETED]: lang === 'zh' ? '已完成' : 'Completed',
-      [OrderStatus.CANCELLED]: lang === 'zh' ? '已取消' : 'Cancelled',
+      [OrderStatus.PREPARING]: t('preparing'),
+      [OrderStatus.DELIVERING]: t('delivering'),
+      [OrderStatus.COMPLETED]: t('completed'),
+      [OrderStatus.CANCELLED]: t('cancelled'),
     };
     return labels[status] || status;
   };
@@ -132,10 +132,10 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ orders, onUpdateStatu
   const filterOptions = [
     { id: 'all', label: t('filterAll'), count: counts.all, color: 'bg-slate-900' },
     { id: OrderStatus.PENDING, label: t('filterPending'), count: counts.pending, color: 'bg-amber-500' },
-    { id: OrderStatus.PREPARING, label: lang === 'zh' ? '制作中' : 'Preparing', count: counts.preparing, color: 'bg-blue-500' },
-    { id: OrderStatus.DELIVERING, label: lang === 'zh' ? '配送中' : 'Delivering', count: counts.delivering, color: 'bg-purple-500' },
-    { id: OrderStatus.COMPLETED, label: lang === 'zh' ? '已完成' : 'Completed', count: counts.completed, color: 'bg-emerald-500' },
-    { id: OrderStatus.CANCELLED, label: lang === 'zh' ? '已取消' : 'Cancelled', count: counts.cancelled, color: 'bg-red-500' },
+    { id: OrderStatus.PREPARING, label: t('preparing'), count: counts.preparing, color: 'bg-blue-500' },
+    { id: OrderStatus.DELIVERING, label: t('delivering'), count: counts.delivering, color: 'bg-purple-500' },
+    { id: OrderStatus.COMPLETED, label: t('completed'), count: counts.completed, color: 'bg-emerald-500' },
+    { id: OrderStatus.CANCELLED, label: t('cancelled'), count: counts.cancelled, color: 'bg-red-500' },
   ];
 
   return (
@@ -155,7 +155,7 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ orders, onUpdateStatu
             <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#d4af37] transition-colors" size={20} />
             <input 
               type="text" 
-              placeholder={lang === 'zh' ? "搜索房间号或订单号..." : "Search Room or Order ID..."}
+              placeholder={t('searchRoomOrder')}
               className="w-full pl-16 pr-8 py-5 bg-white border border-slate-100 rounded-[2rem] text-sm font-bold shadow-sm outline-none focus:ring-8 focus:ring-slate-50 transition-all"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -188,7 +188,7 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ orders, onUpdateStatu
             <ShoppingBag size={48} strokeWidth={1} />
           </div>
           <p className="text-sm font-black text-slate-400 uppercase tracking-[0.3em]">
-            {searchQuery ? (lang === 'zh' ? '未找到相关订单' : 'No matching orders found') : (lang === 'zh' ? `暂无${getStatusLabel(filter as OrderStatus)}订单` : `No ${getStatusLabel(filter as OrderStatus).toLowerCase()} orders`)}
+            {searchQuery ? t('noMatchingOrders') : t('noFilteredOrders').replace('{status}', getStatusLabel(filter as OrderStatus))}
           </p>
         </div>
       ) : (
@@ -210,7 +210,7 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ orders, onUpdateStatu
                           <h4 className="text-3xl font-bold tracking-tight">{t('station')} {order.roomId}</h4>
                           <button 
                             onClick={(e) => { e.stopPropagation(); handlePrint(order); }}
-                            title={lang === 'zh' ? "打印票据" : "Print Ticket"}
+                            title={t('printTicket')}
                             className="p-3 bg-white/5 hover:bg-[#d4af37] text-white/40 hover:text-slate-900 rounded-2xl transition-all active:scale-90 border border-white/5"
                           >
                             <Printer size={18} />
@@ -274,7 +274,7 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ orders, onUpdateStatu
                       {detailOrder.roomId}
                    </div>
                    <div>
-                      <h3 className="text-3xl font-bold text-slate-900 tracking-tight">{lang === 'zh' ? '订单深度明细' : 'Order Intelligence'}</h3>
+                      <h3 className="text-3xl font-bold text-slate-900 tracking-tight">{t('orderDetails')}</h3>
                       <div className="flex items-center space-x-3 mt-1">
                         <Hash size={14} className="text-[#d4af37]" />
                         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">TXID: {detailOrder.id}</p>
@@ -289,7 +289,7 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ orders, onUpdateStatu
                       {/* 选项：顶部打印按钮 */}
                       <button 
                         onClick={() => handlePrint(detailOrder)}
-                        title={lang === 'zh' ? "重新打印票据" : "Re-print Ticket"}
+                        title={t('reprintTicket')}
                         className="w-12 h-12 flex items-center justify-center rounded-xl bg-slate-50 text-slate-500 hover:bg-[#d4af37] hover:text-white transition-all shadow-sm border border-slate-100"
                       >
                          <Printer size={20} />
@@ -309,7 +309,7 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ orders, onUpdateStatu
                       <div className="space-y-4">
                          <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] flex items-center space-x-2">
                            <ShoppingBag size={14} />
-                           <span>{lang === 'zh' ? '所购商品' : 'Items List'}</span>
+                           <span>{t('itemsList')}</span>
                          </h5>
                          <div className="space-y-3">
                             {detailOrder.items.map((item, i) => (
@@ -331,7 +331,7 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ orders, onUpdateStatu
                    <div className="space-y-10">
                       <div className="bg-[#0f172a] p-10 rounded-[3rem] text-white shadow-2xl relative overflow-hidden">
                          <div className="absolute top-0 right-0 w-32 h-32 bg-[#d4af37]/10 blur-[60px] rounded-full translate-x-1/2 -translate-y-1/2" />
-                         <h5 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] mb-8">{lang === 'zh' ? '财务摘要' : 'Financials'}</h5>
+                         <h5 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] mb-8">{t('financialSummary')}</h5>
                          <div className="space-y-6">
                             <div className="flex justify-between text-slate-400">
                                <span className="text-xs font-black uppercase tracking-widest">Subtotal</span>
@@ -355,7 +355,7 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ orders, onUpdateStatu
                          <div className="mt-10 flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
                             <div className="flex items-center space-x-3">
                                <CreditCard size={18} className="text-slate-500" />
-                               <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">{lang === 'zh' ? '支付渠道' : 'Method'}</span>
+                               <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">{t('paymentChannel')}</span>
                             </div>
                             <span className="text-xs font-bold text-white uppercase tracking-widest">{detailOrder.paymentMethod}</span>
                          </div>
@@ -392,7 +392,7 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ orders, onUpdateStatu
                   className="w-full sm:flex-1 h-16 bg-white border border-slate-200 text-slate-900 rounded-[1.5rem] font-black text-[10px] uppercase tracking-[0.3em] hover:bg-slate-100 transition-all flex items-center justify-center space-x-3 shadow-sm group"
                 >
                    <Printer size={18} className="group-hover:text-[#d4af37] transition-colors" />
-                   <span>{lang === 'zh' ? '重新打印后厨票据' : 'Re-print Kitchen Ticket'}</span>
+                   <span>{t('reprintKitchenTicket')}</span>
                 </button>
                 {![OrderStatus.COMPLETED, OrderStatus.CANCELLED].includes(detailOrder.status) && (
                   <button 
@@ -412,7 +412,7 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ orders, onUpdateStatu
       <ConfirmationModal 
         isOpen={confirmCancel.isOpen}
         title={t('voidOrder')}
-        message={lang === 'zh' ? '确定要取消该订单吗？此操作不可逆。' : 'Are you sure you want to cancel this order?'}
+        message={t('confirmCancelOrder')}
         confirmLabel={t('cancelled')}
         confirmVariant="danger"
         onConfirm={() => {

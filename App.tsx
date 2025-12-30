@@ -413,18 +413,17 @@ const App: React.FC = () => {
 
   return (
     <ErrorBoundary lang={lang}>
-      <div className="min-h-screen relative flex flex-col items-center justify-center overflow-hidden bg-[#020617]">
-        <div className="absolute inset-0 z-0 scale-110 bg-[#020617]">
+      <div className="min-h-screen relative flex flex-col items-center justify-center overflow-hidden bg-slate-900">
+        <div className="absolute inset-0 z-0 scale-110 bg-gradient-to-br from-slate-900/95 via-slate-950/90 to-slate-900/95">
           <img 
             src="https://images.unsplash.com/photo-1544644181-1484b3fdfc62?auto=format&fit=crop&q=80&w=2000" 
-            className="w-full h-full object-cover blur-[8px] opacity-20" 
+            className="w-full h-full object-cover blur-[12px] opacity-50" 
             alt="Kitchen" 
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               target.style.display = 'none';
             }}
           />
-          <div className="absolute inset-0 bg-gradient-to-br from-slate-950/90 via-slate-900/80 to-slate-950/90" />
         </div>
 
         <div className="relative z-10 w-full max-w-[480px] px-6">

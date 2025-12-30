@@ -113,7 +113,7 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
             className="h-20 px-8 bg-slate-50 border border-slate-200 text-slate-600 rounded-[2.5rem] font-black text-xs uppercase tracking-widest flex items-center justify-center space-x-3 hover:bg-slate-100 transition-all active:scale-95 shadow-sm"
           >
             <Smartphone size={18} />
-            <span>点餐预览</span>
+            <span>{t('diningPreview')}</span>
           </button>
           <div className="relative group w-full lg:w-72">
             <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#d4af37] transition-all" size={20} />
@@ -130,7 +130,7 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
             className="bg-[#0f172a] text-white h-20 px-10 rounded-[2.5rem] font-black text-xs uppercase tracking-[0.3em] flex items-center justify-center space-x-4 shadow-2xl hover:bg-[#d4af37] transition-all active:scale-95 group shrink-0"
           >
             <Plus size={20} />
-            <span>新增菜品</span>
+            <span>{t('addDish')}</span>
           </button>
         </div>
       </div>
@@ -145,7 +145,13 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
                 ? 'bg-slate-900 text-white border-transparent shadow-xl translate-y-[-2px]' 
                 : 'bg-white text-slate-400 border-slate-100 hover:text-slate-900 hover:border-slate-200 shadow-sm'}`}
           >
-            <span>{cat === 'All' ? t('allCategories') : cat}</span>
+            <span>{cat === 'All' ? t('allCategories') : 
+                  cat === 'Main' ? t('mainCategory') :
+                  cat === 'Seafood' ? t('seafoodCategory') :
+                  cat === 'Staple' ? t('stapleCategory') :
+                  cat === 'Soup' ? t('soupCategory') :
+                  cat === 'Drink' ? t('drinkCategory') :
+                  cat === 'Dessert' ? t('dessertCategory') : cat}</span>
             <span className={`px-2 py-0.5 rounded-full text-[9px] ${activeCategory === cat ? 'bg-white/20 text-[#d4af37]' : 'bg-slate-50 text-slate-400'}`}>
               {categoryCounts[cat] || 0}
             </span>
@@ -158,7 +164,7 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center text-slate-200 mb-6">
               <Filter size={32} />
            </div>
-           <p className="text-sm font-black text-slate-400 uppercase tracking-widest">在该分类下未找到匹配菜品</p>
+           <p className="text-sm font-black text-slate-400 uppercase tracking-widest">{t('noMatchingDishes')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-12">
@@ -172,7 +178,14 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
               <div className="relative aspect-[5/4] rounded-t-[3.5rem] overflow-hidden m-2 bg-slate-100">
                 <OptimizedImage src={dish.imageUrl} alt={dish.name} aspectRatio="h-full w-full" className="transition-all duration-1000 group-hover:scale-110" />
                 <div className="absolute top-6 left-6 flex flex-col space-y-2">
-                    <div className="px-4 py-2 bg-slate-900/60 backdrop-blur-md text-white rounded-full text-[8px] font-black uppercase tracking-[0.3em] border border-white/10">{dish.category}</div>
+                    <div className="px-4 py-2 bg-slate-900/60 backdrop-blur-md text-white rounded-full text-[8px] font-black uppercase tracking-[0.3em] border border-white/10">
+                      {dish.category === 'Main' ? t('mainCategory') :
+                       dish.category === 'Seafood' ? t('seafoodCategory') :
+                       dish.category === 'Staple' ? t('stapleCategory') :
+                       dish.category === 'Soup' ? t('soupCategory') :
+                       dish.category === 'Drink' ? t('drinkCategory') :
+                       dish.category === 'Dessert' ? t('dessertCategory') : dish.category}
+                    </div>
                     {dish.isRecommended && <div className="px-4 py-2 bg-[#d4af37] text-white rounded-full shadow-lg text-[8px] font-black uppercase tracking-[0.3em] flex items-center space-x-1"><Star size={8} fill="white" /> <span>推荐</span></div>}
                 </div>
                 <div className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 transition-all duration-500 flex items-center justify-center backdrop-blur-sm" onClick={e => e.stopPropagation()}>
@@ -214,19 +227,19 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
                 <OptimizedImage src={tempImageUrl || editingDish?.imageUrl || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c'} alt="Preview" aspectRatio="h-full w-full" className="opacity-40" />
                 <div className="absolute inset-0 flex flex-col justify-end p-20 text-white">
                    <h4 className="text-6xl font-serif italic tracking-tighter leading-tight">JX Kitchen Hub</h4>
-                   <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.5em] mt-4">江西云厨核心菜单管理</p>
+                   <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.5em] mt-4">{t('coreMenuManagement')}</p>
                 </div>
              </div>
              <div className="lg:w-1/2 p-12 lg:p-16 space-y-8 overflow-y-auto no-scrollbar bg-white">
                 <div className="flex items-center justify-between">
-                   <h3 className="text-3xl font-bold text-slate-900 tracking-tight">{editingDish ? '编辑菜品资产' : '录入新菜品'}</h3>
+                   <h3 className="text-3xl font-bold text-slate-900 tracking-tight">{editingDish ? t('editDishAsset') : t('addNewDish')}</h3>
                    <button type="button" onClick={closeModal} className="w-12 h-12 flex items-center justify-center rounded-2xl bg-slate-50 text-slate-400 hover:bg-slate-950 hover:text-white transition-all"><X size={24} /></button>
                 </div>
                 
                 <div className="space-y-6">
                    <div className="grid grid-cols-2 gap-6">
                       <div className="space-y-3">
-                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2"><Tag size={12}/> 中文名称</label>
+                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2"><Tag size={12}/> {t('chineseName')}</label>
                          <input name="name" defaultValue={editingDish?.name} required className="w-full px-6 py-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-[#d4af37] transition-all font-bold" />
                       </div>
                       <div className="space-y-3">
@@ -236,24 +249,31 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
                    </div>
 
                    <div className="space-y-3">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2"><Globe size={12}/> 英文名称 / International Name</label>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2"><Globe size={12}/> {t('englishName')}</label>
                       <input name="nameEn" defaultValue={editingDish?.nameEn} className="w-full px-6 py-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-[#d4af37] transition-all font-bold" />
                    </div>
 
                    <div className="space-y-3">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2"><FileText size={12}/> 详细描述 / Flavor Profile</label>
-                      <textarea name="description" defaultValue={editingDish?.description} rows={3} className="w-full px-6 py-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-[#d4af37] transition-all font-medium no-scrollbar resize-none" placeholder="描述菜品的口感、制作工艺或特色..." />
+                      <textarea name="description" defaultValue={editingDish?.description} rows={3} className="w-full px-6 py-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-[#d4af37] transition-all font-medium no-scrollbar resize-none" placeholder={t('dishDescriptionPlaceholder')} />
                    </div>
 
                    <div className="grid grid-cols-2 gap-6">
                       <div className="space-y-3">
-                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2"><Filter size={12}/> 所属分类</label>
+                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2"><Filter size={12}/> {t('dishCategory')}</label>
                          <select name="category" defaultValue={editingDish?.category || CATEGORIES[0]} className="w-full px-6 py-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-[#d4af37] transition-all font-black appearance-none cursor-pointer">
-                            {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                            {CATEGORIES.map(cat => <option key={cat} value={cat}>
+                              {cat === 'Main' ? t('mainCategory') :
+                               cat === 'Seafood' ? t('seafoodCategory') :
+                               cat === 'Staple' ? t('stapleCategory') :
+                               cat === 'Soup' ? t('soupCategory') :
+                               cat === 'Drink' ? t('drinkCategory') :
+                               cat === 'Dessert' ? t('dessertCategory') : cat}
+                            </option>)}
                          </select>
                       </div>
                       <div className="space-y-3">
-                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2"><Package size={12}/> 初始库存</label>
+                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2"><Package size={12}/> {t('initialInventory')}</label>
                          <input name="stock" type="number" defaultValue={editingDish?.stock || 0} required className="w-full px-6 py-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-[#d4af37] transition-all font-black" />
                       </div>
                    </div>
@@ -275,10 +295,10 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
                 </div>
 
                 <div className="pt-6 border-t border-slate-50 flex items-center space-x-6">
-                   <button type="button" onClick={closeModal} className="text-xs font-black text-slate-400 uppercase tracking-widest px-4 hover:text-slate-950">取消</button>
+                   <button type="button" onClick={closeModal} className="text-xs font-black text-slate-400 uppercase tracking-widest px-4 hover:text-slate-950">{t('cancelLabel')}</button>
                    <button type="submit" className="flex-1 bg-slate-950 text-white py-6 rounded-3xl font-black text-xs uppercase tracking-[0.3em] shadow-2xl hover:bg-[#d4af37] transition-all active:scale-95 flex items-center justify-center space-x-3">
                       <Save size={18} />
-                      <span>{editingDish ? '保存菜品更改' : '录入江西云厨'}</span>
+                      <span>{editingDish ? t('saveChanges') : t('addNewDish')}</span>
                    </button>
                 </div>
              </div>
@@ -288,8 +308,8 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
 
       <ConfirmationModal 
         isOpen={confirmDelete.isOpen}
-        title="清除菜品资产"
-        message="该操作将从前端菜单中永久移除该菜品。历史订单审计数据将被保留。确定执行？"
+        title={t('deleteDishAsset')}
+        message={t('confirmDeleteDish')}
         confirmVariant="danger"
         onConfirm={() => { if(confirmDelete.dishId) onDeleteDish(confirmDelete.dishId); setConfirmDelete({ isOpen: false, dishId: null }); }}
         onCancel={() => setConfirmDelete({ isOpen: false, dishId: null })}
