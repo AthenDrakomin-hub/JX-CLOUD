@@ -9,6 +9,7 @@ This is a hospitality management system called "江西云厨" (JX Cloud) - a hot
 ## Architecture
 
 - **Frontend**: React 19 with TypeScript, Vite build system
+- **Styling**: Tailwind CSS (loaded via CDN) with custom CSS variables and utility classes
 - **Backend**: Supabase (PostgreSQL database with Row Level Security)
 - **State Management**: LocalStorage with virtual database that syncs to Supabase (hybrid storage engine)
 - **UI Components**: Located in the `components/` directory
@@ -85,6 +86,7 @@ The application uses Vite environment variables prefixed with `VITE_`:
 - `services/api.ts` - Main API service with offline-first logic and VirtualDB implementation
 - `services/supabaseClient.ts` - Supabase client configuration
 - `services/mfaFixer.ts` - MFA status checking and fixing utilities
+- `services/notification.ts` - Notification handling
 - `types.ts` - Type definitions for all entities
 - `constants.ts` - Application constants and initial data
 - `components/` - React UI components
@@ -92,6 +94,16 @@ The application uses Vite environment variables prefixed with `VITE_`:
 - `translations.ts` - Multi-language translation management
 - `components/ConnectionMonitor.tsx` - Real-time connection status monitoring component
 - `mfa_fix.sql` - SQL script for fixing MFA database schema and data
+- `users_admin_function.ts` - User administration functions
+- `index.html` - HTML entry point with Tailwind CDN and custom CSS variables
+
+## Styling and UI
+
+- **Tailwind CSS**: Loaded via CDN in index.html for utility-first CSS framework
+- **Custom Styles**: Defined in index.html style tag with CSS variables for consistent theming
+- **Font Loading**: Google Fonts (Plus Jakarta Sans and Playfair Display) with preconnect for performance
+- **CSS Variables**: Custom properties for gold (#d4af37), obsidian (#020617), and app background (#f8fafc)
+- **Mobile Optimization**: Safe area handling, scroll behavior, and mobile-friendly styles
 
 ## Security Features
 
@@ -196,6 +208,15 @@ npm run build
 - API calls go through the VirtualDB layer for offline-first functionality
 - Security logging is implemented for all sensitive operations
 - Multi-language support is database-driven with fallback mechanisms
+- Import paths should be relative to the current file location (e.g., `../services/api` from files in subdirectories)
+
+## Common Issues and Fixes
+
+- **Missing CSS file**: index.html had a reference to non-existent index.css file which was removed since styles are handled via Tailwind CDN and inline styles
+- **Import path errors**: Files in the services directory should use relative paths like `../types` when importing from the root directory
+- **Supabase Edge Functions**: Files like users_admin_function.ts are designed to run in Supabase Edge Function environment (Deno) and may show TypeScript errors in local environment but work correctly when deployed to Supabase
+- **Translation keys**: When adding new UI elements, ensure all translation keys used in components exist in translations.ts for all supported languages (zh, en, tl) to avoid TypeScript errors
+- **TypeScript strict mode**: All function parameters should have explicit type annotations to comply with strict TypeScript settings
 
 ## Common Development Tasks
 

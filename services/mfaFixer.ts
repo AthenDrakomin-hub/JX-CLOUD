@@ -1,7 +1,7 @@
 /* Copyright (c) 2025 Jiangxi Star Hotel. 保留所有权利. */
 
-import { api } from './services/api';
-import { User } from './types';
+import { api } from './api';
+import { User } from '../types';
 
 /**
  * MFA状态修复工具
