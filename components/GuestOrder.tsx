@@ -32,6 +32,16 @@ const GuestOrder: React.FC<GuestOrderProps> = ({ roomId, dishes, onSubmitOrder, 
   
   const t = (key: keyof typeof translations.zh) => getTranslation(lang, key);
   const C = t('currency');
+  
+  // 根据当前语言环境获取菜品名称的辅助函数
+  const getDishName = (dish: Dish): string => {
+    if (lang === 'en' && dish.nameEn) {
+      return dish.nameEn;
+    } else if (lang === 'tl' && dish.nameEn) { // 菲律宾语也使用英文名称
+      return dish.nameEn;
+    }
+    return dish.name; // 默认使用中文名称
+  };
 
   useEffect(() => {
     fetchInitialData();
@@ -48,12 +58,14 @@ const GuestOrder: React.FC<GuestOrderProps> = ({ roomId, dishes, onSubmitOrder, 
 
   const filteredDishes = useMemo(() => {
     return visibleDishes.filter(d => {
-      const matchSearch = d.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      const dishName = getDishName(d); // 使用当前语言环境的菜名进行搜索
+      const matchSearch = dishName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          d.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           (d.nameEn || '').toLowerCase().includes(searchTerm.toLowerCase());
       const matchCategory = activeCategory === 'All' || d.category === activeCategory;
       return matchSearch && matchCategory;
     });
-  }, [visibleDishes, searchTerm, activeCategory]);
+  }, [visibleDishes, searchTerm, activeCategory, lang]);
 
   const cartItems = useMemo(() => {
     return (Object.entries(cart) as [string, number][])
@@ -77,7 +89,7 @@ const GuestOrder: React.FC<GuestOrderProps> = ({ roomId, dishes, onSubmitOrder, 
       roomId,
       items: cartItems.map(item => ({
         dishId: item.dish!.id,
-        name: lang === 'zh' ? item.dish!.name : (item.dish!.nameEn || item.dish!.name),
+        name: getDishName(item.dish!),
         quantity: item.quantity,
         price: item.dish!.price
       })),
@@ -187,13 +199,13 @@ const GuestOrder: React.FC<GuestOrderProps> = ({ roomId, dishes, onSubmitOrder, 
                       {filteredDishes.map((dish, idx) => (
                         <div key={dish.id} className="group animate-in fade-in slide-in-from-bottom-8" style={{ animationDelay: `${idx * 100}ms` }}>
                           <div className="relative aspect-[4/3] rounded-[3.5rem] overflow-hidden shadow-xl mb-6 bg-slate-100">
-                              <img src={dish.imageUrl} className="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-110" alt={dish.name} loading="lazy" />
+                              <img src={dish.imageUrl} className="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-110" alt={getDishName(dish)} loading="lazy" />
                               {dish.isRecommended && <div className="absolute top-8 left-8 bg-slate-950 text-[#d4af37] text-[10px] font-black uppercase px-5 py-2.5 rounded-full shadow-2xl flex items-center border border-white/5 backdrop-blur-md"><Flame size={16} className="mr-2" /> {t('curatedRecommendation')}</div>}
                           </div>
                           <div className="flex items-center justify-between px-2">
                               <div className="space-y-1">
-                                <h3 className="text-2xl font-bold text-slate-900 tracking-tight">{dish.name}</h3>
-                                <p className="text-xs font-black text-slate-400 uppercase tracking-widest leading-none mb-3">{dish.nameEn}</p>
+                                <h3 className="text-2xl font-bold text-slate-900 tracking-tight">{getDishName(dish)}</h3>
+                                <p className="text-xs font-black text-slate-400 uppercase tracking-widest leading-none mb-3">{dish.name} / {dish.nameEn || dish.name}</p>
                                 <p className="text-2xl font-serif italic text-slate-900 tracking-tighter">{C}{Math.round(dish.price)}</p>
                               </div>
                               <div className="shrink-0">

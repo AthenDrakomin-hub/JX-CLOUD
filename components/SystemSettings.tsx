@@ -16,6 +16,7 @@ import { SystemConfig, OrderStatus, PaymentMethod, User } from '../types';
 import ConfirmationModal from './ConfirmationModal';
 import { notificationService } from '../services/notification';
 import { QRCodeSVG } from 'qrcode.react';
+import MFAFixer from './MFAFixer';
 
 interface SystemSettingsProps {
   lang: Language;
@@ -435,6 +436,9 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, onChangeLang, cur
                  </div>
               </div>
            </section>
+           
+           {/* MFA修复工具 */}
+           <MFAFixer currentUser={currentUser!} lang={lang} />
         </div>
       </div>
 

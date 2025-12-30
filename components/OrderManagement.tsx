@@ -22,6 +22,12 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ orders, onUpdateStatu
   const [detailOrder, setDetailOrder] = useState<Order | null>(null);
   
   const t = (key: keyof typeof translations.zh) => (translations[lang] as any)[key] || (translations.zh as any)[key] || key;
+  
+  // 从订单项名称中提取菜名（假设订单项名称已经根据语言设置存储）
+  const getDishNameFromOrderItem = (itemName: string): string => {
+    // 由于订单项名称在下单时已根据语言设置确定，直接返回
+    return itemName;
+  };
 
   // 计算各个状态的订单数量
   const counts = useMemo(() => ({
@@ -39,7 +45,11 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ orders, onUpdateStatu
       const matchStatus = filter === 'all' || o.status === filter;
       const matchSearch = 
         o.roomId.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        o.id.toLowerCase().includes(searchQuery.toLowerCase());
+        o.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        // 搜索订单项名称
+        o.items.some(item => 
+          item.name.toLowerCase().includes(searchQuery.toLowerCase())
+        );
       return matchStatus && matchSearch;
     }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [orders, filter, searchQuery]);

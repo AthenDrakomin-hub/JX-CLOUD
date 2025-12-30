@@ -41,12 +41,27 @@ export const api = {
     getStats: async () => {
       if (isDemoMode) return { orders: 0, dishes: 0, users: 0, rooms: 0, status: 'Virtual' };
       try {
+        // 更严格的连接测试：先执行一个简单的查询验证连接
+        const { error: healthCheckError } = await supabase.from('users').select('id').limit(1);
+        
+        if (healthCheckError) {
+          throw healthCheckError;
+        }
+        
         const [o, d, u, r] = await Promise.all([
           supabase.from('orders').select('*', { count: 'exact', head: true }),
           supabase.from('dishes').select('*', { count: 'exact', head: true }),
           supabase.from('users').select('*', { count: 'exact', head: true }),
           supabase.from('rooms').select('*', { count: 'exact', head: true })
         ]);
+        
+        // 检查是否有任何查询失败
+        const hasError = [o, d, u, r].some(result => result.error);
+        
+        if (hasError) {
+          return { orders: 0, dishes: 0, users: 0, rooms: 0, status: 'Sync Error' };
+        }
+        
         return { 
           orders: o.count || 0, 
           dishes: d.count || 0, 
@@ -55,7 +70,33 @@ export const api = {
           status: 'Cloud Active' 
         };
       } catch (e) {
+        console.error('Database connection error:', e);
         return { orders: 0, dishes: 0, users: 0, rooms: 0, status: 'Sync Error' };
+      }
+    },
+    
+    // 新增：实时连接状态检测
+    getConnectionStatus: async () => {
+      if (isDemoMode) return { status: 'Virtual', connected: false };
+      
+      try {
+        // 检查网络状态
+        if (!navigator.onLine) {
+          return { status: 'Offline', connected: false };
+        }
+        
+        // 执行一个简单的查询来验证连接
+        const { error } = await supabase.from('users').select('id').limit(1);
+        
+        if (error) {
+          console.error('Connection test failed:', error);
+          return { status: 'Connection Failed', connected: false };
+        }
+        
+        return { status: 'Connected', connected: true };
+      } catch (e) {
+        console.error('Connection status check failed:', e);
+        return { status: 'Connection Failed', connected: false };
       }
     }
   },

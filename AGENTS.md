@@ -4,16 +4,24 @@ This file provides guidance to Qoder (qoder.com) when working with code in this 
 
 ## Project Overview
 
-This is a hospitality management system called "江西云厨" (JX Cloud) - a hotel/restaurant management solution that allows guests to order food from their rooms. The application uses React with Supabase as the backend, featuring both online and offline capabilities.
+This is a hospitality management system called "江西云厨" (JX Cloud) - a hotel/restaurant management solution that allows guests to order food from their rooms. The application uses React 19 with TypeScript, Vite build system, and Supabase as the backend, featuring both online and offline capabilities.
 
 ## Architecture
 
 - **Frontend**: React 19 with TypeScript, Vite build system
 - **Backend**: Supabase (PostgreSQL database with Row Level Security)
-- **State Management**: LocalStorage with virtual database that syncs to Supabase
+- **State Management**: LocalStorage with virtual database that syncs to Supabase (hybrid storage engine)
 - **UI Components**: Located in the `components/` directory
 - **API Layer**: Service layer in `services/api.ts` with offline-first approach
 - **Database**: PostgreSQL via Supabase with tables for rooms, dishes, orders, users, etc.
+
+## Hybrid Storage Architecture (VirtualDB)
+
+The system implements a sophisticated offline-first architecture:
+- Local storage as the primary data layer for reliability during network outages
+- Supabase cloud sync for multi-device consistency
+- Sync queue mechanism to handle pending operations when offline
+- Automatic reconciliation when connection is restored
 
 ## Development Commands
 
@@ -21,7 +29,7 @@ This is a hospitality management system called "江西云厨" (JX Cloud) - a hot
 # Install dependencies
 npm install
 
-# Run development server
+# Run development server (port 3000, opens automatically)
 npm run dev
 
 # Build for production
@@ -44,6 +52,7 @@ The application uses Supabase with the following key tables:
 - `security_logs` - Audit logging
 - `payments` - Payment method configurations
 - `translations` - Multi-language translations with zh/en/tl support
+- `material_images` - Image asset management
 
 ## Key Features
 
@@ -57,6 +66,12 @@ The application uses Supabase with the following key tables:
 - Financial reporting
 - Security audit logging
 - Forced online session management (single active session per user)
+- IP whitelist functionality for enhanced security
+- Two-factor authentication (2FA) using TOTP
+- Real-time order notifications to kitchen
+- Webhook integration for third-party messaging systems
+- QR code generation for room-based ordering
+- Real-time connection monitoring with accurate status display
 
 ## Environment Configuration
 
@@ -67,8 +82,133 @@ The application uses Vite environment variables prefixed with `VITE_`:
 ## Important Files
 
 - `App.tsx` - Main application component
-- `services/api.ts` - Main API service with offline-first logic
+- `services/api.ts` - Main API service with offline-first logic and VirtualDB implementation
 - `services/supabaseClient.ts` - Supabase client configuration
+- `services/mfaFixer.ts` - MFA status checking and fixing utilities
 - `types.ts` - Type definitions for all entities
 - `constants.ts` - Application constants and initial data
 - `components/` - React UI components
+- `vite.config.ts` - Vite build configuration with optimized chunking
+- `translations.ts` - Multi-language translation management
+- `components/ConnectionMonitor.tsx` - Real-time connection status monitoring component
+- `mfa_fix.sql` - SQL script for fixing MFA database schema and data
+
+## Security Features
+
+- Row Level Security (RLS) in Supabase database
+- IP whitelist validation for user accounts
+- Two-factor authentication (2FA) with TOTP
+- Security audit logging for all user actions
+- Account locking mechanism
+- Session management with forced single session per user
+
+## Connection Monitoring
+
+- Real-time connection status detection with accurate cloud/online status
+- Network connectivity verification using navigator.onLine API
+- Database connection testing with actual queries
+- Visual status indicator in the top navigation bar
+- Automatic status refresh every 30 seconds
+- Manual refresh button for immediate status check
+
+## MFA (Multi-Factor Authentication) Fixes
+
+- Database schema verification and repair for MFA fields
+- Consistency check between two_factor_enabled flag and mfa_secret
+- Automatic fixing of mismatched MFA configurations
+- Batch processing for all user accounts
+- SQL script for database-level MFA field corrections
+
+## Multi-language Support
+
+- Dynamic dish name display based on current language setting
+- Chinese/English/Filipino language switching for menu items
+- Proper dish name localization in guest ordering interface
+- Search functionality that works across languages
+
+## Database Security (RLS)
+
+- Row Level Security (RLS) policies for all database tables
+- Admin-specific access policies for full data management
+- MFA-related field security with proper access controls
+- Security audit logging for sensitive operations
+- Fine-grained permission controls following least-privilege principle
+
+## Sensitive Data Protection
+
+- MFA secret fields protected with restricted access policies
+- Service-role only access for highly sensitive operations
+- Secure functions for MFA configuration management
+- Recovery code generation with audit logging
+- Separation of MFA status visibility from secret access
+
+## MFA Security Implementation
+
+- MFA-related security functions and triggers deployed
+- Column-level protection for sensitive fields
+- Audit logging for all MFA-related operations
+- Secure update procedures for MFA configuration
+- Verification scripts for policy validation
+
+## Database Configuration Management
+
+- Organized SQL scripts for MFA and connection monitoring
+- Consolidated configuration files with removed duplicates
+- Centralized documentation for database security features
+- Structured implementation steps for easy deployment
+
+## Payment Methods
+
+The system supports multiple payment methods:
+- GCash
+- Maya
+- GrabPay
+- Credit/Debit Card
+- Room Charge (Sign the Bill)
+- Cash
+
+## Build Configuration
+
+The Vite build is optimized with:
+- Code splitting for vendor libraries (React core, charts, UI icons, utilities)
+- Custom chunk naming with hash for cache busting
+- Large chunk size warning limit (1500KB) to optimize loading
+- CSS code splitting enabled
+
+## Testing and Linting
+
+The project uses TypeScript strict mode for type checking. While no specific test framework is configured, all code should maintain type safety and follow the established patterns in the codebase.
+
+For type checking and linting, use:
+```bash
+# Type checking
+npx tsc --noEmit
+
+# Check for potential issues
+npm run build
+```
+
+## Development Workflow
+
+- All code follows React 19 + TypeScript best practices with strict typing
+- Components are memoized using React.memo() to optimize performance
+- State management uses React hooks with proper dependency arrays
+- API calls go through the VirtualDB layer for offline-first functionality
+- Security logging is implemented for all sensitive operations
+- Multi-language support is database-driven with fallback mechanisms
+
+## Common Development Tasks
+
+- **Adding new features**: Implement through the VirtualDB layer to maintain offline capabilities
+- **Database schema changes**: Update both local storage schema and Supabase tables with proper migration scripts
+- **Security enhancements**: Follow RLS policies and audit logging requirements
+- **Multi-language additions**: Update translations in both database and translations.ts file
+- **Component development**: Place new components in the components/ directory following existing patterns
+
+## Deployment Configuration
+
+The application is optimized for deployment on Vercel with edge runtime capabilities:
+- Environment variables should be prefixed with VITE_ for client-side access
+- The build process creates optimized chunks with specific naming conventions
+- CDN-ready assets with cache busting hashes
+- Edge-optimized for low-latency responses

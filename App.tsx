@@ -14,6 +14,7 @@ import SystemSettings from './components/SystemSettings';
 import ErrorBoundary from './components/ErrorBoundary';
 import NotificationCenter from './components/NotificationCenter';
 import GuestOrder from './components/GuestOrder';
+import ConnectionMonitor from './components/ConnectionMonitor';
 import { api } from './services/api';
 import { notificationService } from './services/notification';
 import { User, Order, HotelRoom, Expense, Dish, MaterialImage, UserRole, Ingredient, SecurityLog, OrderStatus } from './types';
@@ -328,6 +329,7 @@ const App: React.FC = () => {
           fetchData(); 
         }} 
         lang={lang} 
+        onToggleLang={() => setLang(prevLang => prevLang === 'zh' ? 'en' : prevLang === 'en' ? 'tl' : 'zh')}
         onRescan={() => {
           window.location.href = window.location.origin + window.location.pathname;
         }}
@@ -367,6 +369,7 @@ const App: React.FC = () => {
                 </div>
               </div>
               <div className="flex items-center space-x-3 lg:space-x-8">
+                <ConnectionMonitor />
                 <button onClick={() => {
                   const next = lang === 'zh' ? 'en' : lang === 'en' ? 'tl' : 'zh';
                   updateLang(next);

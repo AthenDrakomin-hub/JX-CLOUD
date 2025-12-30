@@ -38,15 +38,27 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
   const [confirmDelete, setConfirmDelete] = useState<{ isOpen: boolean; dishId: string | null }>({ isOpen: false, dishId: null });
   
   const t = (key: string) => (translations[lang] as any)[key] || (translations.zh as any)[key] || key;
+  
+  // 根据当前语言环境获取菜品名称的辅助函数
+  const getDishName = (dish: Dish): string => {
+    if (lang === 'en' && dish.nameEn) {
+      return dish.nameEn;
+    } else if (lang === 'tl' && dish.nameEn) { // 菲律宾语也使用英文名称
+      return dish.nameEn;
+    }
+    return dish.name; // 默认使用中文名称
+  };
 
   const filteredDishes = useMemo(() => {
     return dishes.filter(d => {
-      const matchSearch = d.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      const dishName = getDishName(d); // 使用当前语言环境的菜名进行搜索
+      const matchSearch = dishName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          d.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           (d.nameEn || '').toLowerCase().includes(searchTerm.toLowerCase());
       const matchCategory = activeCategory === 'All' || d.category === activeCategory;
       return matchSearch && matchCategory;
     });
-  }, [dishes, searchTerm, activeCategory]);
+  }, [dishes, searchTerm, activeCategory, lang]);
 
   const categoryCounts = useMemo(() => {
     const counts: { [key: string]: number } = { All: dishes.length };
@@ -200,8 +212,8 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
               <div className="p-8 space-y-8">
                 <div className="flex items-center justify-between">
                     <div className="space-y-1">
-                      <h4 className="text-2xl font-bold text-slate-900 tracking-tight truncate max-w-[150px]">{dish.name}</h4>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">{dish.nameEn}</p>
+                      <h4 className="text-2xl font-bold text-slate-900 tracking-tight truncate max-w-[150px]">{getDishName(dish)}</h4>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">{dish.name} / {dish.nameEn || dish.name}</p>
                     </div>
                     <p className="text-2xl font-serif italic text-[#d4af37] tracking-tighter">₱{dish.price}</p>
                 </div>
