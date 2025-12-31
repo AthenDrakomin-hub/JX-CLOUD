@@ -285,9 +285,8 @@ const App: React.FC = () => {
     
     try {
       // 使用真实的TOTP验证
-      const isValid = await import('./services/totp').then(totpModule => 
-        totpModule.TOTP.verify(pendingMfaUser.mfaSecret!, mfaCode)
-      );
+      const totpModule = await import('./services/totp');
+      const isValid = await totpModule.TOTP.verify(pendingMfaUser.mfaSecret!, mfaCode);
       
       if (isValid) {
         // 检查用户是否已经在其他地方在线，如果是则强制下线其他会话

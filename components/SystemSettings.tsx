@@ -129,9 +129,8 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, onChangeLang, cur
 
   const startMfaSetup = async () => {
     try {
-      const { secret, otpauthUrl } = await import('../../services/mfaService').then(mfaModule => 
-        mfaModule.mfaService.generateMfaConfig(currentUser?.username || 'user')
-      );
+      const mfaModule = await import('../services/mfaService');
+      const { secret, otpauthUrl } = mfaModule.mfaService.generateMfaConfig(currentUser?.username || 'user');
       setMfaSecret(secret);
       setMfaOtpauthUrl(otpauthUrl);
       setMfaStep(1);
@@ -151,9 +150,8 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, onChangeLang, cur
     
     try {
       // 使用真实的TOTP验证
-      const isValid = await import('../../services/totp').then(totpModule => 
-        totpModule.TOTP.verify(mfaSecret, mfaVerifyCode)
-      );
+      const totpModule = await import('../services/totp');
+      const isValid = await totpModule.TOTP.verify(mfaSecret, mfaVerifyCode);
       
       if (isValid) {
         const updatedUser: User = {
