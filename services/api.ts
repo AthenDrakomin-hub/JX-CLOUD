@@ -294,7 +294,20 @@ export const api = {
           }));
         }
       }
-      return VirtualDB.get<User[]>(STORAGE_KEYS.USERS, []);
+      // 返回默认用户数组，包含admin用户
+      const defaultUsers: User[] = [
+        {
+          id: 'admin-user-id',
+          username: 'admin',
+          password: 'admin',
+          role: UserRole.ADMIN,
+          name: 'Administrator',
+          permissions: ['manage_menu', 'view_finance', 'process_orders', 'manage_staff', 'system_config', 'material_assets'],
+          isOnline: false,
+          lastLogin: undefined
+        }
+      ];
+      return VirtualDB.get<User[]>(STORAGE_KEYS.USERS, defaultUsers);
     },
     create: async (user: User) => {
       const payload = {
