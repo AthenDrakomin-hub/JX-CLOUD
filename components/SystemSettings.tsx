@@ -46,6 +46,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, onChangeLang, cur
   const [isMfaModalOpen, setIsMfaModalOpen] = useState(false);
   const [mfaStep, setMfaStep] = useState(1);
   const [mfaSecret, setMfaSecret] = useState('');
+  const [mfaOtpauthUrl, setMfaOtpauthUrl] = useState('');
   const [mfaVerifyCode, setMfaVerifyCode] = useState('');
   const [isMfaVerifying, setIsMfaVerifying] = useState(false);
   const [mfaError, setMfaError] = useState<string | null>(null);
@@ -126,34 +127,51 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, onChangeLang, cur
     }, 1000);
   };
 
-  const startMfaSetup = () => {
-    const randomSecret = Array.from({length: 16}, () => "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"[Math.floor(Math.random() * 32)]).join('');
-    setMfaSecret(randomSecret);
-    setMfaStep(1);
-    setIsMfaModalOpen(true);
-    setMfaError(null);
-    setMfaVerifyCode('');
+  const startMfaSetup = async () => {
+    try {
+      const { secret, otpauthUrl } = await import('../../services/mfaService').then(mfaModule => 
+        mfaModule.mfaService.generateMfaConfig(currentUser?.username || 'user')
+      );
+      setMfaSecret(secret);
+      setMfaOtpauthUrl(otpauthUrl);
+      setMfaStep(1);
+      setIsMfaModalOpen(true);
+      setMfaError(null);
+      setMfaVerifyCode('');
+    } catch (error) {
+      console.error('Failed to generate MFA secret:', error);
+      setGlobalError('生成MFA密钥失败，请重试。');
+    }
   };
 
   const verifyMfaSetup = async () => {
-    if (!currentUser || !onUpdateCurrentUser) return;
+    if (!currentUser || !onUpdateCurrentUser || !mfaSecret) return;
     setIsMfaVerifying(true);
     setMfaError(null);
     
-    await new Promise(r => setTimeout(r, 1000));
-    
-    if (mfaVerifyCode === '123456' || mfaVerifyCode === '888888') {
-      const updatedUser: User = {
-        ...currentUser,
-        twoFactorEnabled: true,
-        mfaSecret: mfaSecret
-      };
-      await api.users.update(updatedUser);
-      onUpdateCurrentUser(updatedUser);
-      setMfaStep(3);
-    } else {
-      setMfaError('验证码无效。请确保您的 App 已正确绑定密钥。');
+    try {
+      // 使用真实的TOTP验证
+      const isValid = await import('../../services/totp').then(totpModule => 
+        totpModule.TOTP.verify(mfaSecret, mfaVerifyCode)
+      );
+      
+      if (isValid) {
+        const updatedUser: User = {
+          ...currentUser,
+          twoFactorEnabled: true,
+          mfaSecret: mfaSecret
+        };
+        await api.users.update(updatedUser);
+        onUpdateCurrentUser(updatedUser);
+        setMfaStep(3);
+      } else {
+        setMfaError('验证码无效。请确保您的 App 已正确绑定密钥。');
+      }
+    } catch (error) {
+      console.error('MFA verification failed during setup:', error);
+      setMfaError('验证过程中出现错误，请重试。');
     }
+    
     setIsMfaVerifying(false);
   };
 
@@ -455,7 +473,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, onChangeLang, cur
                        <p className="text-xs text-slate-400 leading-relaxed px-4">使用手机 Authenticator 扫描下方二维码。此步骤仅为第一阶段。</p>
                     </div>
                     <div className="p-8 bg-slate-50 rounded-[3rem] inline-block border border-slate-100 shadow-inner">
-                       <QRCodeSVG value={`otpauth://totp/JXCloud:${currentUser?.username}?secret=${mfaSecret}&issuer=JXCloud`} size={180} level="H" />
+                       <QRCodeSVG value={mfaOtpauthUrl} size={180} level="H" />
                     </div>
                     <button onClick={() => setMfaStep(2)} className="w-full py-6 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-xl hover:bg-emerald-600 transition-all">{t('nextStepVerification')}</button>
                   </>

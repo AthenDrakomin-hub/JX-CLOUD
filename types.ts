@@ -3,7 +3,8 @@
 export enum UserRole {
   ADMIN = 'admin',      // 系统管理员 (唯一)
   MANAGER = 'manager',  // 总经理
-  STAFF = 'staff'       // 员工
+  STAFF = 'staff',      // 员工
+  PARTNER = 'partner'   // 合作伙伴
 }
 
 export enum RoomStatus {
@@ -58,6 +59,7 @@ export interface User {
   twoFactorEnabled?: boolean; 
   mfaSecret?: string;         
   isOnline?: boolean;         // 新增：在线状态追踪
+  partnerId?: string;         // 合作伙伴ID（如果是合作伙伴用户）
 }
 
 export interface Dish {
@@ -73,6 +75,7 @@ export interface Dish {
   isAvailable?: boolean;
   calories?: number;
   allergens?: string[];
+  partnerId?: string;         // 所属合作伙伴ID（多租户支持）
 }
 
 export interface Ingredient {
@@ -106,6 +109,7 @@ export interface OrderItem {
   name: string;
   quantity: number;
   price: number;
+  partnerId?: string;         // 订单项所属合作伙伴ID
 }
 
 export interface Order {
@@ -120,6 +124,7 @@ export interface Order {
   estimatedTime?: number;
   taxAmount: number;
   serviceCharge?: number;
+  partnerId?: string;         // 订单所属合作伙伴ID（多租户支持）
 }
 
 export interface Expense {

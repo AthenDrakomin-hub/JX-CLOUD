@@ -278,30 +278,42 @@ const App: React.FC = () => {
 
   const handleMfaVerify = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isLoggingIn || !pendingMfaUser) return;
+    if (isLoggingIn || !pendingMfaUser || !pendingMfaUser.mfaSecret) return;
 
     setIsLoggingIn(true);
-    await new Promise(r => setTimeout(r, 600));
-
-    if (mfaCode === '888888' || mfaCode === '123456') {
-      // 检查用户是否已经在其他地方在线，如果是则强制下线其他会话
-      const latestUsers = await api.users.getAll();
-      const user = latestUsers.find(u => u.id === pendingMfaUser?.id);
-      if (user?.isOnline) {
-        // 强制下线该用户在其他设备上的会话
-        await api.users.setOnlineStatus(pendingMfaUser.id, false);
-        await logAudit('FORCE_OFFLINE', `MFA认证时强制下线该用户之前的会话`, 'Medium', pendingMfaUser.id);
-      }
+    setGlobalError(null);
+    
+    try {
+      // 使用真实的TOTP验证
+      const isValid = await import('./services/totp').then(totpModule => 
+        totpModule.TOTP.verify(pendingMfaUser.mfaSecret!, mfaCode)
+      );
       
-      await api.users.setOnlineStatus(pendingMfaUser.id, true);
-      setCurrentUser({ ...pendingMfaUser, isOnline: true });
-      setPendingMfaUser(null);
-      await logAudit('MFA_SUCCESS', '双因素认证通过。');
-      notificationService.requestPermission();
-    } else {
-      setGlobalError('2FA 错误：Security Token 无效。');
-      await logAudit('MFA_FAILURE', '非法验证码尝试。', 'High');
+      if (isValid) {
+        // 检查用户是否已经在其他地方在线，如果是则强制下线其他会话
+        const latestUsers = await api.users.getAll();
+        const user = latestUsers.find(u => u.id === pendingMfaUser?.id);
+        if (user?.isOnline) {
+          // 强制下线该用户在其他设备上的会话
+          await api.users.setOnlineStatus(pendingMfaUser.id, false);
+          await logAudit('FORCE_OFFLINE', `MFA认证时强制下线该用户之前的会话`, 'Medium', pendingMfaUser.id);
+        }
+        
+        await api.users.setOnlineStatus(pendingMfaUser.id, true);
+        setCurrentUser({ ...pendingMfaUser, isOnline: true });
+        setPendingMfaUser(null);
+        await logAudit('MFA_SUCCESS', '双因素认证通过。');
+        notificationService.requestPermission();
+      } else {
+        setGlobalError('2FA 错误：Security Token 无效。');
+        await logAudit('MFA_FAILURE', '非法验证码尝试。', 'High');
+      }
+    } catch (error) {
+      console.error('MFA verification failed:', error);
+      setGlobalError('2FA 验证过程中出现错误，请重试。');
+      await logAudit('MFA_ERROR', `MFA验证错误: ${error instanceof Error ? error.message : 'Unknown error'}`, 'High');
     }
+    
     setIsLoggingIn(false);
     setMfaCode('');
   };

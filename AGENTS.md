@@ -217,6 +217,7 @@ npm run build
 - **Supabase Edge Functions**: Files like users_admin_function.ts are designed to run in Supabase Edge Function environment (Deno) and may show TypeScript errors in local environment but work correctly when deployed to Supabase
 - **Translation keys**: When adding new UI elements, ensure all translation keys used in components exist in translations.ts for all supported languages (zh, en, tl) to avoid TypeScript errors
 - **TypeScript strict mode**: All function parameters should have explicit type annotations to comply with strict TypeScript settings
+- **Login credentials inconsistency**: Login form shows placeholder "Access Password / password" but actual default admin password is "admin" (admin/admin). For other users, default password is "123456" if not set during creation.
 
 ## Common Development Tasks
 
