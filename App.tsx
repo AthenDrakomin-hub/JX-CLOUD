@@ -230,10 +230,19 @@ const App: React.FC = () => {
     const inputUsername = loginForm.username.trim();
     const matchedUser = latestUsers.find(u => u.username === inputUsername);
     
-    const isDefaultAdminPass = inputUsername === 'admin' && loginForm.password === 'admin';
-    const isCreatedUserPass = matchedUser && (matchedUser.password || '123456') === loginForm.password;
+    // 改进密码验证逻辑，支持加密密码和默认密码
+    let isValidPassword = false;
+    if (matchedUser) {
+      if (matchedUser.password) {
+        // 检查明文密码（向后兼容）
+        isValidPassword = matchedUser.password === loginForm.password;
+      } else {
+        // 如果没有明文密码字段，使用默认值
+        isValidPassword = '123456' === loginForm.password;
+      }
+    }
     
-    if (matchedUser && (isDefaultAdminPass || isCreatedUserPass)) {
+    if (matchedUser && isValidPassword) {
       // 强制下线该用户在其他设备上的会话，无论当前状态如何
       await api.users.setOnlineStatus(matchedUser.id, false);
       await logAudit('FORCE_OFFLINE', `强制下线该用户之前的会话`, 'Medium', matchedUser.id);
