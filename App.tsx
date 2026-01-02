@@ -234,12 +234,9 @@ const App: React.FC = () => {
     const isCreatedUserPass = matchedUser && (matchedUser.password || '123456') === loginForm.password;
     
     if (matchedUser && (isDefaultAdminPass || isCreatedUserPass)) {
-      // 检查用户是否已经在其他地方在线，如果是则强制下线其他会话
-      if (matchedUser.isOnline) {
-        // 强制下线该用户在其他设备上的会话
-        await api.users.setOnlineStatus(matchedUser.id, false);
-        await logAudit('FORCE_OFFLINE', `强制下线该用户之前的会话`, 'Medium', matchedUser.id);
-      }
+      // 强制下线该用户在其他设备上的会话，无论当前状态如何
+      await api.users.setOnlineStatus(matchedUser.id, false);
+      await logAudit('FORCE_OFFLINE', `强制下线该用户之前的会话`, 'Medium', matchedUser.id);
 
       // 检查IP白名单验证
       const userIp = await getUserIP();
