@@ -49,7 +49,7 @@ const GuestOrder: React.FC<GuestOrderProps> = ({ roomId, dishes, onSubmitOrder, 
 
   const fetchInitialData = async () => {
     const pAll = await api.payments.getAll();
-    const active = pAll.filter(p => p.isActive);
+    const active = pAll.filter((p: PaymentMethodConfig) => p.isActive);
     setAvailablePayments(active);
     if (active.length > 0) setSelectedPayment(active[0].type);
   };
@@ -94,6 +94,7 @@ const GuestOrder: React.FC<GuestOrderProps> = ({ roomId, dishes, onSubmitOrder, 
         price: item.dish!.price
       })),
       totalAmount: Math.round(totalAmount),
+      taxAmount: Math.round(subtotal * 0.12),
       status: OrderStatus.PENDING,
       paymentMethod: selectedPayment,
       createdAt: new Date().toISOString(),
