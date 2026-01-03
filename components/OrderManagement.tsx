@@ -82,11 +82,9 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ orders, onUpdateStatu
     if (!printWindow) return;
 
     const itemsHtml = order.items.map(i => `
-      <div style="display: flex; align-items: center; border-bottom: 2px solid #000; padding: 12px 0;">
-        <div style="font-size: 32px; font-weight: 900; width: 70px; text-align: center; border-right: 3px solid #000; margin-right: 15px;">${i.quantity}x</div>
-        <div style="flex: 1;">
-          <div style="font-size: 24px; font-weight: 800; line-height: 1.1; text-transform: uppercase;">${i.name}</div>
-        </div>
+      <div class="item">
+        <div class="item-quantity">${i.quantity}x</div>
+        <div class="item-name">${i.name}</div>
       </div>
     `).join('');
 
@@ -96,41 +94,57 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ orders, onUpdateStatu
         <head>
           <title>KITCHEN TICKET - RM ${order.roomId}</title>
           <style>
-            @page { margin: 0; }
+            @page { 
+              margin: 0;
+              size: 80mm auto;
+            }
+            @media print {
+              @page { margin: 0; size: 80mm auto; }
+              html, body { width: 80mm; height: auto; margin: 0; padding: 5px 0; }
+            }
             body { 
               font-family: 'Courier New', Courier, monospace; 
-              padding: 20px; 
-              width: 360px; 
+              padding: 10px 0; 
+              width: 76mm; /* 留边距 */
+              max-width: 76mm;
               color: #000; 
               background: #fff;
               line-height: 1.2;
+              margin: 0 auto;
+              font-size: 12px;
             }
-            .header { text-align: center; border-bottom: 8px solid #000; padding-bottom: 15px; margin-bottom: 15px; }
-            .room-number { font-size: 84px; font-weight: 900; margin: 0; padding: 0; line-height: 1; }
-            .meta { display: flex; justify-content: space-between; font-size: 16px; font-weight: 900; margin-bottom: 15px; padding: 8px 0; border-bottom: 2px dashed #000; }
-            .footer { text-align: center; border-top: 4px solid #000; padding-top: 15px; font-size: 14px; font-weight: 900; margin-top: 20px; }
-            .urgent { background: #000; color: #fff; padding: 8px; margin-top: 10px; font-size: 20px; letter-spacing: 4px; font-weight: 900; }
-            .order-id { font-size: 12px; margin-top: 5px; opacity: 0.7; }
+            .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 10px; }
+            .room-number { font-size: 24px; font-weight: 900; margin: 5px 0; padding: 0; line-height: 1.2; }
+            .meta { display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; margin-bottom: 10px; padding: 5px 8px; border-bottom: 1px dashed #000; }
+            .items-list { margin-bottom: 12px; }
+            .item { display: flex; align-items: center; padding: 4px 2px; border-bottom: 1px dotted #000; }
+            .item-quantity { font-size: 14px; font-weight: 900; width: 35px; text-align: center; margin-right: 5px; }
+            .item-name { flex: 1; font-size: 12px; }
+            .footer { text-align: center; border-top: 2px solid #000; padding-top: 10px; font-size: 11px; font-weight: 900; margin-top: 12px; }
+            .urgent { background: #000; color: #fff; padding: 4px 0; margin: 8px 0; font-size: 14px; letter-spacing: 2px; font-weight: 900; }
+            .order-id { font-size: 10px; margin-top: 5px; opacity: 0.7; }
           </style>
         </head>
         <body>
           <div class="header">
-            <div style="font-size: 14px; font-weight: 900; letter-spacing: 5px;">ROOM / STATION</div>
+            <div style="font-size: 12px; font-weight: 900;">ROOM / STATION</div>
             <div class="room-number">${order.roomId}</div>
           </div>
           <div class="meta">
             <span>#${order.id.slice(-6).toUpperCase()}</span>
             <span>${new Date(order.createdAt).toLocaleTimeString([], { hour12: false })}</span>
           </div>
-          <div style="margin-bottom: 20px;">${itemsHtml}</div>
+          <div class="items-list">
+            ${itemsHtml}
+          </div>
           <div class="footer">
             <div class="urgent">*** KITCHEN COPY ***</div>
             <div class="order-id">TX: ${order.id}</div>
           </div>
           <script>
             window.onload = function() { 
-              window.print(); 
-              setTimeout(() => window.close(), 500); 
+              setTimeout(() => window.print(), 500); 
+              setTimeout(() => window.close(), 1000); 
             }
           </script>
         </body>
