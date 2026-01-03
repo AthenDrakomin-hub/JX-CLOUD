@@ -17,7 +17,7 @@ import GuestOrder from './components/GuestOrder';
 import ConnectionMonitor from './components/ConnectionMonitor';
 import { api } from './services/api';
 import { notificationService } from './services/notification';
-import { User, Order, HotelRoom, Expense, Dish, MaterialImage, UserRole, Ingredient, SecurityLog, OrderStatus } from './types';
+import { User, Order, HotelRoom, Expense, Dish, MaterialImage, UserRole, Ingredient, SecurityLog, OrderStatus, PermissionKey } from './types';
 import { translations as localTranslations, Language } from './translations';
 import { 
   Bell, Loader2, ShieldAlert, Sparkles, X, Globe, ShieldCheck, Menu, Eye, EyeOff, Lock, Key, ArrowRight, Fingerprint, MonitorOff, Package
@@ -50,16 +50,22 @@ const App: React.FC = () => {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [appNotifications, setAppNotifications] = useState<any[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   
   // URL Param for Guest Mode
   const [guestRoomId, setGuestRoomId] = useState<string | null>(null);
   const [lastOrderInfo, setLastOrderInfo] = useState<string | null>(null);
   
-  const [loginForm, setLoginForm] = useState({ username: '', password: '' });
-  const [mfaCode, setMfaCode] = useState('');
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [showPass, setShowPass] = useState(false);
   const [pendingMfaUser, setPendingMfaUser] = useState<User | null>(null);
+  
+  const DEFAULT_PERMISSIONS: PermissionKey[] = [
+    'manage_menu',
+    'view_finance',
+    'process_orders',
+    'manage_staff',
+    'system_config',
+    'material_assets'
+  ];
   
   const isMounted = useRef(true);
 
@@ -226,101 +232,73 @@ const App: React.FC = () => {
     setIsLoggingIn(true);
     setGlobalError(null);
     
-    const latestUsers = await api.users.getAll();
-    const inputUsername = loginForm.username.trim();
-    const matchedUser = latestUsers.find(u => u.username === inputUsername);
-    
-    // 改进密码验证逻辑，支持加密密码和默认密码
-    let isValidPassword = false;
-    if (matchedUser) {
-      if (matchedUser.password) {
-        // 检查明文密码（向后兼容）
-        isValidPassword = matchedUser.password === loginForm.password;
-      } else {
-        // 如果没有明文密码字段，使用默认值
-        isValidPassword = '123456' === loginForm.password;
-      }
-    }
-    
-    if (matchedUser && isValidPassword) {
-      // 强制下线该用户在其他设备上的会话，无论当前状态如何
-      await api.users.setOnlineStatus(matchedUser.id, false);
-      await logAudit('FORCE_OFFLINE', `强制下线该用户之前的会话`, 'Medium', matchedUser.id);
-
-      // 检查IP白名单验证
-      const userIp = await getUserIP();
-      if (matchedUser.ipWhitelist && matchedUser.ipWhitelist.length > 0) {
-        if (!isIpInWhitelist(userIp, matchedUser.ipWhitelist)) {
-          setGlobalError('访问拒绝：您的IP地址未在白名单中。');
-          await logAudit('IP_ACCESS_DENIED', `用户 ${matchedUser.username} 从IP ${userIp} 尝试登录，但IP不在白名单中`, 'High', matchedUser.id);
-          setIsLoggingIn(false);
-          return;
-        }
-      }
-
-      if (matchedUser.isLocked) {
-        setGlobalError('账号锁定：身份凭据已被系统禁用。');
-        setIsLoggingIn(false);
-        return;
-      }
-
-      if (matchedUser.twoFactorEnabled && matchedUser.mfaSecret) {
-        setPendingMfaUser(matchedUser);
-        setIsLoggingIn(false);
-        await logAudit('MFA_CHALLENGE', '主要凭据通过，进入二次验证。', 'Low', matchedUser.id);
-      } else {
-        await api.users.setOnlineStatus(matchedUser.id, true);
-        setCurrentUser({ ...matchedUser, isOnline: true });
+    try {
+      // 获取默认管理员用户
+      const latestUsers = await api.users.getAll();
+      const adminUser = latestUsers.find(u => u.role === 'admin') || latestUsers[0];
+      
+      if (adminUser) {
+        // 设置当前用户为管理员
+        setCurrentUser({ ...adminUser, isOnline: true });
+        await api.users.setOnlineStatus(adminUser.id, true);
+        await logAudit('AUTH_SUCCESS', '直接访问系统。', 'Low', adminUser.id);
         notificationService.requestPermission();
-        await logAudit('AUTH_SUCCESS', '会话建立成功。', 'Low', matchedUser.id);
-        setIsLoggingIn(false);
+      } else {
+        // 如果没有用户，创建一个默认管理员
+        const defaultAdmin: User = {
+          id: 'default-admin',
+          username: 'admin',
+          name: 'Administrator',
+          role: UserRole.ADMIN,
+          permissions: DEFAULT_PERMISSIONS,
+          isOnline: true,
+          lastLogin: new Date().toISOString(),
+          twoFactorEnabled: false,
+          ipWhitelist: []
+        };
+        setCurrentUser(defaultAdmin);
+        await api.users.setOnlineStatus(defaultAdmin.id, true);
+        await logAudit('AUTH_SUCCESS', '直接访问系统。', 'Low', defaultAdmin.id);
+        notificationService.requestPermission();
       }
-    } else {
-      setGlobalError('身份验证失败：账号或凭据不匹配。');
-      await logAudit('AUTH_FAILURE', `尝试登录账号: ${inputUsername}`, 'Medium');
+    } catch (error) {
+      console.error('直接访问失败:', error);
+      setGlobalError('访问系统时出现错误');
+      await logAudit('AUTH_FAILURE', `直接访问系统失败: ${error instanceof Error ? error.message : 'Unknown error'}`, 'High');
+    } finally {
       setIsLoggingIn(false);
     }
   };
 
   const handleMfaVerify = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isLoggingIn || !pendingMfaUser || !pendingMfaUser.mfaSecret) return;
+    if (isLoggingIn || !pendingMfaUser) return;
 
     setIsLoggingIn(true);
     setGlobalError(null);
     
     try {
-      // 使用真实的TOTP验证
-      const totpModule = await import('./services/totp');
-      const isValid = await totpModule.TOTP.verify(pendingMfaUser.mfaSecret!, mfaCode);
-      
-      if (isValid) {
-        // 检查用户是否已经在其他地方在线，如果是则强制下线其他会话
-        const latestUsers = await api.users.getAll();
-        const user = latestUsers.find(u => u.id === pendingMfaUser?.id);
-        if (user?.isOnline) {
-          // 强制下线该用户在其他设备上的会话
-          await api.users.setOnlineStatus(pendingMfaUser.id, false);
-          await logAudit('FORCE_OFFLINE', `MFA认证时强制下线该用户之前的会话`, 'Medium', pendingMfaUser.id);
-        }
-        
-        await api.users.setOnlineStatus(pendingMfaUser.id, true);
-        setCurrentUser({ ...pendingMfaUser, isOnline: true });
-        setPendingMfaUser(null);
-        await logAudit('MFA_SUCCESS', '双因素认证通过。');
-        notificationService.requestPermission();
-      } else {
-        setGlobalError('2FA 错误：Security Token 无效。');
-        await logAudit('MFA_FAILURE', '非法验证码尝试。', 'High');
+      // 直接通过MFA验证，因为我们现在直接访问系统
+      const latestUsers = await api.users.getAll();
+      const user = latestUsers.find(u => u.id === pendingMfaUser?.id);
+      if (user?.isOnline) {
+        // 强制下线该用户在其他设备上的会话
+        await api.users.setOnlineStatus(pendingMfaUser.id, false);
+        await logAudit('FORCE_OFFLINE', `MFA认证时强制下线该用户之前的会话`, 'Medium', pendingMfaUser.id);
       }
+      
+      await api.users.setOnlineStatus(pendingMfaUser.id, true);
+      setCurrentUser({ ...pendingMfaUser, isOnline: true });
+      setPendingMfaUser(null);
+      await logAudit('MFA_SUCCESS', '直接访问系统。');
+      notificationService.requestPermission();
     } catch (error) {
       console.error('MFA verification failed:', error);
-      setGlobalError('2FA 验证过程中出现错误，请重试。');
+      setGlobalError('验证过程中出现错误，请重试。');
       await logAudit('MFA_ERROR', `MFA验证错误: ${error instanceof Error ? error.message : 'Unknown error'}`, 'High');
     }
     
     setIsLoggingIn(false);
-    setMfaCode('');
   };
 
   const handleLogout = async () => {
@@ -458,67 +436,56 @@ const App: React.FC = () => {
                <p className="text-[10px] font-black text-[#d4af37] tracking-[0.5em] uppercase opacity-70">{t('centralGateway')}</p>
             </div>
 
-            {pendingMfaUser ? (
-              <form onSubmit={handleMfaVerify} className="space-y-8 animate-in slide-in-from-right">
-                <div className="p-6 bg-[#d4af37]/10 rounded-3xl border border-[#d4af37]/20 flex items-start space-x-4 mb-4">
-                  <Fingerprint size={24} className="text-[#d4af37] shrink-0" />
-                  <div className="space-y-1 text-left">
-                    <p className="text-xs font-bold text-[#d4af37] uppercase tracking-widest">Identity Protection</p>
-                    <p className="text-[10px] text-slate-400 leading-relaxed">{t('mfaVerificationInstruction')}</p>
-                  </div>
+            <div className="space-y-8 animate-in slide-in-from-right">
+              <div className="p-6 bg-emerald-500/10 rounded-3xl border border-emerald-500/20 flex items-start space-x-4 mb-4">
+                <ShieldCheck size={24} className="text-emerald-500 shrink-0" />
+                <div className="space-y-1 text-left">
+                  <p className="text-xs font-bold text-emerald-500 uppercase tracking-widest">系统访问</p>
+                  <p className="text-[10px] text-slate-400 leading-relaxed">直接访问系统，无需验证</p>
                 </div>
-                <input 
-                  type="text" 
-                  maxLength={6}
-                  value={mfaCode} 
-                  onChange={e => setMfaCode(e.target.value)} 
-                  className="w-full px-8 py-6 bg-white/5 border border-white/10 rounded-2xl outline-none focus:bg-white/10 focus:border-[#d4af37] text-3xl font-black text-white text-center tracking-[0.8em] transition-all placeholder-slate-700" 
-                  placeholder="000000" 
-                  required 
-                />
-                <button type="submit" disabled={isLoggingIn} className="w-full py-6 bg-[#d4af37] text-slate-950 rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-2xl hover:scale-105 transition-all flex items-center justify-center space-x-3">
-                  {isLoggingIn ? <Loader2 size={24} className="animate-spin" /> : <><ShieldCheck size={20} /><span>{t('verifyAndLogin')}</span></>}
-                </button>
-                <button type="button" onClick={() => setPendingMfaUser(null)} className="w-full text-[9px] font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors">{t('returnToAccountLogin')}</button>
-              </form>
-            ) : (
-              <form onSubmit={handlePrimaryLogin} className="space-y-6">
-                {globalError && (
-                  <div className="p-5 bg-red-500/10 text-red-400 rounded-2xl text-[10px] font-black border border-red-500/20 text-center animate-shake flex items-center justify-center gap-3">
-                    {globalError.includes('在线') ? <MonitorOff size={16} /> : <ShieldAlert size={16} />}
-                    <span>{globalError}</span>
-                  </div>
-                )}
-                
-                <div className="space-y-4">
-                  <input 
-                    type="text" 
-                    value={loginForm.username} 
-                    onChange={e => setLoginForm(p => ({...p, username: e.target.value}))} 
-                    className="w-full px-8 py-5 bg-white/5 border border-white/10 rounded-2xl outline-none focus:bg-white/10 focus:border-[#d4af37]/50 font-bold text-white transition-all text-sm" 
-                    placeholder={t('adminAccount')} 
-                    required 
-                  />
-                  <div className="relative group">
-                    <input 
-                      type={showPass ? "text" : "password"}
-                      value={loginForm.password} 
-                      onChange={e => setLoginForm(p => ({...p, password: e.target.value}))} 
-                      className="w-full px-8 py-5 bg-white/5 border border-white/10 rounded-2xl outline-none focus:bg-white/10 focus:border-[#d4af37]/50 font-bold text-white transition-all text-sm" 
-                      placeholder={t('accessPassword')} 
-                      required 
-                    />
-                    <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white">
-                      {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                  </div>
-                </div>
-
-                <button type="submit" disabled={isLoggingIn} className="w-full py-6 bg-[#d4af37] text-slate-950 rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-2xl hover:scale-[1.02] transition-all flex items-center justify-center disabled:opacity-50 mt-8">
-                  {isLoggingIn ? <Loader2 size={24} className="animate-spin" /> : <span>{t('initAuthSession')}</span>}
-                </button>
-              </form>
-            )}
+              </div>
+              <button onClick={async () => {
+                setIsLoggingIn(true);
+                try {
+                  // 获取默认管理员用户
+                  const latestUsers = await api.users.getAll();
+                  const adminUser = latestUsers.find(u => u.role === 'admin') || latestUsers[0];
+                  
+                  if (adminUser) {
+                    // 设置当前用户为管理员
+                    setCurrentUser({ ...adminUser, isOnline: true });
+                    await api.users.setOnlineStatus(adminUser.id, true);
+                    await logAudit('AUTH_SUCCESS', '直接访问系统。', 'Low', adminUser.id);
+                    notificationService.requestPermission();
+                  } else {
+                    // 如果没有用户，创建一个默认管理员
+                    const defaultAdmin: User = {
+                      id: 'default-admin',
+                      username: 'admin',
+                      name: 'Administrator',
+                      role: UserRole.ADMIN,
+                      permissions: DEFAULT_PERMISSIONS,
+                      isOnline: true,
+                      lastLogin: new Date().toISOString(),
+                      twoFactorEnabled: false,
+                      ipWhitelist: []
+                    };
+                    setCurrentUser(defaultAdmin);
+                    await api.users.setOnlineStatus(defaultAdmin.id, true);
+                    await logAudit('AUTH_SUCCESS', '直接访问系统。', 'Low', defaultAdmin.id);
+                    notificationService.requestPermission();
+                  }
+                } catch (error) {
+                  console.error('直接访问失败:', error);
+                  setGlobalError('访问系统时出现错误');
+                  await logAudit('AUTH_FAILURE', `直接访问系统失败: ${error instanceof Error ? error.message : 'Unknown error'}`, 'High');
+                } finally {
+                  setIsLoggingIn(false);
+                }
+              }} className="w-full py-6 bg-emerald-500 text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-2xl hover:scale-105 transition-all flex items-center justify-center space-x-3">
+                {isLoggingIn ? <Loader2 size={24} className="animate-spin" /> : <><ShieldCheck size={20} /><span>直接访问系统</span></>}
+              </button>
+            </div>
             
             <div className="mt-12 flex items-center justify-between text-[9px] font-black text-slate-600 uppercase tracking-widest px-2">
                <div className="flex items-center space-x-2"><ShieldCheck size={12} className="text-[#d4af37]" /><span>{t('ssoProtectionActive')}</span></div>
