@@ -113,6 +113,13 @@ Secure integration between Vercel and Supabase follows these principles:
   - ANON_KEY for client-side operations with RLS enforcement
   - SERVICE_ROLE_KEY only in server-side functions for administrative operations
 
+## Environment Variables for Vercel Deployment
+
+For proper CORS handling and API proxying, configure these environment variables in Vercel:
+- `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL (publicly accessible)
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anonymous key (publicly accessible)
+- `SUPABASE_SERVICE_ROLE_KEY` - Service role key (private, server-side only)
+
 ## CORS Configuration
 
 When deploying the application, ensure proper CORS configuration in Supabase:
@@ -283,6 +290,7 @@ The system supports 67 rooms:
 - **Login credentials inconsistency**: Login form shows placeholder "Access Password / password" but actual default admin password is "admin" (admin/admin). For other users, default password is "123456" if not set during creation.
 - **CORS errors**: When deploying, ensure Supabase edge functions have proper CORS configuration to allow requests from your domain
 - **Security best practices**: Never expose service role keys in frontend code; use Vercel API routes as secure proxy for sensitive operations
+- **Database connection issues**: Use Vercel API routes as proxy to avoid direct browser-to-Supabase requests that cause CORS errors
 
 ## Common Development Tasks
 

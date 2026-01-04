@@ -727,11 +727,10 @@ export const api = {
     getAll: async (): Promise<Dish[]> => {
       if (!isDemoMode) {
         try {
-          // 使用新的 dish-crud-api 边缘功能
-          const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/dish-crud-api/dishes?limit=1000`, {
+          // 使用 Vercel 边缘函数作为代理，避免 CORS 问题
+          const response = await fetch(`/api/edge/get-dishes`, {
             method: 'GET',
             headers: {
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
               'Content-Type': 'application/json',
             },
           });
@@ -758,7 +757,7 @@ export const api = {
             console.error(`Failed to fetch dishes: ${response.status} ${response.statusText}`);
           }
         } catch (error) {
-          console.error('Failed to fetch dishes from edge function:', error);
+          console.error('Failed to fetch dishes from Vercel edge function:', error);
         }
       }
       // 首先尝试从本地存储获取数据，如果本地没有数据且不是演示模式，则返回空数组等待云端数据
