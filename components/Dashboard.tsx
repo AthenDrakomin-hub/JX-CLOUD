@@ -3,7 +3,7 @@ import React, { useMemo, useState } from 'react';
 import { 
   PieChart, Pie, Cell, ResponsiveContainer, CartesianGrid, XAxis, YAxis, Tooltip, BarChart, Bar
 } from 'recharts';
-import { Order, RoomStatus, HotelRoom, Expense, OrderStatus } from '../types';
+import { Order, RoomStatus, HotelRoom, Expense, OrderStatus, Dish } from '../types';
 import { translations, Language } from '../translations';
 import { TrendingUp, ShoppingBag, DollarSign, Utensils, Sparkles, ShieldCheck, Zap, Loader2, CheckCircle, ArrowUpRight } from 'lucide-react';
 
@@ -11,6 +11,7 @@ interface DashboardProps {
   orders: Order[];
   rooms: HotelRoom[];
   expenses: Expense[];
+  dishes: Dish[];
   lang: Language;
 }
 
@@ -30,7 +31,7 @@ const StatCard: React.FC<{ title: string; value: string | number; icon: any; col
   </div>
 );
 
-const Dashboard: React.FC<DashboardProps> = ({ orders, rooms, expenses, lang }) => {
+const Dashboard: React.FC<DashboardProps> = ({ orders, rooms, expenses, dishes, lang }) => {
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   
@@ -48,17 +49,60 @@ const Dashboard: React.FC<DashboardProps> = ({ orders, rooms, expenses, lang }) 
 
   const PIE_COLORS = ['#d4af37', '#1e293b', '#64748b', '#94a3b8'];
   
-  const hourlyData = useMemo(() => [
-    { hour: '11:00', load: 45 }, { hour: '12:00', load: 85 }, { hour: '13:00', load: 92 },
-    { hour: '14:00', load: 30 }, { hour: '18:00', load: 70 }, { hour: '19:00', load: 98 }, { hour: '20:00', load: 60 },
-  ], []);
+  const hourlyData = useMemo(() => {
+    // 创建一个24小时的数据数组，初始化为0
+    const hours = Array.from({ length: 24 }, (_, i) => {
+      const hour = i.toString().padStart(2, '0');
+      return { hour: `${hour}:00`, load: 0 };
+    });
+    
+    // 根据订单创建时间统计每小时的订单量
+    orders.forEach(order => {
+      const hour = new Date(order.createdAt).getHours();
+      if (hour >= 0 && hour < 24) {
+        hours[hour].load += 1;
+      }
+    });
+    
+    // 只返回有订单的小时数据
+    return hours.filter(hourData => hourData.load > 0);
+  }, [orders]);
 
-  const categoryData = useMemo(() => [
-    { name: t('menu'), value: 4500 },
-    { name: t('finance'), value: 2100 },
-    { name: 'Drinks', value: 1200 },
-    { name: 'Snacks', value: 800 },
-  ], [lang]);
+  const categoryData = useMemo(() => {
+    // 创建一个映射来存储菜品分类和它们的菜品ID
+    const dishMap = new Map<string, { category: string }>();
+    
+    // 遍历所有菜品，将菜品ID和分类存入映射
+    dishes.forEach(dish => {
+      dishMap.set(dish.id, { category: dish.category });
+    });
+    
+    // 计算已完成订单中各分类的收入
+    const completedOrders = orders.filter(o => o.status === OrderStatus.COMPLETED);
+    const categoryRevenue: { [key: string]: number } = {};
+    
+    completedOrders.forEach(order => {
+      order.items.forEach(item => {
+        const dish = dishMap.get(item.dishId);
+        if (dish) {
+          const category = dish.category;
+          const revenue = item.price * item.quantity;
+          categoryRevenue[category] = (categoryRevenue[category] || 0) + revenue;
+        }
+      });
+    });
+    
+    // 转换为图表所需的数据格式
+    return Object.entries(categoryRevenue).map(([name, value]) => ({
+      name: name === 'Main' ? t('mainCategory') :
+           name === 'Seafood' ? t('seafoodCategory') :
+           name === 'Staple' ? t('stapleCategory') :
+           name === 'Soup' ? t('soupCategory') :
+           name === 'Drink' ? t('drinkCategory') :
+           name === 'Dessert' ? t('dessertCategory') : name,
+      value: value
+    }));
+  }, [orders, dishes, lang]);
 
   const handleOptimize = () => {
     setIsOptimizing(true);

@@ -1,7 +1,7 @@
 /* Copyright (c) 2025 Jiangxi Star Hotel. 保留所有权利. */
 
 import { Order, Dish, HotelRoom, Expense, User, OrderStatus, RoomStatus, MaterialImage, SecurityLog, UserRole, PaymentMethod, PaymentMethodConfig, SystemConfig, Ingredient } from '../types';
-import { INITIAL_DISHES, ROOM_NUMBERS } from '../constants';
+import { ROOM_NUMBERS } from '../constants';
 import { supabase, isDemoMode } from './supabaseClient';
 import { notificationService } from './notification';
 
@@ -109,7 +109,14 @@ export const api = {
           if (data && data.length > 0) return data;
         } catch (e) {}
       }
-      return VirtualDB.get<HotelRoom[]>(STORAGE_KEYS.ROOMS, []);
+      // 在非演示模式下，如果没有本地房间数据，则返回空数组，强制从云端获取真实房间数据
+      const localRooms = VirtualDB.get<HotelRoom[]>(STORAGE_KEYS.ROOMS, []);
+      if (localRooms.length > 0 || isDemoMode) {
+        return localRooms;
+      } else {
+        // 返回空数组，让应用等待云端数据
+        return [];
+      }
     },
     update: async (room: HotelRoom) => {
       const rooms = VirtualDB.get<HotelRoom[]>(STORAGE_KEYS.ROOMS, []);
@@ -232,7 +239,14 @@ export const api = {
           }));
         }
       }
-      return VirtualDB.get<Dish[]>(STORAGE_KEYS.DISHES, INITIAL_DISHES);
+      // 首先尝试从本地存储获取数据，如果本地没有数据且不是演示模式，则返回空数组等待云端数据
+      const localDishes = VirtualDB.get<Dish[]>(STORAGE_KEYS.DISHES, []);
+      if (localDishes.length > 0 || isDemoMode) {
+        return localDishes;
+      } else {
+        // 在非演示模式下，如果没有本地数据，则返回空数组，让应用等待云端数据
+        return [];
+      }
     },
     create: async (dish: Dish) => {
       const payload = {
@@ -294,20 +308,14 @@ export const api = {
           }));
         }
       }
-      // 返回默认用户数组，包含admin用户
-      const defaultUsers: User[] = [
-        {
-          id: 'admin-user-id',
-          username: 'admin',
-          password: 'admin',
-          role: UserRole.ADMIN,
-          name: 'Administrator',
-          permissions: ['manage_menu', 'view_finance', 'process_orders', 'manage_staff', 'system_config', 'material_assets'],
-          isOnline: false,
-          lastLogin: undefined
-        }
-      ];
-      return VirtualDB.get<User[]>(STORAGE_KEYS.USERS, defaultUsers);
+      // 在非演示模式下，如果没有本地用户数据，则返回空数组，强制从云端获取真实用户数据
+      const localUsers = VirtualDB.get<User[]>(STORAGE_KEYS.USERS, []);
+      if (localUsers.length > 0 || isDemoMode) {
+        return localUsers;
+      } else {
+        // 返回空数组，让应用等待云端数据
+        return [];
+      }
     },
     create: async (user: User) => {
       const payload = {

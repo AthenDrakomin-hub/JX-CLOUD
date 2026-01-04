@@ -244,22 +244,9 @@ const App: React.FC = () => {
         await logAudit('AUTH_SUCCESS', '直接访问系统。', 'Low', adminUser.id);
         notificationService.requestPermission();
       } else {
-        // 如果没有用户，创建一个默认管理员
-        const defaultAdmin: User = {
-          id: 'default-admin',
-          username: 'admin',
-          name: 'Administrator',
-          role: UserRole.ADMIN,
-          permissions: DEFAULT_PERMISSIONS,
-          isOnline: true,
-          lastLogin: new Date().toISOString(),
-          twoFactorEnabled: false,
-          ipWhitelist: []
-        };
-        setCurrentUser(defaultAdmin);
-        await api.users.setOnlineStatus(defaultAdmin.id, true);
-        await logAudit('AUTH_SUCCESS', '直接访问系统。', 'Low', defaultAdmin.id);
-        notificationService.requestPermission();
+        // 如果没有用户，显示错误信息，提示需要先在云端创建用户
+        setGlobalError('系统中没有用户账户，请先在云端数据库中创建用户');
+        throw new Error('No users found in the system');
       }
     } catch (error) {
       console.error('直接访问失败:', error);
@@ -390,7 +377,7 @@ const App: React.FC = () => {
                 <div className="h-96 flex items-center justify-center"><div className="w-10 h-10 border-4 border-slate-200 border-t-[#d4af37] rounded-full animate-spin"></div></div>
               ) : (
                 <div className="w-full">
-                  {currentTab === 'dashboard' && <MemoDashboard orders={orders} rooms={rooms} expenses={expenses} lang={lang} />}
+                  {currentTab === 'dashboard' && <MemoDashboard orders={orders} rooms={rooms} expenses={expenses} dishes={dishes} lang={lang} />}
                   {currentTab === 'rooms' && <MemoRoomGrid rooms={rooms} dishes={dishes} onRefresh={fetchData} isSyncing={isSyncing} onUpdateRoom={async (r) => { await api.rooms.update(r); fetchData(); }} lang={lang} />}
                   {currentTab === 'orders' && <MemoOrderManagement orders={orders} onUpdateStatus={async (id, s) => { await api.orders.updateStatus(id, s); fetchData(); }} lang={lang} />}
                   {currentTab === 'menu' && <MemoMenuManagement dishes={dishes} materials={materials} onAddDish={async (d) => { await api.dishes.create(d); fetchData(); }} onUpdateDish={async (d) => { await api.dishes.update(d); fetchData(); }} onDeleteDish={async (id) => { await api.dishes.delete(id); fetchData(); }} onAddMaterial={async (m) => { await api.materials.create(m); fetchData(); }} onDeleteMaterial={async (id) => { await api.materials.delete(id); fetchData(); }} lang={lang} />}
@@ -458,22 +445,9 @@ const App: React.FC = () => {
                     await logAudit('AUTH_SUCCESS', '直接访问系统。', 'Low', adminUser.id);
                     notificationService.requestPermission();
                   } else {
-                    // 如果没有用户，创建一个默认管理员
-                    const defaultAdmin: User = {
-                      id: 'default-admin',
-                      username: 'admin',
-                      name: 'Administrator',
-                      role: UserRole.ADMIN,
-                      permissions: DEFAULT_PERMISSIONS,
-                      isOnline: true,
-                      lastLogin: new Date().toISOString(),
-                      twoFactorEnabled: false,
-                      ipWhitelist: []
-                    };
-                    setCurrentUser(defaultAdmin);
-                    await api.users.setOnlineStatus(defaultAdmin.id, true);
-                    await logAudit('AUTH_SUCCESS', '直接访问系统。', 'Low', defaultAdmin.id);
-                    notificationService.requestPermission();
+                    // 如果没有用户，显示错误信息，提示需要先在云端创建用户
+                    setGlobalError('系统中没有用户账户，请先在云端数据库中创建用户');
+                    throw new Error('No users found in the system');
                   }
                 } catch (error) {
                   console.error('直接访问失败:', error);

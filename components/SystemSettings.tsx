@@ -28,8 +28,8 @@ interface SystemSettingsProps {
 const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, onChangeLang, currentUser, onUpdateCurrentUser }) => {
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const [config, setConfig] = useState<SystemConfig>({ 
-    hotelName: 'JX CLOUD 江西云厨', version: '3.2.0-STABLE',
-    serviceChargeRate: 5, exchangeRateCNY: 7.8, exchangeRateUSDT: 56.5,
+    hotelName: '江西云厨', version: '3.5',
+    serviceChargeRate: 0, exchangeRateCNY: 0, exchangeRateUSDT: 0,
     isWebhookEnabled: false, webhookUrl: ''
   });
   const [dbStats, setDbStats] = useState({ orders: 0, dishes: 0, users: 0, rooms: 0, status: 'Loading...' });
@@ -139,7 +139,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, onChangeLang, cur
       setMfaVerifyCode('');
     } catch (error) {
       console.error('Failed to generate MFA secret:', error);
-      setGlobalError('生成MFA密钥失败，请重试。');
+      setMfaError('生成MFA密钥失败，请重试。');
     }
   };
 

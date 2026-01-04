@@ -82,10 +82,17 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
       imageUrl: tempImageUrl || (formData.get('imageUrl') as string) || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c',
       isAvailable: editingDish ? editingDish.isAvailable : true,
       isRecommended: isRecommended,
+      calories: editingDish?.calories || 0,
+      allergens: editingDish?.allergens || []
     };
 
-    if (editingDish) onUpdateDish(dishData);
-    else onAddDish(dishData);
+    if (editingDish) {
+      console.log('Updating dish:', dishData);
+      onUpdateDish(dishData);
+    } else {
+      console.log('Adding dish:', dishData);
+      onAddDish(dishData);
+    }
     closeModal();
   };
 
