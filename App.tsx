@@ -614,7 +614,7 @@ const App: React.FC = () => {
                     type="text" 
                     required 
                     className="w-full py-4 bg-slate-50 border-2 border-slate-100 rounded-xl px-4 text-slate-900 placeholder-slate-300 focus:outline-none focus:border-[#d4af37] focus:bg-white transition-all"
-                    placeholder="请输入用户名 / 房号"
+                    placeholder="输入用户名"
                     autoComplete="username"
                   />
                 </div>
