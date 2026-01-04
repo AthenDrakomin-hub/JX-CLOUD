@@ -30,9 +30,9 @@ const CategoryAuthorizationMatrix: React.FC<CategoryAuthorizationProps> = ({
     const newExclusiveCats: Record<string, boolean> = {};
     
     authorizations.forEach(auth => {
-      const key = `${auth.partnerId}-${auth.category}`;
+      const key = `${auth.partnerId}-${auth.categoryId}`;
       newActiveAuths[key] = true;
-      newExclusiveCats[auth.category] = auth.isExclusive || newExclusiveCats[auth.category] || false;
+      newExclusiveCats[auth.categoryId] = auth.isExclusive || newExclusiveCats[auth.categoryId] || false;
     });
     
     setActiveAuthorizations(newActiveAuths);
@@ -45,7 +45,7 @@ const CategoryAuthorizationMatrix: React.FC<CategoryAuthorizationProps> = ({
     
     if (isCurrentlyAuthorized) {
       // 移除授权
-      const authToRemove = authorizations.find(a => a.partnerId === partnerId && a.category === category);
+      const authToRemove = authorizations.find(a => a.partnerId === partnerId && a.categoryId === category);
       if (authToRemove) {
         onAuthorizationRemove(authToRemove.id);
         const newActiveAuths = { ...activeAuthorizations };
@@ -57,7 +57,7 @@ const CategoryAuthorizationMatrix: React.FC<CategoryAuthorizationProps> = ({
       const newAuth: PartnerCategoryAuthorization = {
         id: `auth-${Date.now()}-${partnerId}-${category}`,
         partnerId,
-        category,
+        categoryId: category,
         isExclusive: false, // 默认非独家
         authorizedAt: new Date().toISOString(),
         authorizedBy: 'current-user-id' // 实际应用中应从上下文获取当前用户ID
@@ -82,7 +82,7 @@ const CategoryAuthorizationMatrix: React.FC<CategoryAuthorizationProps> = ({
       partners.forEach(partner => {
         const key = `${partner.id}-${category}`;
         if (activeAuthorizations[key] && partner.id !== selectedPartner) {
-          const authToRemove = authorizations.find(a => a.partnerId === partner.id && a.category === category);
+          const authToRemove = authorizations.find(a => a.partnerId === partner.id && a.categoryId === category);
           if (authToRemove) {
             onAuthorizationRemove(authToRemove.id);
             const newActiveAuths = { ...activeAuthorizations };
@@ -95,7 +95,7 @@ const CategoryAuthorizationMatrix: React.FC<CategoryAuthorizationProps> = ({
   };
 
   const getPartnerForCategory = (category: string) => {
-    const auth = authorizations.find(a => a.category === category && activeAuthorizations[`${a.partnerId}-${a.category}`]);
+    const auth = authorizations.find(a => a.categoryId === category && activeAuthorizations[`${a.partnerId}-${a.categoryId}`]);
     if (auth) {
       return partners.find(p => p.id === auth.partnerId);
     }

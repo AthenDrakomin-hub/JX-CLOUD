@@ -163,7 +163,7 @@ export const saasApi = {
           const { error } = await supabase.from('partner_category_authorizations').insert({
             id: auth.id,
             partner_id: auth.partnerId,
-            category: auth.category,
+            category: auth.categoryId,
             is_exclusive: auth.isExclusive,
             authorized_at: auth.authorizedAt,
             authorized_by: auth.authorizedBy,
@@ -185,7 +185,7 @@ export const saasApi = {
         try {
           const { error } = await supabase.from('partner_category_authorizations').update({
             partner_id: auth.partnerId,
-            category: auth.category,
+            category: auth.categoryId,
             is_exclusive: auth.isExclusive,
             authorized_at: auth.authorizedAt,
             authorized_by: auth.authorizedBy,

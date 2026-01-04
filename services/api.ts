@@ -1,6 +1,6 @@
 /* Copyright (c) 2025 Jiangxi Star Hotel. 保留所有权利. */
 
-import { Order, Dish, HotelRoom, Expense, User, OrderStatus, RoomStatus, MaterialImage, SecurityLog, UserRole, PaymentMethod, PaymentMethodConfig, SystemConfig, Ingredient } from '../types';
+import { Order, Dish, HotelRoom, Expense, User, OrderStatus, RoomStatus, MaterialImage, SecurityLog, UserRole, PaymentMethod, PaymentMethodConfig, SystemConfig, Ingredient, PasswordResetRequest, PasswordResetResponse } from '../types';
 import { ROOM_NUMBERS } from '../constants';
 import { supabase, isDemoMode, supabaseUrl } from './supabaseClient';
 import { notificationService } from './notification';
@@ -267,6 +267,53 @@ export const api = {
       } catch (e) {
         console.error('Connection status check failed:', e);
         return { status: 'Connection Failed', connected: false };
+      }
+    },
+    
+    // 设置用户密码
+    setUserPassword: async (username: string, newPassword: string): Promise<PasswordResetResponse> => {
+      if (isDemoMode) {
+        console.log(`演示模式：设置用户 ${username} 的密码`);
+        return { success: true, message: 'Password updated successfully in demo mode' };
+      }
+      
+      try {
+        // 在前端环境中，我们没有直接的会话访问权限，但需要传递认证信息
+        // 这里我们使用 localStorage 中存储的 token
+        const sessionData = localStorage.getItem('supabase.auth.token');
+        let token = '';
+        
+        if (sessionData) {
+          try {
+            const sessionObj = JSON.parse(sessionData);
+            token = sessionObj.currentSession?.access_token || '';
+          } catch (e) {
+            console.error('Failed to parse session data:', e);
+          }
+        }
+        
+        // 使用新的 set-user-password 边缘函数（部署在 Vercel 上）
+        const response = await fetch('/api/set-user-password', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            username,
+            newPassword
+          })
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to set user password: ${response.status} ${response.statusText}`);
+        }
+        
+        const result: PasswordResetResponse = await response.json();
+        return result;
+      } catch (error) {
+        console.error('Error setting user password:', error);
+        throw error;
       }
     },
     

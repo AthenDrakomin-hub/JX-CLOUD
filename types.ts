@@ -155,3 +155,14 @@ export interface SystemConfig {
   webhookUrl?: string;        // 新增：Webhook 推送地址
   isWebhookEnabled?: boolean; // 新增：是否启用推送
 }
+
+// 密码重置相关类型
+export interface PasswordResetRequest {
+  username: string;
+  newPassword: string;
+}
+
+export interface PasswordResetResponse {
+  success: boolean;
+  message: string;
+}

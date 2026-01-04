@@ -23,6 +23,7 @@ The system implements a sophisticated offline-first architecture:
 - Supabase cloud sync for multi-device consistency
 - Sync queue mechanism to handle pending operations when offline
 - Automatic reconciliation when connection is restored
+- The VirtualDB implementation uses localStorage with specific storage keys for different data types
 
 ## Development Commands
 
@@ -60,9 +61,9 @@ The application uses Supabase with the following key tables:
 - Room-based ordering system (rooms 8201-8232, 8301-8332, VIP rooms)
 - Multi-language support (Chinese/English/Filipino) with database-driven translations
 - Language switcher moved to top navigation bar for better accessibility
-- Role-based access control (admin, manager, staff)
+- Role-based access control (admin, manager, staff, partner)
 - Offline-first architecture with sync capabilities
-- Payment processing with multiple methods (GCash, Maya, Cash, etc.)
+- Payment processing with multiple methods (GCash, Maya, GrabPay, Cash, Credit/Debit Card, Room Charge)
 - Inventory management
 - Financial reporting
 - Security audit logging
@@ -73,6 +74,7 @@ The application uses Supabase with the following key tables:
 - Webhook integration for third-party messaging systems
 - QR code generation for room-based ordering
 - Real-time connection monitoring with accurate status display
+- Multi-tenant support with partner-specific data isolation
 
 ## Environment Configuration
 
@@ -93,8 +95,12 @@ The application uses Vite environment variables prefixed with `VITE_`:
 - `vite.config.ts` - Vite build configuration with optimized chunking
 - `translations.ts` - Multi-language translation management
 - `components/ConnectionMonitor.tsx` - Real-time connection status monitoring component
-- `mfa_fix.sql` - SQL script for fixing MFA database schema and data
 - `users_admin_function.ts` - User administration functions
+- `api/` - Directory containing Supabase Edge Functions:
+  - `index.ts` - Main API gateway with health check endpoint
+  - `set-user-password.ts` - Function to securely update user passwords using Supabase auth
+  - `select-or-login-user.ts` - Function to securely select or authenticate users
+  - `dish-crud-api.ts` - Function to handle dish CRUD operations
 - `index.html` - HTML entry point with Tailwind CDN and custom CSS variables
 
 ## Styling and UI
@@ -113,6 +119,8 @@ The application uses Vite environment variables prefixed with `VITE_`:
 - Security audit logging for all user actions
 - Account locking mechanism
 - Session management with forced single session per user
+- Multi-tenant data isolation for partner accounts
+- Service-role only access for highly sensitive operations
 
 ## Connection Monitoring
 
@@ -145,6 +153,7 @@ The application uses Vite environment variables prefixed with `VITE_`:
 - MFA-related field security with proper access controls
 - Security audit logging for sensitive operations
 - Fine-grained permission controls following least-privilege principle
+- Multi-tenant data isolation using partnerId fields
 
 ## Sensitive Data Protection
 
@@ -186,6 +195,7 @@ The Vite build is optimized with:
 - Custom chunk naming with hash for cache busting
 - Large chunk size warning limit (1500KB) to optimize loading
 - CSS code splitting enabled
+- Automatic opening of browser on development start
 
 ## Testing and Linting
 
@@ -209,6 +219,14 @@ npm run build
 - Security logging is implemented for all sensitive operations
 - Multi-language support is database-driven with fallback mechanisms
 - Import paths should be relative to the current file location (e.g., `../services/api` from files in subdirectories)
+- Multi-tenant support requires checking partnerId for appropriate data isolation
+
+## Room Configuration
+
+The system supports 67 rooms:
+- 32 rooms in the 82xx series (8201-8232)
+- 32 rooms in the 83xx series (8301-8332) 
+- 3 VIP rooms (VIP-666, VIP-888, VIP-000)
 
 ## Common Issues and Fixes
 
@@ -226,6 +244,7 @@ npm run build
 - **Security enhancements**: Follow RLS policies and audit logging requirements
 - **Multi-language additions**: Update translations in both database and translations.ts file
 - **Component development**: Place new components in the components/ directory following existing patterns
+- **Partner-specific features**: Ensure proper partnerId isolation for multi-tenant functionality
 
 ## Deployment Configuration
 
@@ -234,3 +253,20 @@ The application is optimized for deployment on Vercel with edge runtime capabili
 - The build process creates optimized chunks with specific naming conventions
 - CDN-ready assets with cache busting hashes
 - Edge-optimized for low-latency responses
+
+## Login and Password Management
+
+### Default Credentials
+- Admin user: `admin` / `admin`
+- Other users default password: `123456` (if not set during creation)
+
+### Password Reset Options
+1. Use the built-in password reset functionality via the UI
+2. Use the Supabase Edge Functions to update user passwords:
+   - `set-user-password.ts` - Updates password via Supabase auth
+
+### Troubleshooting Login Issues
+If you're unable to log in:
+1. Check if the default admin credentials work (`admin`/`admin`)
+2. Ensure your Supabase backend is properly configured and accessible
+3. Verify that the edge functions are deployed and accessible

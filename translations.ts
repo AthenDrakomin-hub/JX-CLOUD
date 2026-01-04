@@ -178,6 +178,22 @@ export const translations = {
     cancelLabel: '取消',
     confirmLabel: '确认',
     
+    // Password Reset
+    reset_user_password: '重置用户密码',
+    enter_username_and_new_password: '输入用户名和新密码',
+    username_required: '用户名是必需的',
+    password_required: '新密码是必需的',
+    passwords_do_not_match: '密码不匹配',
+    password_too_short: '密码太短',
+    password_reset_success: '密码重置成功',
+    password_reset_failed: '密码重置失败',
+    new_password: '新密码',
+    confirm_password: '确认密码',
+    confirm_password_placeholder: '确认密码',
+    resetting: '重置中...',
+    reset_password: '重置密码',
+    enter_new_password: '输入新密码',
+    
     // Guest Order
     orderSuccess: '订单成功',
     orderProcessing: '订单处理中',
@@ -418,6 +434,22 @@ export const translations = {
     cancelLabel: 'Cancel',
     confirmLabel: 'Confirm',
     
+    // Password Reset
+    reset_user_password: 'Reset User Password',
+    enter_username_and_new_password: 'Enter username and new password',
+    username_required: 'Username is required',
+    password_required: 'New password is required',
+    passwords_do_not_match: 'Passwords do not match',
+    password_too_short: 'Password is too short',
+    password_reset_success: 'Password reset successfully',
+    password_reset_failed: 'Password reset failed',
+    new_password: 'New Password',
+    confirm_password: 'Confirm Password',
+    confirm_password_placeholder: 'Confirm password',
+    resetting: 'Resetting...',
+    reset_password: 'Reset Password',
+    enter_new_password: 'Enter new password',
+    
     // Guest Order
     orderSuccess: 'Order Success',
     orderProcessing: 'Order Processing',
@@ -642,6 +674,22 @@ export const translations = {
     // Modal/Confirmation
     cancelLabel: 'Kanselahin',
     confirmLabel: 'Kumpirmahin',
+    
+    // Password Reset
+    reset_user_password: 'I-reset ang Password ng User',
+    enter_username_and_new_password: 'Ilagay ang username at bagong password',
+    username_required: 'Kailangan ng username',
+    password_required: 'Kailangan ng bagong password',
+    passwords_do_not_match: 'Hindi magkatugma ang mga password',
+    password_too_short: 'Masyadong maikli ang password',
+    password_reset_success: 'Matagumpay na nai-reset ang password',
+    password_reset_failed: 'Nabigo ang pag-reset ng password',
+    new_password: 'Bagong Password',
+    confirm_password: 'Kumpirmahin ang Password',
+    confirm_password_placeholder: 'Kumpirmahin ang password',
+    resetting: 'Nagre-reset...',
+    reset_password: 'I-reset ang Password',
+    enter_new_password: 'Ilagay ang bagong password',
     
     // Guest Order
     orderSuccess: 'Tagumpay ang Order',

@@ -16,6 +16,7 @@ import NotificationCenter from './components/NotificationCenter';
 import GuestOrder from './components/GuestOrder';
 import ConnectionMonitor from './components/ConnectionMonitor';
 import PasswordReset from './components/PasswordReset';
+import PasswordResetForm from './components/PasswordResetForm';
 import { api } from './services/api';
 import { notificationService } from './services/notification';
 import { isDemoMode, supabase, supabaseUrl } from './services/supabaseClient';
@@ -59,6 +60,7 @@ const App: React.FC = () => {
   const [lastOrderInfo, setLastOrderInfo] = useState<string | null>(null);
   
   const [pendingMfaUser, setPendingMfaUser] = useState<User | null>(null);
+  const [showPasswordResetForm, setShowPasswordResetForm] = useState(false);
   
   // 检查是否是密码重置页面
   const isPasswordResetPage = window.location.pathname === '/reset-password';
@@ -461,13 +463,13 @@ const App: React.FC = () => {
             {lastOrderInfo && (
               <div className="fixed top-0 left-0 lg:left-72 right-0 z-[100] bg-indigo-600 text-white py-3 px-6 shadow-2xl flex items-center justify-between animate-in slide-in-from-top duration-500">
                 <div className="flex items-center space-x-4 overflow-hidden">
-                   <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center shrink-0 animate-pulse">
-                      <Package size={16} />
-                   </div>
-                   <div className="whitespace-nowrap overflow-hidden text-ellipsis">
-                      <span className="text-[10px] font-black uppercase tracking-widest opacity-60 mr-4">Realtime Push Notification</span>
-                      <span className="text-sm font-bold">{lastOrderInfo}</span>
-                   </div>
+                  <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center shrink-0 animate-pulse">
+                    <Package size={16} />
+                  </div>
+                  <div className="whitespace-nowrap overflow-hidden text-ellipsis">
+                    <span className="text-[10px] font-black uppercase tracking-widest opacity-60 mr-4">Realtime Push Notification</span>
+                    <span className="text-sm font-bold">{lastOrderInfo}</span>
+                  </div>
                 </div>
                 <button onClick={() => setLastOrderInfo(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors"><X size={16} /></button>
               </div>
@@ -494,11 +496,11 @@ const App: React.FC = () => {
                   {unreadCount > 0 && <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-white text-[9px] font-black flex items-center justify-center rounded-full border-2 border-white shadow-lg animate-bounce">{unreadCount}</span>}
                 </button>
                 <div className="flex items-center space-x-4 border-l border-slate-200 pl-8">
-                   <div className="text-right hidden sm:block">
-                      <p className="text-base font-bold text-slate-900 leading-none">{currentUser.name}</p>
-                      <p className="text-[10px] font-black text-[#d4af37] uppercase tracking-tighter mt-1.5">{currentUser.role.toUpperCase()}</p>
-                   </div>
-                   <div className="w-14 h-14 bg-slate-900 text-white rounded-2xl flex items-center justify-center font-bold text-lg shadow-xl shrink-0">{currentUser.name[0]}</div>
+                  <div className="text-right hidden sm:block">
+                    <p className="text-base font-bold text-slate-900 leading-none">{currentUser.name}</p>
+                    <p className="text-[10px] font-black text-[#d4af37] uppercase tracking-tighter mt-1.5">{currentUser.role.toUpperCase()}</p>
+                  </div>
+                  <div className="w-14 h-14 bg-slate-900 text-white rounded-2xl flex items-center justify-center font-bold text-lg shadow-xl shrink-0">{currentUser.name[0]}</div>
                 </div>
               </div>
             </header>
@@ -674,80 +676,28 @@ const App: React.FC = () => {
             {/* 密码重置功能 */}
             <div className="mt-8 flex justify-center">
               <button 
-                onClick={() => {
-                  // 创建密码重置弹窗
-                  const modal = document.createElement('div');
-                  modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
-                  modal.innerHTML = `
-                    <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl border border-slate-200">
-                      <div className="flex justify-between items-center mb-6">
-                        <h3 class="text-xl font-bold text-slate-900">密码重置</h3>
-                        <button id="close-reset-modal" class="text-slate-500 hover:text-slate-700 text-2xl">&times;</button>
-                      </div>
-                      <div class="space-y-4">
-                        <input 
-                          type="text" 
-                          id="reset-username-modal" 
-                          placeholder="输入用户名" 
-                          class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-[#d4af37]"
-                        />
-                        <input 
-                          type="password" 
-                          id="reset-password-modal" 
-                          placeholder="新密码" 
-                          class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-[#d4af37]"
-                        />
-                        <button 
-                          id="submit-reset-modal"
-                          class="w-full py-4 bg-[#d4af37] hover:bg-[#b8942e] text-white rounded-xl font-black text-sm uppercase tracking-wider transition-colors"
-                        >
-                          重置密码
-                        </button>
-                      </div>
-                    </div>
-                  `;
-                  document.body.appendChild(modal);
-                  
-                  // 关闭按钮事件
-                  (document.getElementById('close-reset-modal') as HTMLButtonElement).onclick = () => {
-                    document.body.removeChild(modal);
-                  };
-                  
-                  // 提交按钮事件
-                  (document.getElementById('submit-reset-modal') as HTMLButtonElement).onclick = async () => {
-                    const username = (document.getElementById('reset-username-modal') as HTMLInputElement).value;
-                    const password = (document.getElementById('reset-password-modal') as HTMLInputElement).value;
-                    
-                    if (!username || !password) {
-                      setGlobalError('请输入用户名和新密码');
-                      return;
-                    }
-                    
-                    try {
-                      await resetPassword(username, password);
-                      setGlobalError('密码重置成功');
-                      // 关闭弹窗
-                      document.body.removeChild(modal);
-                      // 清空输入框
-                      (document.getElementById('reset-username-modal') as HTMLInputElement).value = '';
-                      (document.getElementById('reset-password-modal') as HTMLInputElement).value = '';
-                    } catch (error) {
-                      setGlobalError('密码重置失败: ' + (error instanceof Error ? error.message : '未知错误'));
-                    }
-                  };
-                  
-                  // 点击背景关闭弹窗
-                  modal.onclick = (e) => {
-                    if (e.target === modal) {
-                      document.body.removeChild(modal);
-                    }
-                  };
-                }}
+                onClick={() => setShowPasswordResetForm(true)}
                 className="text-[#d4af37] hover:text-[#d4af37]/80 text-sm font-medium"
               >
                 忘记密码？
               </button>
             </div>
+            
+            {/* 密码重置表单模态框 */}
+            {showPasswordResetForm && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full">
+                  <PasswordResetForm 
+                    t={t}
+                    onCancel={() => setShowPasswordResetForm(false)}
+                    onResetComplete={() => {
+                      setShowPasswordResetForm(false);
+                      setGlobalError(t('password_reset_success') || 'Password reset successfully');
+                    }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

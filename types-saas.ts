@@ -43,6 +43,7 @@ export interface CommissionRecord {
   commissionAmount: number; // 计算得出: orderAmount * commissionRate
   netAmount: number; // 合作伙伴净收入: orderAmount - commissionAmount
   status: 'pending' | 'processed' | 'paid'; // 佣金状态
+  createdAt: string;
   processedAt?: string;
   processedBy?: string;
   paidAt?: string;
