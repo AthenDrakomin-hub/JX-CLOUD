@@ -193,14 +193,17 @@ const App: React.FC = () => {
   const t = useCallback((key: string) => {
     // Prioritize database translations for current language, then fallback to local translations
     const dbTranslation = dynamicTranslations[lang] && (dynamicTranslations[lang] as any)[key];
-    if (dbTranslation) return dbTranslation;
+    if (dbTranslation !== undefined && dbTranslation !== null) return dbTranslation;
     
     // Then try local translations for current language
     const localTranslation = (localTranslations[lang] as any)[key];
-    if (localTranslation) return localTranslation;
+    if (localTranslation !== undefined && localTranslation !== null) return localTranslation;
     
     // Finally fallback to Chinese local translation or the key itself
-    return (localTranslations.zh as any)[key] || key;
+    const fallbackTranslation = (localTranslations.zh as any)[key];
+    if (fallbackTranslation !== undefined && fallbackTranslation !== null) return fallbackTranslation;
+    
+    return key;
   }, [lang, dynamicTranslations]);
 
   const fetchData = useCallback(async () => {
@@ -231,10 +234,11 @@ const App: React.FC = () => {
       }
 
       // Merge database translations with local translations, giving priority to database translations
+      // But ensure language separation by only merging translations for the same language
       const mergedTranslations = {
-        zh: { ...localTranslations.zh, ...cloudDict.zh },
-        en: { ...localTranslations.en, ...cloudDict.en },
-        tl: { ...localTranslations.tl, ...cloudDict.tl }
+        zh: { ...localTranslations.zh, ...((cloudDict && cloudDict.zh) || {}) },
+        en: { ...localTranslations.en, ...((cloudDict && cloudDict.en) || {}) },
+        tl: { ...localTranslations.tl, ...((cloudDict && cloudDict.tl) || {}) }
       };
       setDynamicTranslations(mergedTranslations);
     } catch (err) { 
@@ -546,16 +550,15 @@ const App: React.FC = () => {
                   <div className="absolute inset-0 bg-gradient-to-tr from-[#d4af37]/20 to-transparent animate-pulse" />
                   <Lock size={32} className="text-[#d4af37] relative z-10" />
                </div>
-               <h1 className="text-4xl font-bold text-white tracking-tighter mb-2">{t('hotelName')}</h1>
+               <h1 className="text-4xl font-bold text-white tracking-tighter mb-2">{t('hotelName')} 管理系统</h1>
                <p className="text-[10px] font-black text-[#d4af37] tracking-[0.5em] uppercase opacity-70">{t('centralGateway')}</p>
             </div>
 
-            <div className="space-y-8 animate-in slide-in-from-right">
-              <div className="p-6 bg-emerald-500/10 rounded-3xl border border-emerald-500/20 flex items-start space-x-4 mb-4">
-                <ShieldCheck size={24} className="text-emerald-500 shrink-0" />
-                <div className="space-y-1 text-left">
+            <div className="space-y-6 animate-in slide-in-from-right">
+              <div className="p-5 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 flex items-start space-x-3 mb-6">
+                <ShieldCheck size={20} className="text-emerald-500 shrink-0 mt-0.5" />
+                <div className="space-y-0.5 text-left">
                   <p className="text-xs font-bold text-emerald-500 uppercase tracking-widest">系统登录</p>
-                  <p className="text-[10px] text-slate-400 leading-relaxed">请输入您的账户凭据</p>
                 </div>
               </div>
               
@@ -604,30 +607,53 @@ const App: React.FC = () => {
                   setIsLoggingIn(false);
                 }
               }} className="space-y-6">
-                <div>
-                  <label htmlFor="username" className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">用户名</label>
+                <div className="space-y-2">
+                  <label htmlFor="username" className="block text-xs font-black text-slate-400 uppercase tracking-widest">用户名</label>
                   <input 
                     name="username" 
                     type="text" 
                     required 
-                    className="w-full py-5 bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 text-slate-900 placeholder-slate-300 focus:outline-none focus:border-[#d4af37] focus:bg-white transition-all"
-                    placeholder="输入用户名"
+                    className="w-full py-4 bg-slate-50 border-2 border-slate-100 rounded-xl px-4 text-slate-900 placeholder-slate-300 focus:outline-none focus:border-[#d4af37] focus:bg-white transition-all"
+                    placeholder="请输入用户名 / 房号"
                     autoComplete="username"
                   />
                 </div>
-                <div>
-                  <label htmlFor="password" className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">密码</label>
-                  <input 
-                    name="password" 
-                    type="password" 
-                    required 
-                    className="w-full py-5 bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 text-slate-900 placeholder-slate-300 focus:outline-none focus:border-[#d4af37] focus:bg-white transition-all"
-                    placeholder="输入密码"
-                    autoComplete="current-password"
-                  />
+                <div className="space-y-2">
+                  <label htmlFor="password" className="block text-xs font-black text-slate-400 uppercase tracking-widest">密码</label>
+                  <div className="relative">
+                    <input 
+                      name="password" 
+                      id="password"
+                      type="password" 
+                      required 
+                      className="w-full py-4 bg-slate-50 border-2 border-slate-100 rounded-xl px-4 text-slate-900 placeholder-slate-300 focus:outline-none focus:border-[#d4af37] focus:bg-white transition-all pr-12"
+                      placeholder="输入密码"
+                      autoComplete="current-password"
+                    />
+                    <button 
+                      type="button" 
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        const passwordInput = document.getElementById('password') as HTMLInputElement;
+                        const currentType = passwordInput.type;
+                        passwordInput.type = currentType === 'password' ? 'text' : 'password';
+                        
+                        // 切换图标
+                        const eyeIcon = e.currentTarget.querySelector('span') as HTMLElement;
+                        if (currentType === 'password') {
+                          eyeIcon.textContent = '👁️';
+                        } else {
+                          eyeIcon.textContent = '🔒';
+                        }
+                      }}
+                    >
+                      <span className="eye-icon">🔒</span>
+                    </button>
+                  </div>
                 </div>
-                <button type="submit" className="w-full py-6 bg-emerald-500 text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-2xl hover:scale-105 transition-all flex items-center justify-center space-x-3">
-                  {isLoggingIn ? <Loader2 size={24} className="animate-spin" /> : <><ShieldCheck size={20} /><span>登录系统</span></>}
+                <button type="submit" className="w-full py-4 bg-[#d4af37] text-white rounded-xl font-bold text-sm uppercase tracking-wider shadow-lg hover:bg-[#b8942e] transition-all flex items-center justify-center space-x-2 mt-4">
+                  {isLoggingIn ? <Loader2 size={18} className="animate-spin" /> : <><ShieldCheck size={16} /><span>登录系统</span></>}
                 </button>
               </form>
             </div>
@@ -646,27 +672,51 @@ const App: React.FC = () => {
             </div>
             
             {/* 密码重置功能 */}
-            <div className="mt-8 p-4 bg-slate-800/50 rounded-xl border border-slate-700">
-              <div className="text-center mb-3">
-                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">管理员密码重置</p>
-              </div>
-              <div className="space-y-3">
-                <input 
-                  type="text" 
-                  id="reset-username" 
-                  placeholder="输入用户名" 
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#d4af37]"
-                />
-                <input 
-                  type="password" 
-                  id="reset-password" 
-                  placeholder="新密码" 
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#d4af37]"
-                />
-                <button 
-                  onClick={async () => {
-                    const username = (document.getElementById('reset-username') as HTMLInputElement).value;
-                    const password = (document.getElementById('reset-password') as HTMLInputElement).value;
+            <div className="mt-8 flex justify-center">
+              <button 
+                onClick={() => {
+                  // 创建密码重置弹窗
+                  const modal = document.createElement('div');
+                  modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
+                  modal.innerHTML = `
+                    <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl border border-slate-200">
+                      <div className="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-bold text-slate-900">密码重置</h3>
+                        <button id="close-reset-modal" class="text-slate-500 hover:text-slate-700 text-2xl">&times;</button>
+                      </div>
+                      <div class="space-y-4">
+                        <input 
+                          type="text" 
+                          id="reset-username-modal" 
+                          placeholder="输入用户名" 
+                          class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-[#d4af37]"
+                        />
+                        <input 
+                          type="password" 
+                          id="reset-password-modal" 
+                          placeholder="新密码" 
+                          class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-[#d4af37]"
+                        />
+                        <button 
+                          id="submit-reset-modal"
+                          class="w-full py-4 bg-[#d4af37] hover:bg-[#b8942e] text-white rounded-xl font-black text-sm uppercase tracking-wider transition-colors"
+                        >
+                          重置密码
+                        </button>
+                      </div>
+                    </div>
+                  `;
+                  document.body.appendChild(modal);
+                  
+                  // 关闭按钮事件
+                  (document.getElementById('close-reset-modal') as HTMLButtonElement).onclick = () => {
+                    document.body.removeChild(modal);
+                  };
+                  
+                  // 提交按钮事件
+                  (document.getElementById('submit-reset-modal') as HTMLButtonElement).onclick = async () => {
+                    const username = (document.getElementById('reset-username-modal') as HTMLInputElement).value;
+                    const password = (document.getElementById('reset-password-modal') as HTMLInputElement).value;
                     
                     if (!username || !password) {
                       setGlobalError('请输入用户名和新密码');
@@ -676,18 +726,27 @@ const App: React.FC = () => {
                     try {
                       await resetPassword(username, password);
                       setGlobalError('密码重置成功');
+                      // 关闭弹窗
+                      document.body.removeChild(modal);
                       // 清空输入框
-                      (document.getElementById('reset-username') as HTMLInputElement).value = '';
-                      (document.getElementById('reset-password') as HTMLInputElement).value = '';
+                      (document.getElementById('reset-username-modal') as HTMLInputElement).value = '';
+                      (document.getElementById('reset-password-modal') as HTMLInputElement).value = '';
                     } catch (error) {
                       setGlobalError('密码重置失败: ' + (error instanceof Error ? error.message : '未知错误'));
                     }
-                  }}
-                  className="w-full py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold text-sm uppercase tracking-wider transition-colors"
-                >
-                  重置密码
-                </button>
-              </div>
+                  };
+                  
+                  // 点击背景关闭弹窗
+                  modal.onclick = (e) => {
+                    if (e.target === modal) {
+                      document.body.removeChild(modal);
+                    }
+                  };
+                }}
+                className="text-[#d4af37] hover:text-[#d4af37]/80 text-sm font-medium"
+              >
+                忘记密码？
+              </button>
             </div>
           </div>
         </div>

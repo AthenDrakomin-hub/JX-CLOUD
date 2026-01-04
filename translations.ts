@@ -172,7 +172,7 @@ export const translations = {
     ssoProtectionActive: 'SSO Protection Active',
     
     // Footer
-    footerText: '© 2025 江西云厨 (JX CLOUD). 保留所有权利.',
+    footerText: '© 2026 江西云厨 (JX CLOUD). 保留所有权利.',
     
     // Modal/Confirmation
     cancelLabel: '取消',
@@ -412,7 +412,7 @@ export const translations = {
     ssoProtectionActive: 'SSO Protection Active',
     
     // Footer
-    footerText: '© 2025 JX Cloud (JX CLOUD). All rights reserved.',
+    footerText: '© 2026 JX Cloud (JX CLOUD). All rights reserved.',
     
     // Modal/Confirmation
     cancelLabel: 'Cancel',
@@ -637,7 +637,7 @@ export const translations = {
     ssoProtectionActive: 'SSO Protection Aktibo',
     
     // Footer
-    footerText: '© 2025 JX Cloud (JX CLOUD). All rights reserved.',
+    footerText: '© 2026 JX Cloud (JX CLOUD). All rights reserved.',
     
     // Modal/Confirmation
     cancelLabel: 'Kanselahin',
