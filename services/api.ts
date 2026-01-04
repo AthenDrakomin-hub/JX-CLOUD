@@ -305,6 +305,189 @@ export const api = {
         console.error('Error notifying order via edge function:', error);
         return false;
       }
+    },
+    
+    // 支付处理API，使用新的边缘函数
+    processPayment: async (paymentData: { order_id: string; method: string; amount: number }) => {
+      if (isDemoMode) return { success: true, provider_response: { provider: paymentData.method, payment_id: `mock_${Date.now()}`, status: 'pending' } };
+      
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          throw new Error('No active session');
+        }
+        
+        const response = await fetch(`${supabaseUrl}/functions/v1/payment-processing/process`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(paymentData)
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to process payment: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Error processing payment via edge function:', error);
+        throw error;
+      }
+    },
+    
+    // 支付验证API，使用新的边缘函数
+    verifyPayment: async (verificationData: { payment_id: string; provider: string }) => {
+      if (isDemoMode) return { success: true, status: 'confirmed' };
+      
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          throw new Error('No active session');
+        }
+        
+        const response = await fetch(`${supabaseUrl}/functions/v1/payment-verification/verify`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(verificationData)
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to verify payment: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Error verifying payment via edge function:', error);
+        throw error;
+      }
+    },
+    
+    // 获取支持的支付方式
+    getPaymentMethods: async () => {
+      if (isDemoMode) return { methods: ['gcash', 'maya', 'card'] };
+      
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          throw new Error('No active session');
+        }
+        
+        const response = await fetch(`${supabaseUrl}/functions/v1/payment-processing/methods`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to get payment methods: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Error getting payment methods via edge function:', error);
+        throw error;
+      }
+    },
+    
+    // 从订单处理API获取支付方式
+    getPaymentMethodsFromOrderApi: async () => {
+      if (isDemoMode) return [];
+      
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          throw new Error('No active session');
+        }
+        
+        const response = await fetch(`${supabaseUrl}/functions/v1/order-processing-api/methods`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to get payment methods: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Error getting payment methods from order API:', error);
+        throw error;
+      }
+    },
+    
+    // 创建支付记录
+    createPayment: async (paymentData: { user_id: string; order_id: string; method_id: string; amount: number; proof_url?: string; note?: string }) => {
+      if (isDemoMode) return { id: `demo_payment_${Date.now()}`, ...paymentData };
+      
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          throw new Error('No active session');
+        }
+        
+        const response = await fetch(`${supabaseUrl}/functions/v1/order-processing-api/payments`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(paymentData)
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to create payment: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Error creating payment via edge function:', error);
+        throw error;
+      }
+    },
+    
+    // 获取支付记录
+    getPayment: async (paymentId: string) => {
+      if (isDemoMode) return { id: paymentId, status: 'confirmed' };
+      
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          throw new Error('No active session');
+        }
+        
+        const response = await fetch(`${supabaseUrl}/functions/v1/order-processing-api/payments/${paymentId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to get payment: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Error getting payment via edge function:', error);
+        throw error;
+      }
     }
   },
 

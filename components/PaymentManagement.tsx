@@ -17,6 +17,8 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ lang }) => {
   const [editingPayment, setEditingPayment] = useState<PaymentMethodConfig | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ success: boolean; status?: string; error?: string } | null>(null);
 
   const t = (key: string) => (translations[lang] as any)[key] || (translations.zh as any)[key] || key;
 
@@ -32,6 +34,47 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ lang }) => {
   const handleToggle = async (id: string) => {
     await api.payments.toggle(id);
     fetchPayments();
+  };
+
+  // 测试支付集成
+  const handleTestPayment = async (paymentMethod: string) => {
+    setIsTesting(true);
+    setTestResult(null);
+    
+    try {
+      // 模拟一个测试支付请求
+      const testData = {
+        user_id: 'test_user',
+        order_id: `test_${Date.now()}`,
+        method_id: paymentMethod.toLowerCase(),
+        amount: 100 // 测试金额
+      };
+      
+      // 调用支付处理边缘函数
+      const result = await api.db.createPayment(testData);
+      
+      if (result) {
+        // 验证支付结果
+        const verificationResult = await api.db.getPayment(result.id);
+        
+        setTestResult({
+          success: verificationResult.status === 'confirmed',
+          status: verificationResult.status
+        });
+      } else {
+        setTestResult({
+          success: false,
+          error: 'Payment processing failed'
+        });
+      }
+    } catch (error) {
+      setTestResult({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    } finally {
+      setIsTesting(false);
+    }
   };
 
   const handleEdit = (p: PaymentMethodConfig) => {
@@ -119,11 +162,38 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ lang }) => {
                   <Edit3 size={14} />
                   <span>Configure</span>
                </button>
-               <Settings2 size={16} className="text-slate-100 group-hover:text-slate-200 transition-colors" />
+               <div className="flex items-center space-x-2">
+                 <button 
+                   onClick={() => handleTestPayment(p.type)}
+                   disabled={isTesting}
+                   className="px-3 py-1.5 text-[8px] font-black uppercase tracking-widest bg-[#d4af37] text-white rounded-full disabled:opacity-50 hover:bg-slate-900 transition-colors"
+                 >
+                   {isTesting ? 'Testing...' : 'Test'}
+                 </button>
+                 <Settings2 size={16} className="text-slate-100 group-hover:text-slate-200 transition-colors" />
+               </div>
             </div>
           </div>
         ))}
       </div>
+
+      {/* 测试结果显示 */}
+      {testResult && (
+        <div className={`fixed top-4 right-4 p-6 rounded-3xl shadow-2xl z-[100] animate-in slide-in-from-right duration-500 ${testResult.success ? 'bg-emerald-50 border border-emerald-200' : 'bg-red-50 border border-red-200'}`}>
+          <div className="flex items-center space-x-3">
+            {testResult.success ? (
+              <CheckCircle2 size={24} className="text-emerald-500" />
+            ) : (
+              <XCircle size={24} className="text-red-500" />
+            )}
+            <div>
+              <p className="font-bold text-slate-900">Payment Test {testResult.success ? 'Successful' : 'Failed'}</p>
+              {testResult.status && <p className="text-sm text-slate-600">Status: {testResult.status}</p>}
+              {testResult.error && <p className="text-sm text-red-600">Error: {testResult.error}</p>}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Configuration Modal */}
       {isModalOpen && editingPayment && (

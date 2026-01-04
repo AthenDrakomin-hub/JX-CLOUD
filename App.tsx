@@ -161,13 +161,19 @@ const App: React.FC = () => {
 
       return (userIpNum & mask) === (networkIpNum & mask);
     } catch (e) {
+      console.error('IP CIDR validation error:', e);
       return false;
     }
   };
 
   // 将IP地址转换为数字
   const ipToNumber = (ip: string): number => {
-    return ip.split('.').reduce((acc, octet) => (acc << 8) + parseInt(octet), 0) >>> 0;
+    try {
+      return ip.split('.').reduce((acc, octet) => (acc << 8) + parseInt(octet), 0) >>> 0;
+    } catch (e) {
+      console.error('IP conversion error:', e);
+      return 0;
+    }
   };
 
   const t = useCallback((key: string) => {
@@ -238,6 +244,13 @@ const App: React.FC = () => {
     setGlobalError(null);
     
     try {
+      // 验证输入
+      if (!credentials.username || !credentials.password) {
+        setGlobalError('请填写用户名和密码');
+        setIsLoggingIn(false);
+        return;
+      }
+      
       // 使用新的 select-or-login-user 边缘函数
       const user = await api.db.selectOrLoginUser(credentials);
       
@@ -254,7 +267,12 @@ const App: React.FC = () => {
       }
     } catch (error) {
       console.error('登录失败:', error);
-      setGlobalError('登录时出现错误，请重试。');
+      // 根据错误类型显示更具体的错误信息
+      if (error instanceof Error && error.message.includes('Authentication failed')) {
+        setGlobalError('用户名或密码错误，请重试。');
+      } else {
+        setGlobalError('登录时出现错误，请重试。');
+      }
       await logAudit('AUTH_FAILURE', `登录失败: ${error instanceof Error ? error.message : 'Unknown error'}`, 'High');
     } finally {
       setIsLoggingIn(false);
@@ -295,7 +313,12 @@ const App: React.FC = () => {
       notificationService.requestPermission();
     } catch (error) {
       console.error('MFA verification failed:', error);
-      setGlobalError('验证过程中出现错误，请重试。');
+      // 根据错误类型显示更具体的错误信息
+      if (error instanceof Error && error.message.includes('User verification failed')) {
+        setGlobalError('用户验证失败，请联系管理员。');
+      } else {
+        setGlobalError('验证过程中出现错误，请重试。');
+      }
       await logAudit('MFA_ERROR', `MFA验证错误: ${error instanceof Error ? error.message : 'Unknown error'}`, 'High');
     }
     
@@ -313,6 +336,42 @@ const App: React.FC = () => {
   const updateLang = (newLang: Language) => {
     setLang(newLang);
     localStorage.setItem('jx_lang', newLang);
+  };
+  
+  // 支付处理函数
+  const processPayment = async (paymentData: { user_id: string; order_id: string; method_id: string; amount: number; proof_url?: string; note?: string }) => {
+    try {
+      // 创建支付记录
+      const paymentResult = await api.db.createPayment(paymentData);
+      
+      await logAudit('PAYMENT_INITIATED', `支付发起成功 - 订单: ${paymentData.order_id}, 方式: ${paymentData.method_id}, 金额: ₱${paymentData.amount}`);
+      
+      // 验证支付结果
+      const verificationResult = await api.db.getPayment(paymentResult.id);
+      
+      if (verificationResult && verificationResult.status === 'confirmed') {
+        await logAudit('PAYMENT_CONFIRMED', `支付确认成功 - 订单: ${paymentData.order_id}`);
+        return { success: true, status: verificationResult.status, paymentId: verificationResult.id };
+      } else {
+        await logAudit('PAYMENT_FAILED', `支付验证失败 - 订单: ${paymentData.order_id}`);
+        return { success: false, status: verificationResult?.status || 'failed', paymentId: verificationResult?.id };
+      }
+    } catch (error) {
+      console.error('Payment processing error:', error);
+      await logAudit('PAYMENT_ERROR', `支付处理错误 - 订单: ${paymentData.order_id}, 错误: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw error;
+    }
+  };
+  
+  // 获取支付方式函数
+  const getPaymentMethods = async () => {
+    try {
+      return await api.db.getPaymentMethods();
+    } catch (error) {
+      console.error('Error getting payment methods:', error);
+      // 返回默认支付方式作为后备
+      return { methods: ['gcash', 'maya', 'card'] };
+    }
   };
 
   if (guestRoomId) {
@@ -452,11 +511,19 @@ const App: React.FC = () => {
                 setGlobalError(null);
                 
                 try {
-                  // 使用新的 select-or-login-user 边缘函数，传入用户名和密码
+                  // 获取表单数据
                   const formData = new FormData(e.target as HTMLFormElement);
                   const username = formData.get('username') as string;
                   const password = formData.get('password') as string;
                   
+                  // 验证输入
+                  if (!username || !password) {
+                    setGlobalError('请填写用户名和密码');
+                    setIsLoggingIn(false);
+                    return;
+                  }
+                  
+                  // 使用新的 select-or-login-user 边缘函数，传入用户名和密码
                   const user = await api.db.selectOrLoginUser({ username, password });
                   
                   if (user) {
@@ -472,7 +539,12 @@ const App: React.FC = () => {
                   }
                 } catch (error) {
                   console.error('登录失败:', error);
-                  setGlobalError('登录时出现错误，请重试。');
+                  // 根据错误类型显示更具体的错误信息
+                  if (error instanceof Error && error.message.includes('Authentication failed')) {
+                    setGlobalError('用户名或密码错误，请重试。');
+                  } else {
+                    setGlobalError('登录时出现错误，请重试。');
+                  }
                   await logAudit('AUTH_FAILURE', `登录失败: ${error instanceof Error ? error.message : 'Unknown error'}`, 'High');
                 } finally {
                   setIsLoggingIn(false);
@@ -486,6 +558,7 @@ const App: React.FC = () => {
                     required 
                     className="w-full py-5 bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 text-slate-900 placeholder-slate-300 focus:outline-none focus:border-[#d4af37] focus:bg-white transition-all"
                     placeholder="输入用户名"
+                    autoComplete="username"
                   />
                 </div>
                 <div>
@@ -496,6 +569,7 @@ const App: React.FC = () => {
                     required 
                     className="w-full py-5 bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 text-slate-900 placeholder-slate-300 focus:outline-none focus:border-[#d4af37] focus:bg-white transition-all"
                     placeholder="输入密码"
+                    autoComplete="current-password"
                   />
                 </div>
                 <button type="submit" className="w-full py-6 bg-emerald-500 text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-2xl hover:scale-105 transition-all flex items-center justify-center space-x-3">
