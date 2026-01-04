@@ -9,8 +9,10 @@ This is a hospitality management system called "江西云厨" (JX Cloud) - a hot
 ## Architecture
 
 - **Frontend**: React 19 with TypeScript, Vite build system
+- **Deployment**: Vercel platform with Supabase backend integration
 - **Styling**: Tailwind CSS (loaded via CDN) with custom CSS variables and utility classes
 - **Backend**: Supabase (PostgreSQL database with Row Level Security)
+- **Edge Functions**: Supabase edge functions for server-side operations (authentication, CRUD operations, etc.)
 - **State Management**: LocalStorage with virtual database that syncs to Supabase (hybrid storage engine)
 - **UI Components**: Located in the `components/` directory
 - **API Layer**: Service layer in `services/api.ts` with offline-first approach
@@ -23,7 +25,16 @@ The system implements a sophisticated offline-first architecture:
 - Supabase cloud sync for multi-device consistency
 - Sync queue mechanism to handle pending operations when offline
 - Automatic reconciliation when connection is restored
-- The VirtualDB implementation uses localStorage with specific storage keys for different data types
+- The VirtualDB implementation uses localStorage with specific storage keys for different data types:
+  - `jx_virtual_rooms` - Hotel room data
+  - `jx_virtual_orders` - Order information
+  - `jx_virtual_dishes` - Menu items
+  - `jx_virtual_expenses` - Financial tracking
+  - `jx_virtual_users` - User accounts
+  - `jx_pending_sync` - Operations queue for cloud sync
+  - `jx_virtual_config` - System configuration
+  - `jx_virtual_materials` - Image assets
+  - `jx_virtual_translations` - Multi-language translations
 
 ## Development Commands
 
@@ -39,6 +50,12 @@ npm run build
 
 # Preview production build
 npm run preview
+
+# Type checking
+npx tsc --noEmit
+
+# Check for potential issues
+npm run build
 ```
 
 ## Database Schema
@@ -75,6 +92,8 @@ The application uses Supabase with the following key tables:
 - QR code generation for room-based ordering
 - Real-time connection monitoring with accurate status display
 - Multi-tenant support with partner-specific data isolation
+- Push notifications for order status updates
+- Data synchronization between local and cloud storage
 
 ## Environment Configuration
 
@@ -88,7 +107,7 @@ The application uses Vite environment variables prefixed with `VITE_`:
 - `services/api.ts` - Main API service with offline-first logic and VirtualDB implementation
 - `services/supabaseClient.ts` - Supabase client configuration
 - `services/mfaFixer.ts` - MFA status checking and fixing utilities
-- `services/notification.ts` - Notification handling
+- `services/notification.ts` - Notification handling and push services
 - `types.ts` - Type definitions for all entities
 - `constants.ts` - Application constants and initial data
 - `components/` - React UI components
@@ -220,6 +239,8 @@ npm run build
 - Multi-language support is database-driven with fallback mechanisms
 - Import paths should be relative to the current file location (e.g., `../services/api` from files in subdirectories)
 - Multi-tenant support requires checking partnerId for appropriate data isolation
+- Push notifications implemented via webhook integration for real-time updates
+- Data submission handled through VirtualDB with automatic sync queue
 
 ## Room Configuration
 
@@ -248,11 +269,12 @@ The system supports 67 rooms:
 
 ## Deployment Configuration
 
-The application is optimized for deployment on Vercel with edge runtime capabilities:
+The application is deployed on Vercel with Supabase backend integration:
+- Client-side deployed on Vercel with Supabase backend services
+- Supabase edge functions handle server-side operations (authentication, CRUD, etc.)
 - Environment variables should be prefixed with VITE_ for client-side access
 - The build process creates optimized chunks with specific naming conventions
 - CDN-ready assets with cache busting hashes
-- Edge-optimized for low-latency responses
 
 ## Login and Password Management
 
