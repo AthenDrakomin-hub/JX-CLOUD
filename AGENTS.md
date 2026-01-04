@@ -361,6 +361,19 @@ export default async function handler(req, res) {
 }
 ```
 
+### User Authentication Verification
+- Validate user tokens before processing requests that require authentication
+- Example implementation for verifying user tokens:
+```
+const userResp = await fetch(`${SUPABASE_URL.replace(/\/$/, "")}/auth/v1/user`, {
+  method: "GET",
+  headers: { Authorization: `Bearer ${token}` },
+});
+if (userResp.status !== 200) return res.status(401).json({ error: "Invalid token" });
+const userInfo = await userResp.json();
+// userInfo contains user id and app_metadata, user_metadata, etc.
+```
+
 ## Login and Password Management
 
 ### Default Credentials

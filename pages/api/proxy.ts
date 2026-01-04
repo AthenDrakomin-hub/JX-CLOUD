@@ -13,7 +13,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return;
   }
 
-  const { path, method = 'GET', body } = req.body || {};
+  const { path, method = 'GET', body, token } = req.body || {};
   
   if (!path) {
     return res.status(400).json({ error: 'Missing path parameter' });
@@ -26,15 +26,41 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ error: 'Missing Supabase environment variables' });
   }
 
+  // 如果提供了 token，则验证用户身份
+  if (token) {
+    try {
+      const userResp = await fetch(`${SUPABASE_URL.replace(/\/$/, "")}/auth/v1/user`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (userResp.status !== 200) return res.status(401).json({ error: "Invalid token" });
+      const userInfo = await userResp.json();
+      // userInfo contains user id and app_metadata, user_metadata, etc.
+    } catch (error) {
+      console.error('Token validation error:', error);
+      return res.status(401).json({ error: 'Token validation failed' });
+    }
+  }
+
   try {
+    // 构建请求头
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_ANON_KEY,
+    };
+
+    // 如果有 token，添加到 Authorization 头
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    } else {
+      // 否则使用 ANON_KEY
+      headers['Authorization'] = `Bearer ${SUPABASE_ANON_KEY}`;
+    }
+
     const url = `${SUPABASE_URL}${path}`;
     const response = await fetch(url, {
       method,
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-      },
+      headers,
       body: method !== 'GET' && body ? JSON.stringify(body) : undefined,
     });
 
