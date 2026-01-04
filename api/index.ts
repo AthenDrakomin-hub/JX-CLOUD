@@ -15,9 +15,9 @@ export default async function handler(req: Request) {
 
   const headers = {
     'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': 'https://www.jiangxijiudian.store',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, Api-Key',
     'Cache-Control': 'no-store, max-age=0', // API 接口不建议缓存
     'X-JX-Cloud-Version': '3.1.0-prod'
   };
