@@ -231,8 +231,7 @@ const App: React.FC = () => {
     fetchData();
   }, []);
 
-  const handlePrimaryLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handlePrimaryLogin = async (credentials: { username: string; password: string }) => {
     if (isLoggingIn) return;
 
     setIsLoggingIn(true);
@@ -240,23 +239,23 @@ const App: React.FC = () => {
     
     try {
       // 使用新的 select-or-login-user 边缘函数
-      const user = await api.db.selectOrLoginUser();
+      const user = await api.db.selectOrLoginUser(credentials);
       
       if (user) {
         // 设置当前用户
         setCurrentUser({ ...user, isOnline: true });
         await api.users.setOnlineStatus(user.id, true);
-        await logAudit('AUTH_SUCCESS', '直接访问系统。', 'Low', user.id);
+        await logAudit('AUTH_SUCCESS', `用户 ${user.username} 登录系统。`, 'Low', user.id);
         notificationService.requestPermission();
       } else {
         // 如果没有用户，显示错误信息，提示需要先在云端创建用户
-        setGlobalError('系统中没有用户账户，请先在云端数据库中创建用户');
-        throw new Error('No users found in the system');
+        setGlobalError('用户名或密码错误，请重试。');
+        throw new Error('Authentication failed');
       }
     } catch (error) {
-      console.error('直接访问失败:', error);
-      setGlobalError('访问系统时出现错误');
-      await logAudit('AUTH_FAILURE', `直接访问系统失败: ${error instanceof Error ? error.message : 'Unknown error'}`, 'High');
+      console.error('登录失败:', error);
+      setGlobalError('登录时出现错误，请重试。');
+      await logAudit('AUTH_FAILURE', `登录失败: ${error instanceof Error ? error.message : 'Unknown error'}`, 'High');
     } finally {
       setIsLoggingIn(false);
     }
@@ -442,37 +441,67 @@ const App: React.FC = () => {
               <div className="p-6 bg-emerald-500/10 rounded-3xl border border-emerald-500/20 flex items-start space-x-4 mb-4">
                 <ShieldCheck size={24} className="text-emerald-500 shrink-0" />
                 <div className="space-y-1 text-left">
-                  <p className="text-xs font-bold text-emerald-500 uppercase tracking-widest">系统访问</p>
-                  <p className="text-[10px] text-slate-400 leading-relaxed">直接访问系统，无需验证</p>
+                  <p className="text-xs font-bold text-emerald-500 uppercase tracking-widest">系统登录</p>
+                  <p className="text-[10px] text-slate-400 leading-relaxed">请输入您的账户凭据</p>
                 </div>
               </div>
-              <button onClick={async () => {
+              
+              <form onSubmit={async (e) => {
+                e.preventDefault();
                 setIsLoggingIn(true);
+                setGlobalError(null);
+                
                 try {
-                  // 使用新的 select-or-login-user 边缘函数
-                  const user = await api.db.selectOrLoginUser();
+                  // 使用新的 select-or-login-user 边缘函数，传入用户名和密码
+                  const formData = new FormData(e.target as HTMLFormElement);
+                  const username = formData.get('username') as string;
+                  const password = formData.get('password') as string;
+                  
+                  const user = await api.db.selectOrLoginUser({ username, password });
                   
                   if (user) {
                     // 设置当前用户
                     setCurrentUser({ ...user, isOnline: true });
                     await api.users.setOnlineStatus(user.id, true);
-                    await logAudit('AUTH_SUCCESS', '直接访问系统。', 'Low', user.id);
+                    await logAudit('AUTH_SUCCESS', `用户 ${user.username} 登录系统。`, 'Low', user.id);
                     notificationService.requestPermission();
                   } else {
                     // 如果没有用户，显示错误信息，提示需要先在云端创建用户
-                    setGlobalError('系统中没有用户账户，请先在云端数据库中创建用户');
-                    throw new Error('No users found in the system');
+                    setGlobalError('用户名或密码错误，请重试。');
+                    throw new Error('Authentication failed');
                   }
                 } catch (error) {
-                  console.error('直接访问失败:', error);
-                  setGlobalError('访问系统时出现错误');
-                  await logAudit('AUTH_FAILURE', `直接访问系统失败: ${error instanceof Error ? error.message : 'Unknown error'}`, 'High');
+                  console.error('登录失败:', error);
+                  setGlobalError('登录时出现错误，请重试。');
+                  await logAudit('AUTH_FAILURE', `登录失败: ${error instanceof Error ? error.message : 'Unknown error'}`, 'High');
                 } finally {
                   setIsLoggingIn(false);
                 }
-              }} className="w-full py-6 bg-emerald-500 text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-2xl hover:scale-105 transition-all flex items-center justify-center space-x-3">
-                {isLoggingIn ? <Loader2 size={24} className="animate-spin" /> : <><ShieldCheck size={20} /><span>直接访问系统</span></>}
-              </button>
+              }} className="space-y-6">
+                <div>
+                  <label htmlFor="username" className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">用户名</label>
+                  <input 
+                    name="username" 
+                    type="text" 
+                    required 
+                    className="w-full py-5 bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 text-slate-900 placeholder-slate-300 focus:outline-none focus:border-[#d4af37] focus:bg-white transition-all"
+                    placeholder="输入用户名"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="password" className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">密码</label>
+                  <input 
+                    name="password" 
+                    type="password" 
+                    required 
+                    className="w-full py-5 bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 text-slate-900 placeholder-slate-300 focus:outline-none focus:border-[#d4af37] focus:bg-white transition-all"
+                    placeholder="输入密码"
+                  />
+                </div>
+                <button type="submit" className="w-full py-6 bg-emerald-500 text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-2xl hover:scale-105 transition-all flex items-center justify-center space-x-3">
+                  {isLoggingIn ? <Loader2 size={24} className="animate-spin" /> : <><ShieldCheck size={20} /><span>登录系统</span></>}
+                </button>
+              </form>
             </div>
             
             <div className="mt-12 flex items-center justify-between text-[9px] font-black text-slate-600 uppercase tracking-widest px-2">
