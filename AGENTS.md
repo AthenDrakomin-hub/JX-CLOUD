@@ -17,6 +17,7 @@ This is a hospitality management system called "江西云厨" (JX Cloud) - a hot
 - **UI Components**: Located in the `components/` directory
 - **API Layer**: Service layer in `services/api.ts` with offline-first approach
 - **Database**: PostgreSQL via Supabase with tables for rooms, dishes, orders, users, etc.
+- **Security**: Service role keys stored as Vercel environment variables, accessed only in serverless functions
 
 ## Hybrid Storage Architecture (VirtualDB)
 
@@ -101,6 +102,17 @@ The application uses Vite environment variables prefixed with `VITE_`:
 - `VITE_SUPABASE_URL` - Supabase project URL
 - `VITE_SUPABASE_ANON_KEY` - Supabase anonymous key
 
+## Vercel and Supabase Integration
+
+Secure integration between Vercel and Supabase follows these principles:
+- Never expose service role keys in frontend code
+- Store sensitive keys (SUPABASE_SERVICE_ROLE_KEY, DATABASE_URL) as Vercel environment variables
+- Use Vercel Serverless Functions or Edge Functions as secure proxy for sensitive operations
+- Frontend communicates with Vercel API routes, which then communicate with Supabase
+- Use two types of keys appropriately:
+  - ANON_KEY for client-side operations with RLS enforcement
+  - SERVICE_ROLE_KEY only in server-side functions for administrative operations
+
 ## CORS Configuration
 
 When deploying the application, ensure proper CORS configuration in Supabase:
@@ -130,6 +142,7 @@ When deploying the application, ensure proper CORS configuration in Supabase:
   - `set-user-password.ts` - Function to securely update user passwords using Supabase auth
   - `select-or-login-user.ts` - Function to securely select or authenticate users
   - `dish-crud-api.ts` - Function to handle dish CRUD operations
+- `pages/api/` - Vercel API routes for secure backend operations
 - `index.html` - HTML entry point with Tailwind CDN and custom CSS variables
 
 ## Styling and UI
@@ -150,6 +163,7 @@ When deploying the application, ensure proper CORS configuration in Supabase:
 - Session management with forced single session per user
 - Multi-tenant data isolation for partner accounts
 - Service-role only access for highly sensitive operations
+- Service role keys stored as Vercel environment variables, never exposed to frontend
 
 ## Connection Monitoring
 
@@ -268,6 +282,7 @@ The system supports 67 rooms:
 - **TypeScript strict mode**: All function parameters should have explicit type annotations to comply with strict TypeScript settings
 - **Login credentials inconsistency**: Login form shows placeholder "Access Password / password" but actual default admin password is "admin" (admin/admin). For other users, default password is "123456" if not set during creation.
 - **CORS errors**: When deploying, ensure Supabase edge functions have proper CORS configuration to allow requests from your domain
+- **Security best practices**: Never expose service role keys in frontend code; use Vercel API routes as secure proxy for sensitive operations
 
 ## Common Development Tasks
 
@@ -277,6 +292,7 @@ The system supports 67 rooms:
 - **Multi-language additions**: Update translations in both database and translations.ts file
 - **Component development**: Place new components in the components/ directory following existing patterns
 - **Partner-specific features**: Ensure proper partnerId isolation for multi-tenant functionality
+- **Vercel API routes**: For sensitive operations, create secure API routes in pages/api/ that proxy requests to Supabase
 
 ## Deployment Configuration
 
@@ -287,6 +303,55 @@ The application is deployed on Vercel with Supabase backend integration:
 - The build process creates optimized chunks with specific naming conventions
 - CDN-ready assets with cache busting hashes
 - Ensure proper CORS configuration for cross-origin requests between frontend and Supabase functions
+
+## Vercel API Routes Implementation
+
+For secure operations that require service role keys, implement Vercel API routes as follows:
+
+### Using Supabase REST API via fetch
+- Store SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY as Vercel environment variables
+- Create API routes in pages/api/ that proxy requests to Supabase REST API
+- Example implementation in a Vercel API route:
+```
+export default async function handler(req, res) {
+  const { method, query } = req;
+  const url = `${process.env.SUPABASE_URL}/rest/v1/orders?select=*&status=eq.pending`;
+  
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+      'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
+      'Accept': 'application/json'
+    }
+  });
+  
+  const data = await response.json();
+  res.status(response.status).json(data);
+}
+```
+
+### Using Supabase Client SDK
+- Initialize Supabase client with service role key in serverless functions only
+- Example implementation:
+```
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
+export default async function handler(req, res) {
+  const { data, error } = await supabase
+    .from('orders')
+    .select('*')
+    .eq('status', 'pending');
+    
+  if (error) return res.status(500).json({ error });
+  res.status(200).json(data);
+}
+```
 
 ## Login and Password Management
 
