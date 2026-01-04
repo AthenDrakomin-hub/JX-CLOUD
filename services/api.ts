@@ -62,6 +62,32 @@ const checkEdgeFunctionStatus = async (): Promise<boolean> => {
 };
 
 export const api = {
+  auth: {
+    // 重置密码功能
+    resetPassword: async (data: { token: string; newPassword: string }) => {
+      if (isDemoMode) return { success: true };
+      
+      try {
+        const response = await fetch(`${supabaseUrl}/functions/v1/users-admin/reset-password`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to reset password: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Error resetting password:', error);
+        throw error;
+      }
+    }
+  },
+  
   db: {
     getStats: async () => {
       if (isDemoMode) return { orders: 0, dishes: 0, users: 0, rooms: 0, status: 'Virtual' };

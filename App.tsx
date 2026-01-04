@@ -15,8 +15,10 @@ import ErrorBoundary from './components/ErrorBoundary';
 import NotificationCenter from './components/NotificationCenter';
 import GuestOrder from './components/GuestOrder';
 import ConnectionMonitor from './components/ConnectionMonitor';
+import PasswordReset from './components/PasswordReset';
 import { api } from './services/api';
 import { notificationService } from './services/notification';
+import { isDemoMode, supabase, supabaseUrl } from './services/supabaseClient';
 import { User, Order, HotelRoom, Expense, Dish, MaterialImage, UserRole, Ingredient, SecurityLog, OrderStatus, PermissionKey } from './types';
 import { translations as localTranslations, Language } from './translations';
 import { 
@@ -57,6 +59,18 @@ const App: React.FC = () => {
   const [lastOrderInfo, setLastOrderInfo] = useState<string | null>(null);
   
   const [pendingMfaUser, setPendingMfaUser] = useState<User | null>(null);
+  
+  // 检查是否是密码重置页面
+  const isPasswordResetPage = window.location.pathname === '/reset-password';
+  
+  // 如果是密码重置页面，只渲染密码重置组件
+  if (isPasswordResetPage) {
+    return (
+      <ErrorBoundary>
+        <PasswordReset />
+      </ErrorBoundary>
+    );
+  }
   
   const DEFAULT_PERMISSIONS: PermissionKey[] = [
     'manage_menu',
@@ -276,6 +290,46 @@ const App: React.FC = () => {
       await logAudit('AUTH_FAILURE', `登录失败: ${error instanceof Error ? error.message : 'Unknown error'}`, 'High');
     } finally {
       setIsLoggingIn(false);
+    }
+  };
+  
+  // 重置密码功能（仅用于开发环境或管理员重置）
+  const resetPassword = async (username: string, newPassword: string) => {
+    if (isDemoMode) {
+      // 在演示模式下，我们创建一个虚拟的重置响应
+      console.log(`演示模式：重置用户 ${username} 的密码`);
+      return { success: true };
+    }
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('No active session');
+      }
+      
+      // 通过边缘函数重置密码
+      const response = await fetch(`${supabaseUrl}/functions/v1/users-admin/reset-password`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username,
+          new_password: newPassword
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to reset password: ${response.status} ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error('Password reset error:', error);
+      throw error;
     }
   };
 
@@ -589,6 +643,51 @@ const App: React.FC = () => {
                  </button>
                  <span className="opacity-40">JX_CLOUD_PROD_V3</span>
                </div>
+            </div>
+            
+            {/* 密码重置功能 */}
+            <div className="mt-8 p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+              <div className="text-center mb-3">
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">管理员密码重置</p>
+              </div>
+              <div className="space-y-3">
+                <input 
+                  type="text" 
+                  id="reset-username" 
+                  placeholder="输入用户名" 
+                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#d4af37]"
+                />
+                <input 
+                  type="password" 
+                  id="reset-password" 
+                  placeholder="新密码" 
+                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#d4af37]"
+                />
+                <button 
+                  onClick={async () => {
+                    const username = (document.getElementById('reset-username') as HTMLInputElement).value;
+                    const password = (document.getElementById('reset-password') as HTMLInputElement).value;
+                    
+                    if (!username || !password) {
+                      setGlobalError('请输入用户名和新密码');
+                      return;
+                    }
+                    
+                    try {
+                      await resetPassword(username, password);
+                      setGlobalError('密码重置成功');
+                      // 清空输入框
+                      (document.getElementById('reset-username') as HTMLInputElement).value = '';
+                      (document.getElementById('reset-password') as HTMLInputElement).value = '';
+                    } catch (error) {
+                      setGlobalError('密码重置失败: ' + (error instanceof Error ? error.message : '未知错误'));
+                    }
+                  }}
+                  className="w-full py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold text-sm uppercase tracking-wider transition-colors"
+                >
+                  重置密码
+                </button>
+              </div>
             </div>
           </div>
         </div>
