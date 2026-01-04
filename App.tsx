@@ -204,6 +204,12 @@ const App: React.FC = () => {
       setUsers(u || []);
       setMaterials(m || []);
 
+      // 检查用户数据
+      if (u && u.length === 0) {
+        console.log('No users found in the system');
+        // 可以考虑使用新的边缘函数来检查用户状态
+      }
+
       // Merge database translations with local translations, giving priority to database translations
       const mergedTranslations = {
         zh: { ...localTranslations.zh, ...cloudDict.zh },
@@ -233,15 +239,14 @@ const App: React.FC = () => {
     setGlobalError(null);
     
     try {
-      // 获取默认管理员用户
-      const latestUsers = await api.users.getAll();
-      const adminUser = latestUsers.find(u => u.role === 'admin') || latestUsers[0];
+      // 使用新的 select-or-login-user 边缘函数
+      const user = await api.db.selectOrLoginUser();
       
-      if (adminUser) {
-        // 设置当前用户为管理员
-        setCurrentUser({ ...adminUser, isOnline: true });
-        await api.users.setOnlineStatus(adminUser.id, true);
-        await logAudit('AUTH_SUCCESS', '直接访问系统。', 'Low', adminUser.id);
+      if (user) {
+        // 设置当前用户
+        setCurrentUser({ ...user, isOnline: true });
+        await api.users.setOnlineStatus(user.id, true);
+        await logAudit('AUTH_SUCCESS', '直接访问系统。', 'Low', user.id);
         notificationService.requestPermission();
       } else {
         // 如果没有用户，显示错误信息，提示需要先在云端创建用户
@@ -265,17 +270,27 @@ const App: React.FC = () => {
     setGlobalError(null);
     
     try {
-      // 直接通过MFA验证，因为我们现在直接访问系统
-      const latestUsers = await api.users.getAll();
-      const user = latestUsers.find(u => u.id === pendingMfaUser?.id);
-      if (user?.isOnline) {
-        // 强制下线该用户在其他设备上的会话
-        await api.users.setOnlineStatus(pendingMfaUser.id, false);
-        await logAudit('FORCE_OFFLINE', `MFA认证时强制下线该用户之前的会话`, 'Medium', pendingMfaUser.id);
+      // 使用新的 select-or-login-user 边缘函数验证MFA用户
+      if (!pendingMfaUser.username || !pendingMfaUser.password) {
+        setGlobalError('用户信息不完整，请联系管理员。');
+        throw new Error('Incomplete user credentials');
       }
       
-      await api.users.setOnlineStatus(pendingMfaUser.id, true);
-      setCurrentUser({ ...pendingMfaUser, isOnline: true });
+      const user = await api.db.selectOrLoginUser({ username: pendingMfaUser.username, password: pendingMfaUser.password });
+      
+      if (!user) {
+        setGlobalError('用户验证失败，请联系管理员。');
+        throw new Error('User verification failed');
+      }
+      
+      if (user?.isOnline) {
+        // 强制下线该用户在其他设备上的会话
+        await api.users.setOnlineStatus(user.id, false);
+        await logAudit('FORCE_OFFLINE', `MFA认证时强制下线该用户之前的会话`, 'Medium', user.id);
+      }
+      
+      await api.users.setOnlineStatus(user.id, true);
+      setCurrentUser({ ...user, isOnline: true });
       setPendingMfaUser(null);
       await logAudit('MFA_SUCCESS', '直接访问系统。');
       notificationService.requestPermission();
@@ -434,15 +449,14 @@ const App: React.FC = () => {
               <button onClick={async () => {
                 setIsLoggingIn(true);
                 try {
-                  // 获取默认管理员用户
-                  const latestUsers = await api.users.getAll();
-                  const adminUser = latestUsers.find(u => u.role === 'admin') || latestUsers[0];
+                  // 使用新的 select-or-login-user 边缘函数
+                  const user = await api.db.selectOrLoginUser();
                   
-                  if (adminUser) {
-                    // 设置当前用户为管理员
-                    setCurrentUser({ ...adminUser, isOnline: true });
-                    await api.users.setOnlineStatus(adminUser.id, true);
-                    await logAudit('AUTH_SUCCESS', '直接访问系统。', 'Low', adminUser.id);
+                  if (user) {
+                    // 设置当前用户
+                    setCurrentUser({ ...user, isOnline: true });
+                    await api.users.setOnlineStatus(user.id, true);
+                    await logAudit('AUTH_SUCCESS', '直接访问系统。', 'Low', user.id);
                     notificationService.requestPermission();
                   } else {
                     // 如果没有用户，显示错误信息，提示需要先在云端创建用户
