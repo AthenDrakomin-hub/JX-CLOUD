@@ -101,6 +101,16 @@ The application uses Vite environment variables prefixed with `VITE_`:
 - `VITE_SUPABASE_URL` - Supabase project URL
 - `VITE_SUPABASE_ANON_KEY` - Supabase anonymous key
 
+## CORS Configuration
+
+When deploying the application, ensure proper CORS configuration in Supabase:
+- Access Supabase dashboard -> Authentication -> URL Configuration
+- Add your domain to the allowed origins list (e.g., https://www.jiangxijiudian.store)
+- For edge functions, configure CORS headers in the function code:
+  - Add appropriate 'Access-Control-Allow-Origin' headers
+  - Include 'Access-Control-Allow-Methods' and 'Access-Control-Allow-Headers'
+- For production deployment, ensure the Supabase edge functions return proper CORS headers
+
 ## Important Files
 
 - `App.tsx` - Main application component
@@ -257,6 +267,7 @@ The system supports 67 rooms:
 - **Translation keys**: When adding new UI elements, ensure all translation keys used in components exist in translations.ts for all supported languages (zh, en, tl) to avoid TypeScript errors
 - **TypeScript strict mode**: All function parameters should have explicit type annotations to comply with strict TypeScript settings
 - **Login credentials inconsistency**: Login form shows placeholder "Access Password / password" but actual default admin password is "admin" (admin/admin). For other users, default password is "123456" if not set during creation.
+- **CORS errors**: When deploying, ensure Supabase edge functions have proper CORS configuration to allow requests from your domain
 
 ## Common Development Tasks
 
@@ -275,6 +286,7 @@ The application is deployed on Vercel with Supabase backend integration:
 - Environment variables should be prefixed with VITE_ for client-side access
 - The build process creates optimized chunks with specific naming conventions
 - CDN-ready assets with cache busting hashes
+- Ensure proper CORS configuration for cross-origin requests between frontend and Supabase functions
 
 ## Login and Password Management
 
