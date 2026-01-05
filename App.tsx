@@ -114,6 +114,53 @@ const App: React.FC = () => {
     return unsubscribe;
   }, [currentTab]);
 
+  // 初始化会话 - 尝试从本地存储恢复会话
+  useEffect(() => {
+    const initializeSession = async () => {
+      if (isDemoMode) return;
+      
+      try {
+        // 检查是否有现有会话
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          // 如果没有会话，尝试从本地存储恢复
+          const storedSession = localStorage.getItem('supabase.auth.token');
+          if (storedSession) {
+            try {
+              const sessionObj = JSON.parse(storedSession);
+              const accessToken = sessionObj?.currentSession?.access_token;
+              const refreshToken = sessionObj?.currentSession?.refresh_token;
+              
+              if (accessToken && refreshToken) {
+                // 使用存储的令牌尝试恢复会话
+                const { error } = await supabase.auth.setSession({
+                  access_token: accessToken,
+                  refresh_token: refreshToken
+                });
+                
+                if (error) {
+                  console.warn('Failed to restore session:', error);
+                  // 如果恢复失败，清除无效的本地存储
+                  localStorage.removeItem('supabase.auth.token');
+                } else {
+                  console.log('Session restored from local storage');
+                }
+              }
+            } catch (e) {
+              console.warn('Failed to parse stored session:', e);
+              localStorage.removeItem('supabase.auth.token');
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error initializing session:', error);
+      }
+    };
+
+    initializeSession();
+  }, []);
+
   const logAudit = useCallback(async (action: string, details: string, riskLevel: 'Low' | 'Medium' | 'High' = 'Low', overrideUserId?: string) => {
     const userContext = currentUser || pendingMfaUser;
     const log: SecurityLog = {

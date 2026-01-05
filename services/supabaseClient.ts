@@ -28,7 +28,25 @@ export const supabase = isDemoMode
         detectSessionInUrl: true
       },
       global: {
-        headers: { 'x-application-name': 'jx-cloud-v3' }
+        headers: { 
+          'x-application-name': 'jx-cloud-v3',
+          // 添加请求拦截器来处理会话问题
+          ...(() => {
+            const token = localStorage.getItem('supabase.auth.token');
+            if (token) {
+              try {
+                const tokenObj = JSON.parse(token);
+                const accessToken = tokenObj?.currentSession?.access_token;
+                if (accessToken) {
+                  return { 'Authorization': `Bearer ${accessToken}` };
+                }
+              } catch (e) {
+                console.warn('Failed to parse stored token:', e);
+              }
+            }
+            return {};
+          })()
+        }
       },
       realtime: {
         params: {
@@ -40,3 +58,31 @@ export const supabase = isDemoMode
 if (!isDemoMode) {
   console.log('🔗 JX-CLOUD: 已挂载生产级云端路由: zlbemopcgjohrnyyiwvs');
 }
+
+// 会话管理辅助函数
+export const getStoredSession = () => {
+  try {
+    const sessionData = localStorage.getItem('supabase.auth.token');
+    if (sessionData) {
+      const sessionObj = JSON.parse(sessionData);
+      return sessionObj?.currentSession || null;
+    }
+  } catch (e) {
+    console.warn('Failed to get stored session:', e);
+  }
+  return null;
+};
+
+// 检查会话是否有效
+export const isValidSession = (session: any) => {
+  if (!session || !session.access_token) return false;
+  
+  try {
+    const payload = JSON.parse(atob(session.access_token.split('.')[1]));
+    const now = Date.now() / 1000;
+    return payload.exp > now;
+  } catch (e) {
+    console.warn('Failed to validate session:', e);
+    return false;
+  }
+};

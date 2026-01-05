@@ -134,7 +134,23 @@ export const api = {
         // 从 Supabase 获取当前会话
         const { data: { session } } = await supabase.auth.getSession();
         
-        if (!session) {
+        let token;
+        if (session && session.access_token) {
+          token = session.access_token;
+        } else {
+          // 如果没有当前会话，尝试使用存储的令牌
+          const storedSession = localStorage.getItem('supabase.auth.token');
+          if (storedSession) {
+            try {
+              const sessionObj = JSON.parse(storedSession);
+              token = sessionObj?.currentSession?.access_token;
+            } catch (e) {
+              console.error('Failed to parse stored session:', e);
+            }
+          }
+        }
+        
+        if (!token) {
           console.log('No active session found');
           return null;
         }
@@ -143,7 +159,7 @@ export const api = {
         const response = await fetch(`${supabaseUrl}/functions/v1/get-current-user`, {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${session.access_token}`,
+            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
             'Prefer': 'return=representation',
           },
@@ -322,16 +338,32 @@ export const api = {
       if (isDemoMode) return order;
       
       try {
+        let token;
         const { data: { session } } = await supabase.auth.getSession();
         
-        if (!session) {
+        if (session && session.access_token) {
+          token = session.access_token;
+        } else {
+          // 如果没有当前会话，尝试使用存储的令牌
+          const storedSession = localStorage.getItem('supabase.auth.token');
+          if (storedSession) {
+            try {
+              const sessionObj = JSON.parse(storedSession);
+              token = sessionObj?.currentSession?.access_token;
+            } catch (e) {
+              console.error('Failed to parse stored session:', e);
+            }
+          }
+        }
+        
+        if (!token) {
           throw new Error('No active session');
         }
         
         const response = await fetch(`${supabaseUrl}/functions/v1/order-processing-api`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${session.access_token}`,
+            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(order)
@@ -354,16 +386,32 @@ export const api = {
       if (isDemoMode) return true;
       
       try {
+        let token;
         const { data: { session } } = await supabase.auth.getSession();
         
-        if (!session) {
+        if (session && session.access_token) {
+          token = session.access_token;
+        } else {
+          // 如果没有当前会话，尝试使用存储的令牌
+          const storedSession = localStorage.getItem('supabase.auth.token');
+          if (storedSession) {
+            try {
+              const sessionObj = JSON.parse(storedSession);
+              token = sessionObj?.currentSession?.access_token;
+            } catch (e) {
+              console.error('Failed to parse stored session:', e);
+            }
+          }
+        }
+        
+        if (!token) {
           throw new Error('No active session');
         }
         
         const response = await fetch(`${supabaseUrl}/functions/v1/order-notification`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${session.access_token}`,
+            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(orderEvent)
