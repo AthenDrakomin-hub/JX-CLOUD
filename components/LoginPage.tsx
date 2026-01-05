@@ -1,7 +1,6 @@
 /* Copyright (c) 2025 Jiangxi Star Hotel. 保留所有权利. */
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
 import { api } from '../services/api';
 import { notificationService } from '../services/notification';
@@ -12,12 +11,11 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const LoginPage: React.FC = () => {
+const LoginPage: React.FC<{ onLoginSuccess: () => void }> = ({ onLoginSuccess }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,8 +47,8 @@ const LoginPage: React.FC = () => {
           // 发送通知
           notificationService.send('登录成功', `欢迎回来，${user.name || username}`, 'AUTH');
           
-          // 重定向到主页
-          navigate('/');
+          // 调用成功回调
+          onLoginSuccess();
         } else {
           setErrorMsg('用户信息获取失败');
         }
