@@ -1,5 +1,6 @@
 /* Copyright (c) 2025 Jiangxi Star Hotel. 保留所有权利. */
 
+import '/src/input.css';
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';

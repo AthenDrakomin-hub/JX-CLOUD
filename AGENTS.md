@@ -4,7 +4,7 @@ This file provides guidance to Qoder (qoder.com) when working with code in this 
 
 ## Project Overview
 
-This is a hospitality management system called "江西云厨" (JX Cloud) - a hotel/restaurant management solution that allows guests to order food from their rooms. The application uses React 19 with TypeScript, Vite build system, and Supabase as the backend, featuring both online and offline capabilities.
+This is a hospitality management system called "江西云厨" (JX Cloud) - a hotel/restaurant management solution that allows guests to order food from their rooms. The application uses React 19 with TypeScript, Vite build system, and Supabase as the backend, featuring both online and offline capabilities. The system is built on the principles of "cloud-native, offline-first, and maximum security".
 
 ## Architecture
 
@@ -19,47 +19,36 @@ This is a hospitality management system called "江西云厨" (JX Cloud) - a hot
 - **Database**: PostgreSQL via Supabase with tables for rooms, dishes, orders, users, etc.
 - **Security**: Service role keys stored as Vercel environment variables, accessed only in serverless functions
 
-## API Architecture Clarification
+## Frontend Technology Stack
 
-The system uses a dual API architecture pattern:
+### Core Framework
+- **React 19**: Latest version with strict mode and improved concurrent features ensuring smooth UI responses
+- **TypeScript**: Full-flow strong type constraints to minimize runtime errors
+- **Vite**: Fast development tool with millisecond-level hot updates (HMR)
 
-### Supabase Edge Functions (api/ directory)
-- Located in `api/` directory
-- Deployed to Supabase Edge Runtime
-- Used for direct database operations and authentication
-- Includes: `dish-crud-api.ts`, `select-or-login-user.ts`, `set-user-password.ts`, `index.ts`, `api/edge/get-dishes.ts`
+### Styling & UI
+- **Tailwind CSS**: Atomic CSS engine with built-in "Gold + Obsidian" theme for ultimate visual aesthetics
+- **Lucide React**: Modern lightweight vector icon library for all dynamic visual elements
+- **Recharts**: Professional-grade data visualization engine for business dashboards and financial charts
 
-### Vercel Serverless Functions (pages/api/ directory) 
-- Located in `pages/api/` directory
-- Deployed to Vercel Serverless Functions
-- Used for proxy operations and business logic that requires Vercel environment
-- Includes: `create-order.ts`, `update-order.ts`, `proxy.ts`
+## Backend & Cloud Services
 
-**Note**: This is a Vite + React application, NOT a Next.js application. The `api/` directory contains Supabase Edge Functions, while `pages/api/` contains Vercel Serverless Functions. This is different from Next.js API routes. The warning about Next.js API routes does not apply to this project architecture.
+### Core Database
+- **Supabase (PostgreSQL)**: Core database leveraging PostgREST features for direct API-to-database secure communication
+- **Row Level Security (RLS)**: Database-level security policies ensuring guests can only order, staff can only process orders, and admins have full access
+- **Real-time Subscriptions**: PostgreSQL logical replication for real-time order status updates to kitchen terminals
 
-This separation ensures proper security boundaries and deployment optimization.
-
-## Type Definitions
-
-The system has two type definition files:
-- `types.ts` - Core application types for rooms, dishes, orders, users, etc.
-- `types-saas.ts` - SaaS-specific types for partners, commissions, and multi-tenant features
-
-## Styling Architecture
-
-Styling is handled through multiple layers:
-- `src/input.css` - Tailwind directives and custom CSS variables
-- Tailwind CSS via CDN in `index.html`
-- Inline CSS variables for theming (gold, obsidian, app background)
-- Component-level styling through Tailwind classes
+### Edge Computing
+- **Vercel Edge Runtime**: API endpoints optimized for global low-latency responses (<20ms typically)
+- **Edge Functions**: Supabase Edge Functions for server-side operations
 
 ## Hybrid Storage Architecture (VirtualDB)
 
 The system implements a sophisticated offline-first architecture:
-- Local storage as the primary data layer for reliability during network outages
-- Supabase cloud sync for multi-device consistency
-- Sync queue mechanism to handle pending operations when offline
-- Automatic reconciliation when connection is restored
+- **Local Storage**: "Offline reliable layer" that allows the system to operate during cloud connection outages
+- **Supabase Sync**: Cloud mirror synchronization for multi-device consistency
+- **Sync Queue**: Mechanism to handle pending operations when offline
+- **Automatic Reconciliation**: Automatic data alignment when connection is restored
 - The VirtualDB implementation uses localStorage with specific storage keys for different data types:
   - `jx_virtual_rooms` - Hotel room data
   - `jx_virtual_orders` - Order information
@@ -70,6 +59,25 @@ The system implements a sophisticated offline-first architecture:
   - `jx_virtual_config` - System configuration
   - `jx_virtual_materials` - Image assets
   - `jx_virtual_translations` - Multi-language translations
+
+## Security & Integration Features
+
+### Authentication & Security
+- **MFA (Two-Factor Authentication)**: TOTP algorithm-based authentication supporting Google Authenticator/Microsoft Authenticator
+- **Audit Engine**: Built-in security audit engine recording every order modification and staff login activity
+- **IP Whitelist**: User IP address validation for enhanced security
+- **Account Locking**: Support for account locking/unlocking functionality
+
+### Integration Features
+- **Webhook Integration**: Support for third-party systems (DingTalk, Lark, WeChat Work) for real-time message pushing
+- **Print Engine**: Dedicated kitchen thermal printer engine supporting industrial standard 80mm thermal print format
+
+## Development Tools & Build Process
+
+- **Vite**: Fast development tool with millisecond-level hot updates (HMR)
+- **Supabase SQL Editor**: For executing DDL scripts and managing complex indexing strategies
+- **ESM.sh**: Full ESM imports without dependency on large local node_modules, significantly improving deployment and loading speeds
+- **Vercel/Edge Gateway**: Production environment platform providing CI/CD pipeline
 
 ## Development Commands
 
@@ -177,6 +185,7 @@ When deploying the application, ensure proper CORS configuration in Supabase:
 - `services/supabaseClient.ts` - Supabase client configuration
 - `services/mfaFixer.ts` - MFA status checking and fixing utilities
 - `services/notification.ts` - Notification handling and push services
+- `services/totp.ts` - TOTP authentication implementation
 - `types.ts` - Type definitions for all entities
 - `constants.ts` - Application constants and initial data
 - `components/` - React UI components
@@ -195,7 +204,8 @@ When deploying the application, ensure proper CORS configuration in Supabase:
 ## Styling and UI
 
 - **Tailwind CSS**: Loaded via CDN in index.html for utility-first CSS framework
-- **Custom Styles**: Defined in index.html style tag with CSS variables for consistent theming
+- **CSS Loading**: Custom CSS imported in App.tsx for module-based approach
+- **Custom Styles**: Defined in src/input.css with CSS variables for consistent theming
 - **Font Loading**: Google Fonts (Plus Jakarta Sans and Playfair Display) with preconnect for performance
 - **CSS Variables**: Custom properties for gold (#d4af37), obsidian (#020617), and app background (#f8fafc)
 - **Mobile Optimization**: Safe area handling, scroll behavior, and mobile-friendly styles
@@ -342,6 +352,10 @@ The system supports 67 rooms:
 - **Partner-specific features**: Ensure proper partnerId isolation for multi-tenant functionality
 - **Vercel API routes**: For sensitive operations, create secure API routes in pages/api/ that proxy requests to Supabase
 
+## Core Competitiveness
+
+This system is more than just a management tool. It solves the "no internet, no business" problem that many small hotels worry about using VirtualDB mirroring technology. Even if the cloud is unavailable, local data automatically aligns after reconnecting to the internet, which is a feature that pure SaaS systems do not have.
+
 ## Deployment Configuration
 
 The application is deployed on Vercel with Supabase backend integration:
@@ -430,3 +444,23 @@ If you're unable to log in:
 1. Check if the default admin credentials work (`admin`/`admin`)
 2. Ensure your Supabase backend is properly configured and accessible
 3. Verify that the edge functions are deployed and accessible
+
+## API Architecture Clarification
+
+The system uses a dual API architecture pattern:
+
+### Supabase Edge Functions (api/ directory)
+- Located in `api/` directory
+- Deployed to Supabase Edge Runtime
+- Used for direct database operations and authentication
+- Includes: `dish-crud-api.ts`, `select-or-login-user.ts`, `set-user-password.ts`, `index.ts`, `api/edge/get-dishes.ts`
+
+### Vercel Serverless Functions (pages/api/ directory) 
+- Located in `pages/api/` directory
+- Deployed to Vercel Serverless Functions
+- Used for proxy operations and business logic that requires Vercel environment
+- Includes: `create-order.ts`, `update-order.ts`, `proxy.ts`
+
+**Note**: This is a Vite + React application, NOT a Next.js application. The `api/` directory contains Supabase Edge Functions, while `pages/api/` contains Vercel Serverless Functions. This is different from Next.js API routes. The warning about Next.js API routes does not apply to this project architecture.
+
+This separation ensures proper security boundaries and deployment optimization.
