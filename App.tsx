@@ -1,6 +1,7 @@
 /* Copyright (c) 2025 Jiangxi Star Hotel. 保留所有权利. */
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { initializeErrorHandling } from './services/errorHandlingInit';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import RoomGrid from './components/RoomGrid';
@@ -86,6 +87,9 @@ const App: React.FC = () => {
   const isMounted = useRef(true);
 
   useEffect(() => {
+    // 初始化错误处理系统
+    initializeErrorHandling();
+    
     const params = new URLSearchParams(window.location.search);
     const room = params.get('room');
     if (room) setGuestRoomId(room);

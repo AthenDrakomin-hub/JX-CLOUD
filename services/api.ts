@@ -61,6 +61,54 @@ const checkEdgeFunctionStatus = async (): Promise<boolean> => {
   }
 };
 
+// 网络请求重试机制
+const retryRequest = async <T>(
+  requestFn: () => Promise<T>, 
+  maxRetries: number = 3, 
+  delay: number = 1000
+): Promise<T> => {
+  let lastError: any;
+
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await requestFn();
+    } catch (error) {
+      lastError = error;
+      
+      // 如果是认证错误，不应重试
+      if (error.status === 401 || error.message?.includes('unauthorized')) {
+        throw error;
+      }
+
+      // 如果是网络错误，进行重试（除了最后一次）
+      if ((error.name === 'TypeError' || error.message?.includes('Failed to fetch')) && i < maxRetries - 1) {
+        // 指数退避延迟
+        await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
+      } else {
+        break; // 非网络错误或达到最大重试次数，停止重试
+      }
+    }
+  }
+
+  throw lastError;
+};
+
+// 通用API请求处理函数
+const handleApiResponse = async <T>(response: Response, context?: string): Promise<T> => {
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    const errorMessage = errorData.message || `API请求失败: ${response.status} ${response.statusText}`;
+    
+    const error = new Error(errorMessage) as any;
+    error.status = response.status;
+    error.context = context;
+    
+    throw error;
+  }
+  
+  return response.json();
+};
+
 export const api = {
   auth: {
     // 重置密码功能
@@ -139,25 +187,33 @@ export const api = {
           return null;
         }
         
-        // 使用新的 get-current-user 边缘函数
-        const response = await fetch(`${supabaseUrl}/functions/v1/get-current-user`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=representation',
-          },
+        // 使用重试机制调用边缘函数
+        const result = await retryRequest(async () => {
+          const response = await fetch(`${supabaseUrl}/functions/v1/get-current-user`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`,
+              'Content-Type': 'application/json',
+              'Prefer': 'return=representation',
+            },
+          });
+          
+          if (!response.ok) {
+            if (response.status === 401) {
+              console.warn('JWT verification failed - unauthorized');
+              return null;
+            }
+            throw new Error(`Failed to fetch current user: ${response.status} ${response.statusText}`);
+          }
+          
+          return response;
         });
         
-        if (!response.ok) {
-          if (response.status === 401) {
-            console.warn('JWT verification failed - unauthorized');
-            return null;
-          }
-          throw new Error(`Failed to fetch current user: ${response.status} ${response.statusText}`);
+        if (result === null) {
+          return null;
         }
         
-        const payload = await response.json();
+        const payload = await result.json();
         const row = payload.user ?? payload;
         
         if (!row) {
@@ -624,101 +680,157 @@ export const api = {
       return VirtualDB.get<Order[]>(STORAGE_KEYS.ORDERS, []);
     },
     create: async (order: Order) => {
-      const orders = VirtualDB.get<Order[]>(STORAGE_KEYS.ORDERS, []);
-      VirtualDB.set(STORAGE_KEYS.ORDERS, [order, ...orders]);
-      
-      if (!isDemoMode) {
+      try {
+        // 数据验证
+        if (!order.roomId || !order.items || order.items.length === 0) {
+          throw new Error('订单数据不完整：缺少房间ID或订单项目');
+        }
+        
+        if (order.totalAmount <= 0) {
+          throw new Error('订单总金额必须大于0');
+        }
+        
+        // 检查订单项目是否有效
+        for (const item of order.items) {
+          if (!item.dishId || item.quantity <= 0 || item.price < 0) {
+            throw new Error('订单项目数据无效');
+          }
+        }
+        
+        const orders = VirtualDB.get<Order[]>(STORAGE_KEYS.ORDERS, []);
+        VirtualDB.set(STORAGE_KEYS.ORDERS, [order, ...orders]);
+        
+        if (!isDemoMode) {
+          try {
+            // 使用重试机制处理订单
+            await retryRequest(async () => {
+              // 使用新的订单处理边缘函数
+              const processedOrder = await api.db.processOrder(order);
+              
+              // 更新房间状态
+              const { error: roomUpdateError } = await supabase
+                .from('rooms')
+                .update({ status: RoomStatus.ORDERING })
+                .eq('id', order.roomId);
+                
+              if (roomUpdateError) {
+                console.error('Failed to update room status:', roomUpdateError);
+                // 即使房间状态更新失败，订单仍应创建
+              }
+              
+              return processedOrder;
+            });
+          } catch (e) {
+            console.error('Failed to process order via edge function:', e);
+            VirtualDB.queueForSync('INSERT', 'orders', order);
+          }
+        }
+        
+        // Send notification to kitchen
         try {
-          // 使用新的订单处理边缘函数
-          const processedOrder = await api.db.processOrder(order);
-          
-          // 更新房间状态
-          await supabase.from('rooms').update({ status: RoomStatus.ORDERING }).eq('id', order.roomId);
+          notificationService.send('新订单', `房间 ${order.roomId} 发起点餐 ₱${order.totalAmount}`, 'NEW_ORDER');
         } catch (e) {
-          VirtualDB.queueForSync('INSERT', 'orders', order);
+          console.error('Failed to send notification:', e);
         }
-      }
-      
-      // Send notification to kitchen
-      notificationService.send('新订单', `房间 ${order.roomId} 发起点餐 ₱${order.totalAmount}`, 'NEW_ORDER');
-      
-      // Trigger webhook if enabled
-      try {
-        const config = await api.config.get();
-        if (config.isWebhookEnabled && config.webhookUrl) {
-          await notificationService.triggerWebhook(order, config.webhookUrl);
+        
+        // Trigger webhook if enabled
+        try {
+          const config = await api.config.get();
+          if (config.isWebhookEnabled && config.webhookUrl) {
+            await notificationService.triggerWebhook(order, config.webhookUrl);
+          }
+        } catch (e) {
+          console.warn('Failed to get config or trigger webhook:', e);
         }
-      } catch (e) {
-        console.warn('Failed to get config or trigger webhook:', e);
-      }
-      
-      // 使用新的订单通知边缘函数
-      try {
-        await api.db.notifyOrder({
-          orderId: order.id,
-          eventType: 'NEW_ORDER',
-          payload: { roomId: order.roomId, totalAmount: order.totalAmount }
-        });
-      } catch (e) {
-        console.warn('Failed to send order notification via edge function:', e);
+        
+        // 使用新的订单通知边缘函数
+        try {
+          await api.db.notifyOrder({
+            orderId: order.id,
+            eventType: 'NEW_ORDER',
+            payload: { roomId: order.roomId, totalAmount: order.totalAmount }
+          });
+        } catch (e) {
+          console.warn('Failed to send order notification via edge function:', e);
+        }
+      } catch (error) {
+        console.error('Failed to create order:', error);
+        throw error;
       }
     },
     updateStatus: async (orderId: string, status: OrderStatus) => {
-      const orders = VirtualDB.get<Order[]>(STORAGE_KEYS.ORDERS, []);
-      VirtualDB.set(STORAGE_KEYS.ORDERS, orders.map(o => o.id === orderId ? { ...o, status, updatedAt: new Date().toISOString() } : o));
-      
-      if (!isDemoMode) {
+      try {
+        const orders = VirtualDB.get<Order[]>(STORAGE_KEYS.ORDERS, []);
+        VirtualDB.set(STORAGE_KEYS.ORDERS, orders.map(o => o.id === orderId ? { ...o, status, updatedAt: new Date().toISOString() } : o));
+        
+        if (!isDemoMode) {
+          try {
+            // 使用新的订单处理边缘函数
+            const { data: { session } } = await supabase.auth.getSession();
+            
+            if (session) {
+              const response = await fetch(`${supabaseUrl}/functions/v1/order-processing-api`, {
+                method: 'PATCH',
+                headers: {
+                  'Authorization': `Bearer ${session.access_token}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id: orderId, status, updated_at: new Date().toISOString() })
+              });
+              
+              if (!response.ok) {
+                throw new Error(`Failed to update order status: ${response.status} ${response.statusText}`);
+              }
+              
+              if (status === OrderStatus.COMPLETED || status === OrderStatus.CANCELLED) {
+                 const { data, error } = await supabase.from('orders').select('room_id').eq('id', orderId).single();
+                 if (error) {
+                   console.error('Failed to get order room ID:', error);
+                 } else if (data) {
+                   const { error: roomUpdateError } = await supabase.from('rooms').update({ status: RoomStatus.READY }).eq('id', (data as any).room_id);
+                   if (roomUpdateError) {
+                     console.error('Failed to update room status:', roomUpdateError);
+                   }
+                 }
+              }
+            }
+          } catch (e) {
+            console.error('Error updating order status via edge function:', e);
+            VirtualDB.queueForSync('UPDATE_STATUS', 'orders', { orderId, status });
+          }
+        }
+        
+        // Send notification about order status update
         try {
-          // 使用新的订单处理边缘函数
-          const { data: { session } } = await supabase.auth.getSession();
-          
-          if (session) {
-            const response = await fetch(`${supabaseUrl}/functions/v1/order-processing-api`, {
-              method: 'PATCH',
-              headers: {
-                'Authorization': `Bearer ${session.access_token}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ id: orderId, status, updated_at: new Date().toISOString() })
-            });
+          const order = orders.find(o => o.id === orderId);
+          if (order) {
+            const statusText = {
+              [OrderStatus.PENDING]: '待处理',
+              [OrderStatus.PREPARING]: '制作中',
+              [OrderStatus.DELIVERING]: '配送中',
+              [OrderStatus.COMPLETED]: '已完成',
+              [OrderStatus.CANCELLED]: '已取消'
+            }[status] || status;
             
-            if (!response.ok) {
-              throw new Error(`Failed to update order status: ${response.status} ${response.statusText}`);
-            }
-            
-            if (status === OrderStatus.COMPLETED || status === OrderStatus.CANCELLED) {
-               const { data } = await supabase.from('orders').select('room_id').eq('id', orderId).single();
-               if (data) await supabase.from('rooms').update({ status: RoomStatus.READY }).eq('id', (data as any).room_id);
-            }
+            notificationService.send('订单状态更新', `订单 ${orderId} 状态更新为: ${statusText}`, 'ORDER_UPDATE');
           }
         } catch (e) {
-          VirtualDB.queueForSync('UPDATE_STATUS', 'orders', { orderId, status });
+          console.error('Failed to send notification:', e);
         }
-      }
-      
-      // Send notification about order status update
-      const order = orders.find(o => o.id === orderId);
-      if (order) {
-        const statusText = {
-          [OrderStatus.PENDING]: '待处理',
-          [OrderStatus.PREPARING]: '制作中',
-          [OrderStatus.DELIVERING]: '配送中',
-          [OrderStatus.COMPLETED]: '已完成',
-          [OrderStatus.CANCELLED]: '已取消'
-        }[status] || status;
         
-        notificationService.send('订单状态更新', `订单 ${orderId} 状态更新为: ${statusText}`, 'ORDER_UPDATE');
-      }
-      
-      // 使用新的订单通知边缘函数
-      try {
-        await api.db.notifyOrder({
-          orderId,
-          eventType: 'STATUS_UPDATE',
-          payload: { status, updatedAt: new Date().toISOString() }
-        });
-      } catch (e) {
-        console.warn('Failed to send order notification via edge function:', e);
+        // 使用新的订单通知边缘函数
+        try {
+          await api.db.notifyOrder({
+            orderId,
+            eventType: 'STATUS_UPDATE',
+            payload: { status, updatedAt: new Date().toISOString() }
+          });
+        } catch (e) {
+          console.warn('Failed to send order notification via edge function:', e);
+        }
+      } catch (error) {
+        console.error('Failed to update order status:', error);
+        throw error;
       }
     }
   },
