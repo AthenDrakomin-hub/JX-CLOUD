@@ -221,7 +221,7 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
                   <div className="flex flex-col items-center">
                     <span className="text-4xl font-black tracking-tighter text-slate-900">{room.id}</span>
                     <span className="text-[10px] uppercase font-black mt-1 text-slate-300 tracking-[0.3em] font-serif italic">
-                      {room.status === 'ordering' ? 'Occupied' : t('station')}
+                      {room.status === 'ordering' ? t('occupied') : t('station')}
                     </span>
                   </div>
                 </div>
@@ -237,7 +237,7 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
           <div className="relative w-full max-w-2xl bg-white rounded-[4rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500">
              <div className="p-12 lg:p-16 space-y-10">
                 <div className="flex items-center justify-between">
-                   <h3 className="text-3xl font-bold text-slate-900 tracking-tight">Room {activeRoom.id}</h3>
+                   <h3 className="text-3xl font-bold text-slate-900 tracking-tight">{t('room')} {activeRoom.id}</h3>
                    <button onClick={closeModal} className="w-12 h-12 flex items-center justify-center rounded-2xl bg-slate-50 text-slate-400 hover:bg-slate-900 hover:text-white transition-all">
                       <X size={20} />
                    </button>
@@ -251,8 +251,8 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
                       <div className="w-20 h-20 bg-white shadow-xl rounded-[2rem] flex items-center justify-center text-slate-900 mb-6 group-hover:bg-[#d4af37] group-hover:text-white transition-all">
                          <QrCode size={32} />
                       </div>
-                      <span className="text-sm font-black uppercase tracking-[0.3em] text-slate-900">Guest QR Code</span>
-                      <p className="text-[10px] text-slate-400 font-bold mt-2">Display digital ordering link</p>
+                      <span className="text-sm font-black uppercase tracking-[0.3em] text-slate-900">{t('guestQRCode')}</span>
+                      <p className="text-[10px] text-slate-400 font-bold mt-2">{t('displayDigitalOrderingLink')}</p>
                    </button>
 
                    <button 
@@ -262,8 +262,8 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
                       <div className="w-20 h-20 bg-white shadow-xl rounded-[2rem] flex items-center justify-center text-slate-900 mb-6 group-hover:bg-[#d4af37] group-hover:text-white transition-all">
                          <ShoppingCart size={32} />
                       </div>
-                      <span className="text-sm font-black uppercase tracking-[0.3em] text-slate-900">Manual Order</span>
-                      <p className="text-[10px] text-slate-400 font-bold mt-2">Place order for guest</p>
+                      <span className="text-sm font-black uppercase tracking-[0.3em] text-slate-900">{t('manualOrder')}</span>
+                      <p className="text-[10px] text-slate-400 font-bold mt-2">{t('placeOrderForGuest')}</p>
                    </button>
                 </div>
              </div>
@@ -298,8 +298,8 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
           <div className="relative w-full max-w-6xl bg-white rounded-[4rem] shadow-2xl overflow-hidden animate-in slide-in-from-bottom-20 duration-500 flex flex-col max-h-[90vh]">
              <div className="p-10 border-b border-slate-100 flex items-center justify-between shrink-0">
                 <div>
-                   <h3 className="text-3xl font-bold text-slate-900 tracking-tight">Manual Order • Room {activeRoom.id}</h3>
-                   <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Staff-Operated Transaction</p>
+                   <h3 className="text-3xl font-bold text-slate-900 tracking-tight">{t('manualOrder')} • {t('room')} {activeRoom.id}</h3>
+                   <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">{t('staffOperatedTransaction')}</p>
                 </div>
                 <button onClick={closeModal} className="w-14 h-14 flex items-center justify-center rounded-2xl bg-slate-50 text-slate-400 hover:bg-slate-900 hover:text-white transition-all"><X size={24} /></button>
              </div>
@@ -308,7 +308,7 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
                    <div className="p-8 shrink-0">
                       <div className="relative">
                          <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                         <input type="text" placeholder="Search dishes..." className="w-full pl-14 pr-6 py-5 bg-white rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-[#d4af37]/10 transition-all font-bold" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                         <input type="text" placeholder={t('searchDishes')} className="w-full pl-14 pr-6 py-5 bg-white rounded-2xl border border-slate-200 outline-none focus:ring-4 focus:ring-[#d4af37]/10 transition-all font-bold" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                       </div>
                    </div>
                    <div className="flex-1 overflow-y-auto p-8 pt-0 grid grid-cols-1 md:grid-cols-2 gap-6 no-scrollbar">
@@ -336,12 +336,12 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
                 </div>
                 <div className="lg:w-1/3 flex flex-col bg-white overflow-hidden">
                    <div className="p-8 border-b border-slate-50 flex items-center justify-between shrink-0">
-                      <span className="text-sm font-black uppercase tracking-widest">Order Summary</span>
-                      <span className="px-3 py-1 bg-slate-100 rounded-full text-[10px] font-black">{cartItems.length} Items</span>
+                      <span className="text-sm font-black uppercase tracking-widest">{t('orderSummary')}</span>
+                      <span className="px-3 py-1 bg-slate-100 rounded-full text-[10px] font-black">{cartItems.length} {t('items')}</span>
                    </div>
                    <div className="flex-1 overflow-y-auto p-8 space-y-4 no-scrollbar">
                       {cartItems.length === 0 ? (
-                        <div className="h-full flex flex-col items-center justify-center text-slate-300 space-y-4 opacity-40"><ShoppingCart size={48} /><p className="text-sm font-black uppercase tracking-widest">Cart is empty</p></div>
+                        <div className="h-full flex flex-col items-center justify-center text-slate-300 space-y-4 opacity-40"><ShoppingCart size={48} /><p className="text-sm font-black uppercase tracking-widest">{t('cartIsEmpty')}</p></div>
                       ) : (
                         cartItems.map(item => (
                           <div key={item.dish!.id} className="flex justify-between items-center py-2">
@@ -353,9 +353,9 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
                    </div>
                    <div className="p-10 bg-slate-50 border-t border-slate-100 space-y-6 shrink-0">
                       <div className="space-y-3">
-                         <div className="flex justify-between text-sm"><span className="text-slate-500 font-medium">Subtotal</span><span className="font-bold text-slate-900">₱{totalAmount.toFixed(0)}</span></div>
-                         <div className="flex justify-between text-sm"><span className="text-slate-500 font-medium">Tax (12%)</span><span className="font-bold text-slate-900">₱{(totalAmount * 0.12).toFixed(0)}</span></div>
-                         <div className="pt-4 border-t border-slate-200 flex justify-between items-baseline"><span className="text-xs font-black uppercase tracking-widest">Total Bill</span><span className="text-3xl font-serif italic text-[#d4af37]">₱{(totalAmount * 1.12).toFixed(0)}</span></div>
+                         <div className="flex justify-between text-sm"><span className="text-slate-500 font-medium">{t('subtotal')}</span><span className="font-bold text-slate-900">₱{totalAmount.toFixed(0)}</span></div>
+                         <div className="flex justify-between text-sm"><span className="text-slate-500 font-medium">{t('tax12')}</span><span className="font-bold text-slate-900">₱{(totalAmount * 0.12).toFixed(0)}</span></div>
+                         <div className="pt-4 border-t border-slate-200 flex justify-between items-baseline"><span className="text-xs font-black uppercase tracking-widest">{t('totalBill')}</span><span className="text-3xl font-serif italic text-[#d4af37]">₱{(totalAmount * 1.12).toFixed(0)}</span></div>
                       </div>
                       <button onClick={handleManualOrderSubmit} disabled={cartItems.length === 0 || isSubmitting} className="w-full py-6 bg-slate-900 text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.3em] shadow-2xl hover:bg-[#d4af37] transition-all disabled:opacity-50 flex items-center justify-center space-x-3">{isSubmitting ? <Loader2 className="animate-spin" size={18} /> : (<><span>Authorize Order</span><ArrowRight size={18} /></>)}</button>
                    </div>

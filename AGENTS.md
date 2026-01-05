@@ -4,26 +4,80 @@ This file provides guidance to Qoder (qoder.com) when working with code in this 
 
 ## Project Overview
 
-This is a hospitality management system called "江西云厨" (JX Cloud) - a hotel/restaurant management solution that allows guests to order food from their rooms. The application uses React 19 with TypeScript, Vite build system, and Supabase as the backend, featuring both online and offline capabilities.
+This is a hospitality management system called "江西云厨" (JX Cloud) - a hotel/restaurant management solution that allows guests to order food from their rooms. The application uses React 19 with TypeScript, Vite build system, and Supabase as the backend, featuring both online and offline capabilities. The system is built on the principles of "cloud-native, offline-first, and maximum security".
 
 ## Architecture
 
 - **Frontend**: React 19 with TypeScript, Vite build system
+- **Deployment**: Vercel platform with Supabase backend integration
 - **Styling**: Tailwind CSS (loaded via CDN) with custom CSS variables and utility classes
 - **Backend**: Supabase (PostgreSQL database with Row Level Security)
+- **Edge Functions**: Supabase edge functions for server-side operations (authentication, CRUD operations, etc.)
 - **State Management**: LocalStorage with virtual database that syncs to Supabase (hybrid storage engine)
 - **UI Components**: Located in the `components/` directory
 - **API Layer**: Service layer in `services/api.ts` with offline-first approach
 - **Database**: PostgreSQL via Supabase with tables for rooms, dishes, orders, users, etc.
+- **Security**: Service role keys stored as Vercel environment variables, accessed only in serverless functions
+
+## Frontend Technology Stack
+
+### Core Framework
+- **React 19**: Latest version with strict mode and improved concurrent features ensuring smooth UI responses
+- **TypeScript**: Full-flow strong type constraints to minimize runtime errors
+- **Vite**: Fast development tool with millisecond-level hot updates (HMR)
+
+### Styling & UI
+- **Tailwind CSS**: Atomic CSS engine with built-in "Gold + Obsidian" theme for ultimate visual aesthetics
+- **Lucide React**: Modern lightweight vector icon library for all dynamic visual elements
+- **Recharts**: Professional-grade data visualization engine for business dashboards and financial charts
+
+## Backend & Cloud Services
+
+### Core Database
+- **Supabase (PostgreSQL)**: Core database leveraging PostgREST features for direct API-to-database secure communication
+- **Row Level Security (RLS)**: Database-level security policies ensuring guests can only order, staff can only process orders, and admins have full access
+- **Real-time Subscriptions**: PostgreSQL logical replication for real-time order status updates to kitchen terminals
+
+### Edge Computing
+- **Vercel Edge Runtime**: API endpoints optimized for global low-latency responses (<20ms typically)
+- **Edge Functions**: Supabase Edge Functions for server-side operations
 
 ## Hybrid Storage Architecture (VirtualDB)
 
 The system implements a sophisticated offline-first architecture:
-- Local storage as the primary data layer for reliability during network outages
-- Supabase cloud sync for multi-device consistency
-- Sync queue mechanism to handle pending operations when offline
-- Automatic reconciliation when connection is restored
-- The VirtualDB implementation uses localStorage with specific storage keys for different data types
+- **Local Storage**: "Offline reliable layer" that allows the system to operate during cloud connection outages
+- **Supabase Sync**: Cloud mirror synchronization for multi-device consistency
+- **Sync Queue**: Mechanism to handle pending operations when offline
+- **Automatic Reconciliation**: Automatic data alignment when connection is restored
+- The VirtualDB implementation uses localStorage with specific storage keys for different data types:
+  - `jx_virtual_rooms` - Hotel room data
+  - `jx_virtual_orders` - Order information
+  - `jx_virtual_dishes` - Menu items
+  - `jx_virtual_expenses` - Financial tracking
+  - `jx_virtual_users` - User accounts
+  - `jx_pending_sync` - Operations queue for cloud sync
+  - `jx_virtual_config` - System configuration
+  - `jx_virtual_materials` - Image assets
+  - `jx_virtual_translations` - Multi-language translations
+
+## Security & Integration Features
+
+### Authentication & Security
+- **MFA (Two-Factor Authentication)**: TOTP algorithm-based authentication supporting Google Authenticator/Microsoft Authenticator
+- **Audit Engine**: Built-in security audit engine recording every order modification and staff login activity
+- **IP Whitelist**: User IP address validation for enhanced security
+- **Account Locking**: Support for account locking/unlocking functionality
+
+### Integration Features
+- **Webhook Integration**: Support for third-party systems (DingTalk, Lark, WeChat Work) for real-time message pushing
+- **Print Engine**: Dedicated kitchen thermal printer engine supporting industrial standard 80mm thermal print format
+
+## Development Tools & Build Process
+
+- **Vite**: Fast development tool with millisecond-level hot updates (HMR)
+- **Supabase SQL Editor**: For executing DDL scripts and managing complex indexing strategies
+- **ESM.sh**: Full ESM imports without dependency on large local node_modules, significantly improving deployment and loading speeds
+- **Vercel/Edge Gateway**: Production environment platform providing CI/CD pipeline
 
 ## Development Commands
 
@@ -39,6 +93,18 @@ npm run build
 
 # Preview production build
 npm run preview
+
+# Build Tailwind CSS
+npm run tailwind:build
+
+# Watch Tailwind CSS changes
+npm run tailwind:watch
+
+# Type checking
+npx tsc --noEmit
+
+# Check for potential issues
+npm run build
 ```
 
 ## Database Schema
@@ -75,6 +141,8 @@ The application uses Supabase with the following key tables:
 - QR code generation for room-based ordering
 - Real-time connection monitoring with accurate status display
 - Multi-tenant support with partner-specific data isolation
+- Push notifications for order status updates
+- Data synchronization between local and cloud storage
 
 ## Environment Configuration
 
@@ -82,13 +150,42 @@ The application uses Vite environment variables prefixed with `VITE_`:
 - `VITE_SUPABASE_URL` - Supabase project URL
 - `VITE_SUPABASE_ANON_KEY` - Supabase anonymous key
 
+## Vercel and Supabase Integration
+
+Secure integration between Vercel and Supabase follows these principles:
+- Never expose service role keys in frontend code
+- Store sensitive keys (SUPABASE_SERVICE_ROLE_KEY, DATABASE_URL) as Vercel environment variables
+- Use Vercel Serverless Functions or Edge Functions as secure proxy for sensitive operations
+- Frontend communicates with Vercel API routes, which then communicate with Supabase
+- Use two types of keys appropriately:
+  - ANON_KEY for client-side operations with RLS enforcement
+  - SERVICE_ROLE_KEY only in server-side functions for administrative operations
+
+## Environment Variables for Vercel Deployment
+
+For proper CORS handling and API proxying, configure these environment variables in Vercel:
+- `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL (publicly accessible)
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anonymous key (publicly accessible)
+- `SUPABASE_SERVICE_ROLE_KEY` - Service role key (private, server-side only)
+
+## CORS Configuration
+
+When deploying the application, ensure proper CORS configuration in Supabase:
+- Access Supabase dashboard -> Authentication -> URL Configuration
+- Add your domain to the allowed origins list (e.g., https://www.jiangxijiudian.store)
+- For edge functions, configure CORS headers in the function code:
+  - Add appropriate 'Access-Control-Allow-Origin' headers
+  - Include 'Access-Control-Allow-Methods' and 'Access-Control-Allow-Headers'
+- For production deployment, ensure the Supabase edge functions return proper CORS headers
+
 ## Important Files
 
 - `App.tsx` - Main application component
 - `services/api.ts` - Main API service with offline-first logic and VirtualDB implementation
 - `services/supabaseClient.ts` - Supabase client configuration
 - `services/mfaFixer.ts` - MFA status checking and fixing utilities
-- `services/notification.ts` - Notification handling
+- `services/notification.ts` - Notification handling and push services
+- `services/totp.ts` - TOTP authentication implementation
 - `types.ts` - Type definitions for all entities
 - `constants.ts` - Application constants and initial data
 - `components/` - React UI components
@@ -101,12 +198,13 @@ The application uses Vite environment variables prefixed with `VITE_`:
   - `set-user-password.ts` - Function to securely update user passwords using Supabase auth
   - `select-or-login-user.ts` - Function to securely select or authenticate users
   - `dish-crud-api.ts` - Function to handle dish CRUD operations
+- `pages/api/` - Vercel API routes for secure backend operations
 - `index.html` - HTML entry point with Tailwind CDN and custom CSS variables
 
 ## Styling and UI
 
 - **Tailwind CSS**: Loaded via CDN in index.html for utility-first CSS framework
-- **Custom Styles**: Defined in index.html style tag with CSS variables for consistent theming
+- **Custom Styles**: Defined in src/input.css with CSS variables for consistent theming
 - **Font Loading**: Google Fonts (Plus Jakarta Sans and Playfair Display) with preconnect for performance
 - **CSS Variables**: Custom properties for gold (#d4af37), obsidian (#020617), and app background (#f8fafc)
 - **Mobile Optimization**: Safe area handling, scroll behavior, and mobile-friendly styles
@@ -121,6 +219,7 @@ The application uses Vite environment variables prefixed with `VITE_`:
 - Session management with forced single session per user
 - Multi-tenant data isolation for partner accounts
 - Service-role only access for highly sensitive operations
+- Service role keys stored as Vercel environment variables, never exposed to frontend
 
 ## Connection Monitoring
 
@@ -220,6 +319,8 @@ npm run build
 - Multi-language support is database-driven with fallback mechanisms
 - Import paths should be relative to the current file location (e.g., `../services/api` from files in subdirectories)
 - Multi-tenant support requires checking partnerId for appropriate data isolation
+- Push notifications implemented via webhook integration for real-time updates
+- Data submission handled through VirtualDB with automatic sync queue
 
 ## Room Configuration
 
@@ -236,6 +337,9 @@ The system supports 67 rooms:
 - **Translation keys**: When adding new UI elements, ensure all translation keys used in components exist in translations.ts for all supported languages (zh, en, tl) to avoid TypeScript errors
 - **TypeScript strict mode**: All function parameters should have explicit type annotations to comply with strict TypeScript settings
 - **Login credentials inconsistency**: Login form shows placeholder "Access Password / password" but actual default admin password is "admin" (admin/admin). For other users, default password is "123456" if not set during creation.
+- **CORS errors**: When deploying, ensure Supabase edge functions have proper CORS configuration to allow requests from your domain
+- **Security best practices**: Never expose service role keys in frontend code; use Vercel API routes as secure proxy for sensitive operations
+- **Database connection issues**: Use Vercel API routes as proxy to avoid direct browser-to-Supabase requests that cause CORS errors
 
 ## Common Development Tasks
 
@@ -245,14 +349,83 @@ The system supports 67 rooms:
 - **Multi-language additions**: Update translations in both database and translations.ts file
 - **Component development**: Place new components in the components/ directory following existing patterns
 - **Partner-specific features**: Ensure proper partnerId isolation for multi-tenant functionality
+- **Vercel API routes**: For sensitive operations, create secure API routes in pages/api/ that proxy requests to Supabase
+
+## Core Competitiveness
+
+This system is more than just a management tool. It solves the "no internet, no business" problem that many small hotels worry about using VirtualDB mirroring technology. Even if the cloud is unavailable, local data automatically aligns after reconnecting to the internet, which is a feature that pure SaaS systems do not have.
 
 ## Deployment Configuration
 
-The application is optimized for deployment on Vercel with edge runtime capabilities:
+The application is deployed on Vercel with Supabase backend integration:
+- Client-side deployed on Vercel with Supabase backend services
+- Supabase edge functions handle server-side operations (authentication, CRUD, etc.)
 - Environment variables should be prefixed with VITE_ for client-side access
 - The build process creates optimized chunks with specific naming conventions
 - CDN-ready assets with cache busting hashes
-- Edge-optimized for low-latency responses
+- Ensure proper CORS configuration for cross-origin requests between frontend and Supabase functions
+
+## Vercel API Routes Implementation
+
+For secure operations that require service role keys, implement Vercel API routes as follows:
+
+### Using Supabase REST API via fetch
+- Store SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY as Vercel environment variables
+- Create API routes in pages/api/ that proxy requests to Supabase REST API
+- Example implementation in a Vercel API route:
+```
+export default async function handler(req, res) {
+  const { method, query } = req;
+  const url = `${process.env.SUPABASE_URL}/rest/v1/orders?select=*&status=eq.pending`;
+  
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+      'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
+      'Accept': 'application/json'
+    }
+  });
+  
+  const data = await response.json();
+  res.status(response.status).json(data);
+}
+```
+
+### Using Supabase Client SDK
+- Initialize Supabase client with service role key in serverless functions only
+- Example implementation:
+```
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
+export default async function handler(req, res) {
+  const { data, error } = await supabase
+    .from('orders')
+    .select('*')
+    .eq('status', 'pending');
+    
+  if (error) return res.status(500).json({ error });
+  res.status(200).json(data);
+}
+```
+
+### User Authentication Verification
+- Validate user tokens before processing requests that require authentication
+- Example implementation for verifying user tokens:
+```
+const userResp = await fetch(`${SUPABASE_URL.replace(/\/$/, "")}/auth/v1/user`, {
+  method: "GET",
+  headers: { Authorization: `Bearer ${token}` },
+});
+if (userResp.status !== 200) return res.status(401).json({ error: "Invalid token" });
+const userInfo = await userResp.json();
+// userInfo contains user id and app_metadata, user_metadata, etc.
+```
 
 ## Login and Password Management
 
@@ -270,3 +443,23 @@ If you're unable to log in:
 1. Check if the default admin credentials work (`admin`/`admin`)
 2. Ensure your Supabase backend is properly configured and accessible
 3. Verify that the edge functions are deployed and accessible
+
+## API Architecture Clarification
+
+The system uses a dual API architecture pattern:
+
+### Supabase Edge Functions (api/ directory)
+- Located in `api/` directory
+- Deployed to Supabase Edge Runtime
+- Used for direct database operations and authentication
+- Includes: `dish-crud-api.ts`, `select-or-login-user.ts`, `set-user-password.ts`, `index.ts`, `api/edge/get-dishes.ts`
+
+### Vercel Serverless Functions (pages/api/ directory) 
+- Located in `pages/api/` directory
+- Deployed to Vercel Serverless Functions
+- Used for proxy operations and business logic that requires Vercel environment
+- Includes: `create-order.ts`, `update-order.ts`, `proxy.ts`
+
+**Note**: This is a Vite + React application, NOT a Next.js application. The `api/` directory contains Supabase Edge Functions, while `pages/api/` contains Vercel Serverless Functions. This is completely different from Next.js API routes. The warning about Next.js API routes is irrelevant and does not apply to this project architecture. This is standard practice for Vite/React applications that use Vercel for deployment.
+
+This separation ensures proper security boundaries and deployment optimization.

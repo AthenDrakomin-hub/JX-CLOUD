@@ -268,7 +268,19 @@ export const translations = {
     completeSetup: '完成设置',
     initializeSystemStorage: '初始化系统存储',
     confirmClearCache: '确认清除缓存',
-    confirmClear: '确认清除'
+    confirmClear: '确认清除',
+    
+    // Room Grid
+    occupied: '占用中',
+    guestQRCode: '客人二维码',
+    displayDigitalOrderingLink: '显示数字点餐链接',
+    manualOrder: '手动下单',
+    placeOrderForGuest: '为客人下单',
+    staffOperatedTransaction: '员工操作交易',
+    items: '项目',
+    cartIsEmpty: '购物车为空',
+    tax12: '税金(12%)',
+    room: '房间'
   },
   en: {
     dashboard: 'Analytics',
@@ -524,7 +536,19 @@ export const translations = {
     completeSetup: 'Complete Setup',
     initializeSystemStorage: 'Initialize System Storage',
     confirmClearCache: 'Confirm Clear Cache',
-    confirmClear: 'Confirm Clear'
+    confirmClear: 'Confirm Clear',
+    
+    // Room Grid
+    occupied: 'Occupied',
+    guestQRCode: 'Guest QR Code',
+    displayDigitalOrderingLink: 'Display digital ordering link',
+    manualOrder: 'Manual Order',
+    placeOrderForGuest: 'Place order for guest',
+    staffOperatedTransaction: 'Staff-Operated Transaction',
+    items: 'Items',
+    cartIsEmpty: 'Cart is empty',
+    tax12: 'Tax (12%)',
+    room: 'Room'
   },
   tl: {
     dashboard: 'Analitika',
@@ -593,6 +617,18 @@ export const translations = {
     revByCategory: 'Kita ayon sa Kategorya',
     totalYield: 'Kabuuang Kita',
 
+    // Room Grid
+    occupied: 'Abala',
+    guestQRCode: 'QR Code ng Bisita',
+    displayDigitalOrderingLink: 'Ipakita ang digital na link para sa pag-order',
+    manualOrder: 'Manual na Order',
+    placeOrderForGuest: 'Mag-order para sa bisita',
+    staffOperatedTransaction: 'Transaksyon na pinapagana ng Staff',
+    items: 'Mga Aytem',
+    cartIsEmpty: 'Walang laman ang cart',
+    tax12: 'Buwis (12%)',
+    room: 'Silid',
+    
     // Orders
     filterPending: 'Nakabinbin',
     filterAll: 'Lahat ng Order',

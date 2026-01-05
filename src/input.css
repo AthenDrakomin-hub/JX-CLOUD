@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --gold: #d4af37;
+  --obsidian: #020617;
+  --app-bg: #f8fafc;
+}
+
+body { 
+  font-family: 'Plus Jakarta Sans', sans-serif; 
+  -webkit-tap-highlight-color: transparent; 
+  overscroll-behavior-y: contain;
+  background-color: var(--app-bg);
+  color: #0f172a;
+  margin: 0;
+  overflow-x: hidden;
+}
+
+.font-serif { font-family: 'Playfair Display', serif; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
+
+html { scroll-behavior: smooth; }
+
+.glass {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+}
+
+.card-shadow {
+  box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.05);
+}
+
+/* 修复 Vite 构建可能产生的闪烁 */
+[v-cloak] { display: none; }
