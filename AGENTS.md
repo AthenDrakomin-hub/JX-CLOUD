@@ -19,6 +19,40 @@ This is a hospitality management system called "江西云厨" (JX Cloud) - a hot
 - **Database**: PostgreSQL via Supabase with tables for rooms, dishes, orders, users, etc.
 - **Security**: Service role keys stored as Vercel environment variables, accessed only in serverless functions
 
+## API Architecture Clarification
+
+The system uses a dual API architecture pattern:
+
+### Supabase Edge Functions (api/ directory)
+- Located in `api/` directory
+- Deployed to Supabase Edge Runtime
+- Used for direct database operations and authentication
+- Includes: `dish-crud-api.ts`, `select-or-login-user.ts`, `set-user-password.ts`, `index.ts`, `api/edge/get-dishes.ts`
+
+### Vercel Serverless Functions (pages/api/ directory) 
+- Located in `pages/api/` directory
+- Deployed to Vercel Serverless Functions
+- Used for proxy operations and business logic that requires Vercel environment
+- Includes: `create-order.ts`, `update-order.ts`, `proxy.ts`
+
+**Note**: This is a Vite + React application, NOT a Next.js application. The `api/` directory contains Supabase Edge Functions, while `pages/api/` contains Vercel Serverless Functions. This is different from Next.js API routes. The warning about Next.js API routes does not apply to this project architecture.
+
+This separation ensures proper security boundaries and deployment optimization.
+
+## Type Definitions
+
+The system has two type definition files:
+- `types.ts` - Core application types for rooms, dishes, orders, users, etc.
+- `types-saas.ts` - SaaS-specific types for partners, commissions, and multi-tenant features
+
+## Styling Architecture
+
+Styling is handled through multiple layers:
+- `src/input.css` - Tailwind directives and custom CSS variables
+- Tailwind CSS via CDN in `index.html`
+- Inline CSS variables for theming (gold, obsidian, app background)
+- Component-level styling through Tailwind classes
+
 ## Hybrid Storage Architecture (VirtualDB)
 
 The system implements a sophisticated offline-first architecture:
@@ -51,6 +85,12 @@ npm run build
 
 # Preview production build
 npm run preview
+
+# Build Tailwind CSS
+npm run tailwind:build
+
+# Watch Tailwind CSS changes
+npm run tailwind:watch
 
 # Type checking
 npx tsc --noEmit
