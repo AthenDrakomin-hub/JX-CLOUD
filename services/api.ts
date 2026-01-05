@@ -333,7 +333,7 @@ export const api = {
       }
     },
     
-    // 订单处理API，使用新的边缘函数
+    // 订单处理API，使用 Vercel API 路由
     processOrder: async (order: Order) => {
       if (isDemoMode) return order;
       
@@ -360,13 +360,19 @@ export const api = {
           throw new Error('No active session');
         }
         
-        const response = await fetch(`${supabaseUrl}/functions/v1/order-processing-api`, {
+        const response = await fetch(`/api/create-order`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(order)
+          body: JSON.stringify({
+            room_id: order.roomId,
+            items: order.items,
+            total_amount: order.totalAmount,
+            tax_amount: order.taxAmount,
+            payment_method: order.paymentMethod
+          })
         });
         
         if (!response.ok) {
@@ -375,8 +381,8 @@ export const api = {
         
         return await response.json();
       } catch (error) {
-        console.error('Error processing order via edge function:', error);
-        // 如果边缘函数失败，返回原始订单以供后续处理
+        console.error('Error processing order via Vercel API:', error);
+        // 如果 Vercel API 失败，返回原始订单以供后续处理
         return order;
       }
     },
@@ -717,17 +723,32 @@ export const api = {
       
       if (!isDemoMode) {
         try {
-          // 使用新的订单处理边缘函数
+          let token;
           const { data: { session } } = await supabase.auth.getSession();
           
-          if (session) {
-            const response = await fetch(`${supabaseUrl}/functions/v1/order-processing-api`, {
+          if (session && session.access_token) {
+            token = session.access_token;
+          } else {
+            // 如果没有当前会话，尝试使用存储的令牌
+            const storedSession = localStorage.getItem('supabase.auth.token');
+            if (storedSession) {
+              try {
+                const sessionObj = JSON.parse(storedSession);
+                token = sessionObj?.currentSession?.access_token;
+              } catch (e) {
+                console.error('Failed to parse stored session:', e);
+              }
+            }
+          }
+          
+          if (token) {
+            const response = await fetch(`/api/update-order`, {
               method: 'PATCH',
               headers: {
-                'Authorization': `Bearer ${session.access_token}`,
+                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
               },
-              body: JSON.stringify({ id: orderId, status, updated_at: new Date().toISOString() })
+              body: JSON.stringify({ order_id: orderId, status })
             });
             
             if (!response.ok) {
@@ -741,6 +762,7 @@ export const api = {
           }
         } catch (e) {
           VirtualDB.queueForSync('UPDATE_STATUS', 'orders', { orderId, status });
+          console.error('Error updating order status via Vercel API:', e);
         }
       }
       
