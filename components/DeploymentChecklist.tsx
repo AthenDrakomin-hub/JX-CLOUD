@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { 
   CheckCircle2, AlertCircle, Clock, Server, ShieldAlert, Zap, 
@@ -10,7 +11,9 @@ interface DeploymentChecklistProps {
 }
 
 const DeploymentChecklist: React.FC<DeploymentChecklistProps> = ({ lang }) => {
-  const t = (key: keyof typeof translations.zh) => translations[lang][key] || key;
+  // Use a safer translation function pattern consistent with other components to avoid type indexing issues
+  const t = (key: keyof typeof translations.zh) => 
+    (translations[lang] as any)[key] || (translations.zh as any)[key] || key;
 
   const categories = [
     {

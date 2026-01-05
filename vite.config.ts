@@ -1,4 +1,3 @@
-/* Copyright (c) 2025 Jiangxi Star Hotel. 保留所有权利. */
 
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';

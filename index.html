@@ -1,34 +1,96 @@
+
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh" data-theme="light" data-font-size="medium">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover">
-  <title>江西云厨 - JX CLOUD Enterprise Hospitality</title>
+  <title>江西云厨终端系统 - JX CLOUD Terminal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
   
-  <!-- 字体预加载与加载 -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
-  
-  <!-- 生产环境 Tailwind CSS -->
-  <link href="/src/input.css" rel="stylesheet">
-<script type="importmap">
+  <style>
+    :root {
+      --app-bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+    }
+
+    html[data-theme='dark'] {
+      --app-bg: #020617;
+      --card-bg: #0f172a;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --border-color: #1e293b;
+    }
+
+    html[data-font-size='standard'] { font-size: 14px; }
+    html[data-font-size='medium'] { font-size: 16px; }
+    html[data-font-size='large'] { font-size: 18px; }
+
+    body { 
+      font-family: 'Plus Jakarta Sans', sans-serif; 
+      background-color: var(--app-bg);
+      color: var(--text-main);
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    /* 80mm 热敏打印生产级指令 */
+    @media print {
+      @page {
+        size: 80mm auto;
+        margin: 0;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        background: #fff !important;
+      }
+      body * { visibility: hidden; }
+      .thermal-ticket, .thermal-ticket * { visibility: visible; }
+      .thermal-ticket {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 72mm; /* 留出边距 */
+        margin-left: 4mm;
+        padding: 4mm 0;
+        color: black !important;
+        background: white !important;
+        word-break: break-all;
+      }
+      .no-print { display: none !important; }
+      
+      /* 隐藏页眉页脚 */
+      header, footer, nav { display: none !important; }
+    }
+
+    /* 动画定义 */
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-up { animation: fade-up 0.5s ease-out forwards; }
+  </style>
+  <script type="importmap">
 {
   "imports": {
     "react": "https://esm.sh/react@19.0.0",
-    "react/": "https://esm.sh/react@19.0.0/",
     "react-dom": "https://esm.sh/react-dom@19.0.0",
     "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
     "recharts": "https://esm.sh/recharts@2.15.0?deps=react@19.0.0",
     "lucide-react": "https://esm.sh/lucide-react@0.475.0?deps=react@19.0.0",
     "qrcode.react": "https://esm.sh/qrcode.react@4.0.1?deps=react@19.0.0",
+    "@aws-sdk/client-s3": "https://esm.sh/@aws-sdk/client-s3@^3.962.0",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
     "vite": "https://esm.sh/vite@^7.3.0",
     "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
   }
 }
 </script>
-
+<link rel="stylesheet" href="/index.css">
 </head>
 <body>
   <div id="root"></div>

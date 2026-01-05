@@ -1,597 +1,393 @@
-/* Copyright (c) 2025 Jiangxi Star Hotel. 保留所有权利. */
 
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { initializeErrorHandling } from './services/errorHandlingInit';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import RoomGrid from './components/RoomGrid';
 import OrderManagement from './components/OrderManagement';
-import MenuManagement from './components/MenuManagement';
-import ImageLibrary from './components/ImageLibrary';
-import FinanceManagement from './components/FinanceManagement';
-import StaffManagement from './components/StaffManagement';
-import PaymentManagement from './components/PaymentManagement';
 import SystemSettings from './components/SystemSettings';
-import ErrorBoundary from './components/ErrorBoundary';
-import NotificationCenter from './components/NotificationCenter';
+import StaffManagement from './components/StaffManagement';
+import ImageManagement from './components/ImageManagement';
+import SupplyChainManager from './components/SupplyChainManager';
+import FinancialCenter from './components/FinancialCenter';
 import GuestOrder from './components/GuestOrder';
-import ConnectionMonitor from './components/ConnectionMonitor';
-import PasswordReset from './components/PasswordReset';
-import PasswordResetForm from './components/PasswordResetForm';
+import DatabaseManagement from './components/DatabaseManagement';
+import Toast, { ToastType } from './components/Toast';
 import { api } from './services/api';
 import { notificationService } from './services/notification';
-import { isDemoMode, supabase, supabaseUrl } from './services/supabaseClient';
-import { User, Order, HotelRoom, Expense, Dish, MaterialImage, UserRole, Ingredient, SecurityLog, OrderStatus, PermissionKey } from './types';
-import { translations as localTranslations, Language } from './translations';
-import { 
-  Bell, Loader2, ShieldAlert, Sparkles, X, Globe, ShieldCheck, Menu, Eye, EyeOff, Lock, Key, ArrowRight, Fingerprint, MonitorOff, Package
-} from 'lucide-react';
-
-const MemoDashboard = React.memo(Dashboard);
-const MemoRoomGrid = React.memo(RoomGrid);
-const MemoOrderManagement = React.memo(OrderManagement);
-const MemoMenuManagement = React.memo(MenuManagement);
-const MemoImageLibrary = React.memo(ImageLibrary);
-const MemoStaffManagement = React.memo(StaffManagement);
-const MemoFinanceManagement = React.memo(FinanceManagement);
-const MemoPaymentManagement = React.memo(PaymentManagement);
-const MemoSystemSettings = React.memo(SystemSettings);
+import { supabase, isDemoMode } from './services/supabaseClient';
+import { User, Order, HotelRoom, Expense, Dish, MaterialImage, UserRole, Partner, SystemConfig, OrderStatus } from './types';
+import { translations as localTranslations, Language, getTranslation } from './translations';
+import { ShieldCheck, Monitor, Lock, User as UserIcon, Sparkles, Globe, ChevronRight, Loader2 } from 'lucide-react';
+import { INITIAL_USERS } from './constants';
 
 const App: React.FC = () => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    const saved = localStorage.getItem('jx_user');
+    try { return saved ? JSON.parse(saved) : null; } catch { return null; }
+  });
+
   const [currentTab, setCurrentTab] = useState('dashboard');
+  const [lang, setLang] = useState<Language>(() => (localStorage.getItem('jx_lang') as Language) || 'zh');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [sysConfig, setSysConfig] = useState<SystemConfig | null>(null);
+  
   const [rooms, setRooms] = useState<HotelRoom[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [dishes, setDishes] = useState<Dish[]>([]);
-  const [materials, setMaterials] = useState<MaterialImage[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [dynamicTranslations, setDynamicTranslations] = useState<any>(localTranslations);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [globalError, setGlobalError] = useState<string | null>(null);
-  const [lang, setLang] = useState<Language>(() => (localStorage.getItem('jx_lang') as Language) || 'zh');
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [appNotifications, setAppNotifications] = useState<any[]>([]);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-  
-  // URL Param for Guest Mode
-  const [guestRoomId, setGuestRoomId] = useState<string | null>(null);
-  const [lastOrderInfo, setLastOrderInfo] = useState<string | null>(null);
-  
-  const [pendingMfaUser, setPendingMfaUser] = useState<User | null>(null);
-  const [showPasswordResetForm, setShowPasswordResetForm] = useState(false);
-  
-  // 检查是否是密码重置页面
-  const isPasswordResetPage = window.location.pathname === '/reset-password';
-  
-  // 如果是密码重置页面，只渲染密码重置组件
-  if (isPasswordResetPage) {
-    return (
-      <ErrorBoundary>
-        <PasswordReset />
-      </ErrorBoundary>
-    );
-  }
-  
-  const DEFAULT_PERMISSIONS: PermissionKey[] = [
-    'manage_menu',
-    'view_finance',
-    'process_orders',
-    'manage_staff',
-    'system_config',
-    'material_assets'
-  ];
-  
-  const isMounted = useRef(true);
+  const [materials, setMaterials] = useState<MaterialImage[]>([]);
+  const [partners, setPartners] = useState<Partner[]>([]);
 
-  useEffect(() => {
-    // 初始化错误处理系统
-    initializeErrorHandling();
-    
-    const params = new URLSearchParams(window.location.search);
-    const room = params.get('room');
-    if (room) setGuestRoomId(room);
-    
-    return () => { isMounted.current = false; };
+  const announcedOrdersRef = useRef<Set<string>>(new Set());
+
+  const [toast, setToast] = useState<{message: string, type: ToastType} | null>(null);
+  const showToast = useCallback((message: string, type: ToastType = 'success') => {
+    setToast({message, type});
   }, []);
 
-  useEffect(() => {
-    const unsubscribe = notificationService.subscribe((msg) => {
-      if (msg.type === 'NEW_ORDER') {
-        setLastOrderInfo(msg.body);
-        setTimeout(() => setLastOrderInfo(null), 8000);
-        
-        setAppNotifications(prev => [{
-          id: `notif-${Date.now()}`,
-          title: msg.title,
-          body: msg.body,
-          type: msg.type,
-          timestamp: new Date(),
-          read: false
-        }, ...prev]);
+  const t = useCallback((key: string): string => getTranslation(lang, key), [lang]);
 
-        if (currentTab !== 'orders') fetchData();
-      }
-    });
-    return unsubscribe;
-  }, [currentTab]);
+  const toggleLanguage = useCallback(() => {
+    const nextLang = lang === 'zh' ? 'en' : 'zh';
+    setLang(nextLang);
+    localStorage.setItem('jx_lang', nextLang);
+    showToast(nextLang === 'zh' ? '界面语言已切换为中文' : 'UI Language switched to English', 'info');
+  }, [lang, showToast]);
 
-  // 初始化会话 - 尝试从本地存储恢复会话
-  useEffect(() => {
-    const initializeSession = async () => {
-      if (isDemoMode) return;
-      
-      try {
-        // 检查是否有现有会话
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          // 如果没有会话，尝试从本地存储恢复
-          const storedSession = localStorage.getItem('supabase.auth.token');
-          if (storedSession) {
-            try {
-              const sessionObj = JSON.parse(storedSession);
-              const accessToken = sessionObj?.currentSession?.access_token;
-              const refreshToken = sessionObj?.currentSession?.refresh_token;
-              
-              if (accessToken && refreshToken) {
-                // 使用存储的令牌尝试恢复会话
-                const { error } = await supabase.auth.setSession({
-                  access_token: accessToken,
-                  refresh_token: refreshToken
-                });
-                
-                if (error) {
-                  console.warn('Failed to restore session:', error);
-                  // 如果恢复失败，清除无效的本地存储
-                  localStorage.removeItem('supabase.auth.token');
-                } else {
-                  console.log('Session restored from local storage');
-                }
-              }
-            } catch (e) {
-              console.warn('Failed to parse stored session:', e);
-              localStorage.removeItem('supabase.auth.token');
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error initializing session:', error);
-      }
-    };
-
-    initializeSession();
-  }, []);
-
-  const logAudit = useCallback(async (action: string, details: string, riskLevel: 'Low' | 'Medium' | 'High' = 'Low', overrideUserId?: string) => {
-    const userContext = currentUser || pendingMfaUser;
-    const log: SecurityLog = {
-      id: `audit-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-      userId: overrideUserId || userContext?.id || 'SYSTEM',
-      action,
-      details: `${userContext?.name || '匿名'} : ${details}`,
-      timestamp: new Date().toISOString(),
-      ip: "127.0.0.1", 
-      riskLevel
-    };
-    await api.logs.add(log);
-  }, [currentUser, pendingMfaUser]);
-
-  // 获取用户IP地址的函数
-  const getUserIP = async (): Promise<string> => {
+  const fetchData = useCallback(async (quiet = false) => {
+    if (!quiet) setIsLoading(true);
     try {
-      // 尝试从各种来源获取IP地址
-      const response = await fetch('https://httpbin.org/ip');
-      const data = await response.json();
-      return data.origin || '127.0.0.1';
-    } catch (error) {
-      // 如果无法获取真实IP，返回本地地址作为默认值
-      // 在实际生产环境中，可以从服务器端API获取真实IP
-      return '127.0.0.1';
-    }
-  };
-
-  // 检查IP是否在白名单中的函数
-  const isIpInWhitelist = (userIp: string, whitelist: string[]): boolean => {
-    if (!userIp || !whitelist || whitelist.length === 0) {
-      return true; // 如果没有白名单，允许访问
-    }
-
-    for (const ipPattern of whitelist) {
-      if (ipPattern.includes('/')) {
-        // CIDR格式检查 (如 192.168.1.0/24)
-        if (isIpInCidrRange(userIp, ipPattern)) {
-          return true;
-        }
-      } else {
-        // 精确IP匹配
-        if (userIp === ipPattern) {
-          return true;
-        }
-      }
-    }
-    return false;
-  };
-
-  // 检查IP是否在CIDR范围内的函数
-  const isIpInCidrRange = (userIp: string, cidr: string): boolean => {
-    try {
-      const [network, prefixStr] = cidr.split('/');
-      const prefix = parseInt(prefixStr);
-      if (isNaN(prefix) || prefix < 0 || prefix > 32) return false;
-
-      const userIpNum = ipToNumber(userIp);
-      const networkIpNum = ipToNumber(network);
-      const mask = ~((1 << (32 - prefix)) - 1);
-
-      return (userIpNum & mask) === (networkIpNum & mask);
-    } catch (e) {
-      console.error('IP CIDR validation error:', e);
-      return false;
-    }
-  };
-
-  // 将IP地址转换为数字
-  const ipToNumber = (ip: string): number => {
-    try {
-      return ip.split('.').reduce((acc, octet) => (acc << 8) + parseInt(octet), 0) >>> 0;
-    } catch (e) {
-      console.error('IP conversion error:', e);
-      return 0;
-    }
-  };
-
-  const t = useCallback((key: string) => {
-    // Prioritize database translations for current language, then fallback to local translations
-    const dbTranslation = dynamicTranslations[lang] && (dynamicTranslations[lang] as any)[key];
-    if (dbTranslation !== undefined && dbTranslation !== null) return dbTranslation;
-    
-    // Then try local translations for current language
-    const localTranslation = (localTranslations[lang] as any)[key];
-    if (localTranslation !== undefined && localTranslation !== null) return localTranslation;
-    
-    // Finally fallback to Chinese local translation or the key itself
-    const fallbackTranslation = (localTranslations.zh as any)[key];
-    if (fallbackTranslation !== undefined && fallbackTranslation !== null) return fallbackTranslation;
-    
-    return key;
-  }, [lang, dynamicTranslations]);
-
-  const fetchData = useCallback(async () => {
-    if (isSyncing) return;
-    setIsSyncing(true);
-    try {
-      const [r, o, e, d, u, m, cloudDict] = await Promise.all([
-        api.rooms.getAll(),
-        api.orders.getAll(),
-        api.expenses.getAll(),
-        api.dishes.getAll(),
-        api.users.getAll(),
-        api.materials.getAll(),
-        api.translations.getAll()
+      const [r, o, e, d, u, m, p, config] = await Promise.all([
+        api.rooms.getAll(), api.orders.getAll(), api.expenses.getAll(),
+        api.dishes.getAll(), api.users.getAll(), api.materials.getAll(),
+        api.partners.getAll(), api.config.get()
       ]);
-      if (!isMounted.current) return;
-      setRooms(r || []);
-      setOrders(o || []);
-      setExpenses(e || []);
-      setDishes(d || []);
-      setUsers(u || []);
-      setMaterials(m || []);
-
-      // 检查用户数据
-      if (u && u.length === 0) {
-        console.log('No users found in the system');
-        // 可以考虑使用新的边缘函数来检查用户状态
+      
+      if (config.voiceBroadcastEnabled) {
+        o.forEach(order => {
+          if (order.status === OrderStatus.PENDING && !announcedOrdersRef.current.has(order.id)) {
+            notificationService.broadcastOrderVoice(order, lang, config.voiceVolume);
+            announcedOrdersRef.current.add(order.id);
+          }
+        });
       }
 
-      // Merge database translations with local translations, giving priority to database translations
-      // But ensure language separation by only merging translations for the same language
-      const mergedTranslations = {
-        zh: { ...localTranslations.zh, ...((cloudDict && cloudDict.zh) || {}) },
-        en: { ...localTranslations.en, ...((cloudDict && cloudDict.en) || {}) },
-        tl: { ...localTranslations.tl, ...((cloudDict && cloudDict.tl) || {}) }
-      };
-      setDynamicTranslations(mergedTranslations);
-    } catch (err) { 
-      console.warn('Sync failed');
-    } finally { 
-      if (isMounted.current) {
-        setIsLoading(false); 
-        setIsSyncing(false);
-      }
-    }
-  }, [isSyncing]);
+      setRooms(r); setOrders(o); setExpenses(e); setDishes(d); setUsers(u); setMaterials(m); setPartners(p);
+      setSysConfig(config);
+    } catch (error) {
+       if (!quiet) showToast(t('syncError'), "error");
+    } finally { if (!quiet) setIsLoading(false); }
+  }, [showToast, lang, t]);
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (currentUser) {
+      fetchData();
+      const syncInterval = window.setInterval(() => fetchData(true), 30000);
+      return () => clearInterval(syncInterval);
+    }
+  }, [currentUser, fetchData]);
 
-  const handlePrimaryLogin = async (credentials: { username: string; password: string }) => {
-    if (isLoggingIn) return;
+  useEffect(() => {
+    if (sysConfig) {
+      const root = document.documentElement;
+      root.style.setProperty('--font-family-main', sysConfig.fontFamily || "'Plus Jakarta Sans', sans-serif");
+      root.style.setProperty('--font-size-base', `${sysConfig.fontSizeBase || 16}px`);
+      root.style.setProperty('--font-weight-base', `${sysConfig.fontWeightBase || 500}`);
+      root.style.setProperty('--line-height-base', `${sysConfig.lineHeightBase || 1.5}`);
+      root.style.setProperty('--letter-spacing-base', `${sysConfig.letterSpacing || 0}px`);
+      if (sysConfig.theme === 'custom') {
+        root.style.setProperty('--text-main', sysConfig.textColorMain);
+        root.style.setProperty('--app-bg', sysConfig.bgColorMain);
+      }
+      root.setAttribute('data-theme', sysConfig.theme);
+    }
+  }, [sysConfig]);
 
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
     setIsLoggingIn(true);
-    setGlobalError(null);
+    const fd = new FormData(e.currentTarget as HTMLFormElement);
+    const uname = fd.get('username') as string;
+    const pwd = fd.get('password') as string;
     
     try {
-      // 验证输入
-      if (!credentials.username || !credentials.password) {
-        setGlobalError('请填写用户名和密码');
-        setIsLoggingIn(false);
-        return;
-      }
-      
-      // 使用新的 select-or-login-user 边缘函数
-      const user = await api.db.selectOrLoginUser(credentials);
-      
-      if (user) {
+      // 在生产环境中使用Supabase Auth进行认证
+      if (!isDemoMode && supabase) {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: uname,
+          password: pwd,
+        });
+        
+        if (error) {
+          throw error;
+        }
+        
+        // 获取用户信息
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('email', data.user.email)
+          .single();
+          
+        if (userError || !userData) {
+          throw new Error('User data not found');
+        }
+        
         // 设置当前用户
-        setCurrentUser({ ...user, isOnline: true });
-        await api.users.setOnlineStatus(user.id, true);
-        await logAudit('AUTH_SUCCESS', `用户 ${user.username} 登录系统。`, 'Low', user.id);
-        notificationService.requestPermission();
+        const user: User = {
+          id: userData.id,
+          username: userData.email,
+          name: userData.full_name,
+          role: userData.role as UserRole,
+          modulePermissions: userData.metadata?.permissions || {}
+        };
+        
+        setCurrentUser(user);
+        localStorage.setItem('jx_user', JSON.stringify(user));
+        showToast(`${t('welcomeBack')}, ${user.name}`, "success");
       } else {
-        // 如果没有用户，显示错误信息，提示需要先在云端创建用户
-        setGlobalError('用户名或密码错误，请重试。');
-        throw new Error('Authentication failed');
+        // 演示模式：使用本地验证
+        const user = [...INITIAL_USERS, ...users].find(u => u.username === uname && u.password === pwd);
+        
+        if (user) {
+          setCurrentUser(user);
+          localStorage.setItem('jx_user', JSON.stringify(user));
+          showToast(`${t('welcomeBack')}, ${user.name}`, "success");
+        } else {
+          showToast(t('loginFailed'), "error");
+        }
       }
-    } catch (error) {
-      console.error('登录失败:', error);
-      // 根据错误类型显示更具体的错误信息
-      if (error instanceof Error && error.message.includes('Authentication failed')) {
-        setGlobalError('用户名或密码错误，请重试。');
-      } else {
-        setGlobalError('登录时出现错误，请重试。');
-      }
-      await logAudit('AUTH_FAILURE', `登录失败: ${error instanceof Error ? error.message : 'Unknown error'}`, 'High');
+    } catch (error: any) {
+      console.error('Login error:', error);
+      showToast(t('loginFailed'), "error");
     } finally {
       setIsLoggingIn(false);
     }
   };
-  
-  // 重置密码功能（仅用于开发环境或管理员重置）
-  const resetPassword = async (username: string, newPassword: string) => {
-    if (isDemoMode) {
-      // 在演示模式下，我们创建一个虚拟的重置响应
-      console.log(`演示模式：重置用户 ${username} 的密码`);
-      return { success: true };
-    }
-    
+
+  const wrapAsync = useCallback(async (fn: () => Promise<any>, successMsg?: string) => {
+    setIsSyncing(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        throw new Error('No active session');
-      }
-      
-      // 通过边缘函数重置密码
-      const response = await fetch(`${supabaseUrl}/functions/v1/users-admin/reset-password`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username,
-          new_password: newPassword
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to reset password: ${response.status} ${response.statusText}`);
-      }
-      
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      console.error('Password reset error:', error);
-      throw error;
+      await fn();
+      await fetchData(true);
+      if (successMsg) showToast(successMsg, "success");
+    } catch (err) {
+      showToast(t('syncError'), "error");
+    } finally {
+      setIsSyncing(false);
     }
-  };
+  }, [fetchData, showToast, t]);
 
-  const handleMfaVerify = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isLoggingIn || !pendingMfaUser) return;
-
-    setIsLoggingIn(true);
-    setGlobalError(null);
-    
-    try {
-      // 使用新的 select-or-login-user 边缘函数验证MFA用户
-      if (!pendingMfaUser.username || !pendingMfaUser.password) {
-        setGlobalError('用户信息不完整，请联系管理员。');
-        throw new Error('Incomplete user credentials');
-      }
-      
-      const user = await api.db.selectOrLoginUser({ username: pendingMfaUser.username, password: pendingMfaUser.password });
-      
-      if (!user) {
-        setGlobalError('用户验证失败，请联系管理员。');
-        throw new Error('User verification failed');
-      }
-      
-      if (user?.isOnline) {
-        // 强制下线该用户在其他设备上的会话
-        await api.users.setOnlineStatus(user.id, false);
-        await logAudit('FORCE_OFFLINE', `MFA认证时强制下线该用户之前的会话`, 'Medium', user.id);
-      }
-      
-      await api.users.setOnlineStatus(user.id, true);
-      setCurrentUser({ ...user, isOnline: true });
-      setPendingMfaUser(null);
-      await logAudit('MFA_SUCCESS', '直接访问系统。');
-      notificationService.requestPermission();
-    } catch (error) {
-      console.error('MFA verification failed:', error);
-      // 根据错误类型显示更具体的错误信息
-      if (error instanceof Error && error.message.includes('User verification failed')) {
-        setGlobalError('用户验证失败，请联系管理员。');
-      } else {
-        setGlobalError('验证过程中出现错误，请重试。');
-      }
-      await logAudit('MFA_ERROR', `MFA验证错误: ${error instanceof Error ? error.message : 'Unknown error'}`, 'High');
-    }
-    
-    setIsLoggingIn(false);
-  };
-
-  const handleLogout = async () => {
-    if (currentUser) {
-      await api.users.setOnlineStatus(currentUser.id, false);
-      await logAudit('SESSION_TERMINATED', '安全退出系统。');
-      setCurrentUser(null);
-    }
-  };
-
-  const updateLang = (newLang: Language) => {
-    setLang(newLang);
-    localStorage.setItem('jx_lang', newLang);
-  };
-  
-  // 支付处理函数
-  const processPayment = async (paymentData: { user_id: string; order_id: string; method_id: string; amount: number; proof_url?: string; note?: string }) => {
-    try {
-      // 创建支付记录
-      const paymentResult = await api.db.createPayment(paymentData);
-      
-      await logAudit('PAYMENT_INITIATED', `支付发起成功 - 订单: ${paymentData.order_id}, 方式: ${paymentData.method_id}, 金额: ₱${paymentData.amount}`);
-      
-      // 验证支付结果
-      const verificationResult = await api.db.getPayment(paymentResult.id);
-      
-      if (verificationResult && verificationResult.status === 'confirmed') {
-        await logAudit('PAYMENT_CONFIRMED', `支付确认成功 - 订单: ${paymentData.order_id}`);
-        return { success: true, status: verificationResult.status, paymentId: verificationResult.id };
-      } else {
-        await logAudit('PAYMENT_FAILED', `支付验证失败 - 订单: ${paymentData.order_id}`);
-        return { success: false, status: verificationResult?.status || 'failed', paymentId: verificationResult?.id };
-      }
-    } catch (error) {
-      console.error('Payment processing error:', error);
-      await logAudit('PAYMENT_ERROR', `支付处理错误 - 订单: ${paymentData.order_id}, 错误: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      throw error;
-    }
-  };
-  
-  // 获取支付方式函数
-  const getPaymentMethods = async () => {
-    try {
-      return await api.db.getPaymentMethods();
-    } catch (error) {
-      console.error('Error getting payment methods:', error);
-      // 返回默认支付方式作为后备
-      return { methods: ['gcash', 'maya', 'card'] };
-    }
-  };
-
+  const guestRoomId = new URLSearchParams(window.location.search).get('room');
   if (guestRoomId) {
     return (
       <GuestOrder 
         roomId={guestRoomId} 
         dishes={dishes} 
-        onSubmitOrder={async (order) => { 
-          await api.orders.create(order as Order); 
-          fetchData(); 
+        onSubmitOrder={async (o) => { 
+          await api.orders.create(o as Order); 
+          fetchData(true); 
+          showToast(lang === 'zh' ? '点餐已确认' : 'Order confirmed', "success"); 
         }} 
         lang={lang} 
-        onToggleLang={() => setLang(prevLang => prevLang === 'zh' ? 'en' : prevLang === 'en' ? 'tl' : 'zh')}
-        onRescan={() => {
-          window.location.href = window.location.origin + window.location.pathname;
-        }}
+        onToggleLang={toggleLanguage}
+        onRescan={() => window.location.href = window.location.origin}
       />
     );
   }
 
-  // 设置默认用户，跳过登录
-  const defaultUser = {
-    id: 'default-user',
-    username: 'admin',
-    name: 'Administrator',
-    role: UserRole.ADMIN,
-    permissions: DEFAULT_PERMISSIONS,
-    isOnline: true,
-    lastLogin: new Date().toISOString(),
-    twoFactorEnabled: false,
-  };
-  
   if (!currentUser) {
-    setCurrentUser(defaultUser as User);
-  }
-  
-  const unreadCount = appNotifications.filter(n => !n.read).length;
-  return (
-    <ErrorBoundary lang={lang}>
-      <div className="min-h-screen bg-[#f8fafc] text-[#0f172a] relative">
-        <Sidebar currentTab={currentTab} setCurrentTab={(tab) => { setCurrentTab(tab); setIsSidebarOpen(false); }} userRole={defaultUser.role} onLogout={handleLogout} lang={lang} isOpen={isSidebarOpen} />
-        <main className={`min-h-screen transition-all duration-500 lg:pl-72`}>
-          
-          {lastOrderInfo && (
-            <div className="fixed top-0 left-0 lg:left-72 right-0 z-[100] bg-indigo-600 text-white py-3 px-6 shadow-2xl flex items-center justify-between animate-in slide-in-from-top duration-500">
-                <div className="flex items-center space-x-4 overflow-hidden">
-                  <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center shrink-0 animate-pulse">
-                    <Package size={16} />
-                  </div>
-                  <div className="whitespace-nowrap overflow-hidden text-ellipsis">
-                    <span className="text-[10px] font-black uppercase tracking-widest opacity-60 mr-4">Realtime Push Notification</span>
-                    <span className="text-sm font-bold">{lastOrderInfo}</span>
-                  </div>
-                </div>
-                <button onClick={() => setLastOrderInfo(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors"><X size={16} /></button>
-              </div>
-          )}
+    return (
+      <div className="min-h-screen relative flex items-center justify-center p-6 bg-slate-100 overflow-hidden">
+        {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+        
+        <div className="absolute inset-0 z-0">
+          <img 
+            src="https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&q=80&w=2000" 
+            className="w-full h-full object-cover" 
+            alt="Hospitality Background" 
+          />
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" />
+        </div>
 
-          <header className="sticky top-0 z-40 h-20 lg:h-24 bg-white/90 backdrop-blur-2xl border-b border-slate-100 px-6 lg:px-12 flex items-center justify-between shadow-sm">
-            <div className="flex items-center gap-4">
-              <button onClick={() => setIsSidebarOpen(true)} className="p-2 -ml-2 text-slate-500 hover:text-slate-900 lg:hidden"><Menu size={24} /></button>
-              <div className="flex flex-col">
-                <span className="hidden sm:block text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] leading-none mb-1">{t('centralConsole')}</span>
-                <h2 className="text-xl lg:text-3xl font-bold tracking-tight text-[#0f172a]">{t(currentTab as any)}</h2>
+        <div className="w-full max-w-md relative z-10 animate-fade-up">
+          <div className="bg-white/90 backdrop-blur-2xl rounded-[3rem] shadow-2xl p-10 lg:p-14 space-y-10 border border-white/50">
+            <div className="text-center space-y-4">
+              <div className="flex justify-center items-center">
+                 <div className="w-16 h-16 bg-slate-950 text-blue-500 rounded-3xl flex items-center justify-center font-black text-2xl italic shadow-2xl mb-4 border-2 border-white/20">JX</div>
               </div>
+              <h1 className="text-3xl font-black text-slate-900 tracking-tighter">江西云厨管理系统</h1>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.4em]">JX Cloud Terminal Interface</p>
             </div>
-            <div className="flex items-center space-x-3 lg:space-x-8">
-              <ConnectionMonitor />
-              <button onClick={() => {
-                const next = lang === 'zh' ? 'en' : lang === 'en' ? 'tl' : 'zh';
-                updateLang(next);
-              }} className="p-3 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-all group">
-                <Globe size={20} className="text-slate-500 group-hover:text-[#d4af37]" />
-              </button>
-              <button onClick={() => setIsNotificationsOpen(true)} className="relative p-3 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-all group">
-                <Bell size={20} className="text-slate-500 group-hover:text-[#d4af37]" />
-                {unreadCount > 0 && <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-white text-[9px] font-black flex items-center justify-center rounded-full border-2 border-white shadow-lg animate-bounce">{unreadCount}</span>}
-              </button>
-              <div className="flex items-center space-x-4 border-l border-slate-200 pl-8">
-                <div className="text-right hidden sm:block">
-                  <p className="text-base font-bold text-slate-900 leading-none">{defaultUser.name}</p>
-                  <p className="text-[10px] font-black text-[#d4af37] uppercase tracking-tighter mt-1.5">{(defaultUser.role as string).toUpperCase()}</p>
-                </div>
-                <div className="w-14 h-14 bg-slate-900 text-white rounded-2xl flex items-center justify-center font-bold text-lg shadow-xl shrink-0">{defaultUser.name[0]}</div>
-              </div>
-            </div>
-          </header>
 
-          <div className="p-6 lg:p-12 max-w-[1600px] mx-auto">
-            {isLoading ? (
-              <div className="h-96 flex items-center justify-center"><div className="w-10 h-10 border-4 border-slate-200 border-t-[#d4af37] rounded-full animate-spin"></div></div>
-            ) : (
-              <div className="w-full">
-                {currentTab === 'dashboard' && <MemoDashboard orders={orders} rooms={rooms} expenses={expenses} dishes={dishes} lang={lang} />}
-                {currentTab === 'rooms' && <MemoRoomGrid rooms={rooms} dishes={dishes} onRefresh={fetchData} isSyncing={isSyncing} onUpdateRoom={async (r) => { await api.rooms.update(r); fetchData(); }} lang={lang} />}
-                {currentTab === 'orders' && <MemoOrderManagement orders={orders} onUpdateStatus={async (id, s) => { await api.orders.updateStatus(id, s); fetchData(); }} lang={lang} />}
-                {currentTab === 'menu' && <MemoMenuManagement dishes={dishes} materials={materials} onAddDish={async (d) => { await api.dishes.create(d); fetchData(); }} onUpdateDish={async (d) => { await api.dishes.update(d); fetchData(); }} onDeleteDish={async (id) => { await api.dishes.delete(id); fetchData(); }} onAddMaterial={async (m) => { await api.materials.create(m); fetchData(); }} onDeleteMaterial={async (id) => { await api.materials.delete(id); fetchData(); }} lang={lang} />}
-                {currentTab === 'materials' && <MemoImageLibrary materials={materials} onAddMaterial={async (m) => { await api.materials.create(m); fetchData(); }} onDeleteMaterial={async (id) => { await api.materials.delete(id); fetchData(); }} lang={lang} />}
-                {currentTab === 'finance' && <MemoFinanceManagement orders={orders} expenses={expenses} onAddExpense={async (e) => { await api.expenses.create(e); fetchData(); }} onDeleteExpense={async (id) => { await api.expenses.delete(id); fetchData(); }} lang={lang} />}
-                {currentTab === 'payments' && <MemoPaymentManagement lang={lang} />}
-                {currentTab === 'users' && <MemoStaffManagement users={users} onRefresh={fetchData} onAddUser={async (u) => { await api.users.create(u); fetchData(); }} onUpdateUser={async (u) => { await api.users.update(u); fetchData(); }} onDeleteUser={async (id) => { await api.users.delete(id); fetchData(); }} lang={lang} />}
-                {currentTab === 'settings' && <MemoSystemSettings lang={lang} onChangeLang={updateLang} currentUser={defaultUser as User} onUpdateCurrentUser={(u) => { setCurrentUser(u); fetchData(); }} />}
+            <form onSubmit={handleLogin} className="space-y-6">
+              <div className="space-y-5">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">账号 Username</label>
+                  <input 
+                    name="username" 
+                    type="text" 
+                    placeholder="请输入工号" 
+                    disabled={isLoggingIn}
+                    required 
+                    className="w-full px-8 py-5 bg-white border border-slate-200 rounded-[2rem] font-bold text-slate-900 focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none transition-all shadow-sm disabled:opacity-50" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">密码 Password</label>
+                  <input 
+                    name="password" 
+                    type="password" 
+                    placeholder="请输入密钥" 
+                    disabled={isLoggingIn}
+                    required 
+                    className="w-full px-8 py-5 bg-white border border-slate-200 rounded-[2rem] font-bold text-slate-900 focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none transition-all shadow-sm disabled:opacity-50" 
+                  />
+                </div>
               </div>
-            )}
+
+              <button 
+                type="submit" 
+                disabled={isLoggingIn}
+                className="group w-full py-6 bg-slate-950 text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.4em] hover:bg-blue-600 transition-all shadow-xl flex items-center justify-center space-x-3 active:scale-95 disabled:opacity-70"
+              >
+                {isLoggingIn ? <Loader2 className="animate-spin" size={18} /> : (
+                  <>
+                    <span>登录 Login</span>
+                    <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                  </>
+                )}
+              </button>
+            </form>
+            
+            <div className="text-center">
+               <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] pt-4">© 2025 JX-Cloud Infrastructure Group</p>
+            </div>
           </div>
-          <NotificationCenter isOpen={isNotificationsOpen} onClose={() => setIsNotificationsOpen(false)} notifications={appNotifications} onMarkAsRead={(id) => setAppNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))} onClearAll={() => setAppNotifications([])} />
-        </main>
+        </div>
       </div>
-    </ErrorBoundary>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex bg-[#f8fafc]">
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      <Sidebar 
+        currentTab={currentTab} 
+        setCurrentTab={setCurrentTab} 
+        currentUser={currentUser} 
+        onLogout={async () => { 
+          if (!isDemoMode && supabase) {
+            await supabase.auth.signOut();
+          }
+          setCurrentUser(null); 
+          localStorage.removeItem('jx_user'); 
+          showToast(lang === 'zh' ? '安全退出成功' : 'Logged out safely', "info"); 
+        }} 
+        lang={lang} 
+        onToggleLang={toggleLanguage}
+        isOpen={isSidebarOpen} 
+      />
+      <main className="flex-1 lg:pl-72 flex flex-col min-h-screen">
+        <header className="h-24 bg-white/80 backdrop-blur-xl border-b border-slate-200 px-10 flex items-center justify-between sticky top-0 z-40">
+          <div className="flex items-center space-x-6">
+            <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-3 bg-slate-50 rounded-2xl text-slate-400"><Monitor size={24} /></button>
+            <div>
+              <div className="flex items-center gap-3">
+                <h2 className="text-2xl font-black uppercase tracking-tighter text-slate-950 leading-none">{t(currentTab as any)}</h2>
+                {isSyncing && <Loader2 className="animate-spin text-blue-500" size={18} />}
+              </div>
+              <div className="flex items-center space-x-2 mt-2">
+                 <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{t(`role_${currentUser.role}` as any)} {t('statusActive')}</p>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center space-x-6">
+             <div className="text-right hidden sm:block">
+                <p className="text-sm font-black text-slate-950">{currentUser.name}</p>
+                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">ID: {currentUser.username}</p>
+             </div>
+             <div className="w-14 h-14 bg-slate-950 text-white rounded-[1.75rem] flex items-center justify-center font-black text-xl shadow-xl border-4 border-white">{currentUser.name[0]}</div>
+          </div>
+        </header>
+
+        <div className="p-10 max-w-[1600px] mx-auto w-full flex-1">
+          {isLoading ? (
+            <div className="h-[60vh] flex flex-col items-center justify-center space-y-6 text-slate-400 font-black text-[10px] uppercase tracking-[0.5em]">
+              <Loader2 size={48} className="animate-spin text-blue-500 mb-4" />
+              JX-Cloud Engine Orchestrating...
+            </div>
+          ) : (
+            <div className="animate-fade-up">
+              {currentTab === 'dashboard' && <Dashboard orders={orders} rooms={rooms} expenses={expenses} dishes={dishes} lang={lang} />}
+              {currentTab === 'rooms' && (
+                <RoomGrid 
+                  rooms={rooms} 
+                  dishes={dishes} 
+                  onUpdateRoom={(r) => wrapAsync(() => api.rooms.update(r), t('stationManagement') + (lang === 'zh' ? '已更新' : ' updated'))} 
+                  onRefresh={() => fetchData(true)} 
+                  lang={lang} 
+                />
+              )}
+              {currentTab === 'orders' && (
+                <OrderManagement 
+                  orders={orders} 
+                  onUpdateStatus={(id, s) => wrapAsync(() => api.orders.updateStatus(id, s), t('orders') + (lang === 'zh' ? '同步成功' : ' synced'))} 
+                  lang={lang} 
+                />
+              )}
+              {currentTab === 'supply_chain' && (
+                <SupplyChainManager 
+                  dishes={dishes} 
+                  currentUser={currentUser} 
+                  onAddDish={(d) => wrapAsync(() => api.dishes.create(d), lang === 'zh' ? '商品档案已录入' : 'Product recorded')} 
+                  onUpdateDish={(d) => wrapAsync(() => api.dishes.update(d), lang === 'zh' ? '档案修改已保存' : 'Records saved')} 
+                  onDeleteDish={(id) => wrapAsync(() => api.dishes.delete(id), lang === 'zh' ? '商品已下架' : 'Product removed')} 
+                  lang={lang} 
+                />
+              )}
+              {currentTab === 'financial_hub' && (
+                <FinancialCenter 
+                  orders={orders} 
+                  expenses={expenses} 
+                  partners={partners} 
+                  onAddExpense={(e) => wrapAsync(() => api.expenses.create(e), lang === 'zh' ? '财务支出已记账' : 'Expense recorded')} 
+                  onDeleteExpense={(id) => wrapAsync(() => api.expenses.delete(id))} 
+                  onAddPartner={(p) => wrapAsync(() => api.partners.create(p), lang === 'zh' ? '联营商户注册成功' : 'Partner registered')} 
+                  onUpdatePartner={(p) => wrapAsync(() => api.partners.update(p))} 
+                  onDeletePartner={(id) => wrapAsync(() => api.partners.delete(id))} 
+                  lang={lang} 
+                />
+              )}
+              {currentTab === 'database' && <DatabaseManagement lang={lang} />}
+              {currentTab === 'images' && <ImageManagement lang={lang} />}
+              {currentTab === 'users' && (
+                <StaffManagement 
+                  users={users} 
+                  onRefresh={() => fetchData(true)} 
+                  onAddUser={(u) => wrapAsync(() => api.users.create(u), lang === 'zh' ? '新员工授权已签发' : 'Staff auth issued')} 
+                  onUpdateUser={(u) => wrapAsync(() => api.users.update(u), lang === 'zh' ? '员工权限已更新' : 'Permissions updated')} 
+                  onDeleteUser={(id) => wrapAsync(() => api.users.delete(id), lang === 'zh' ? '员工账号已吊销' : 'Account revoked')} 
+                  lang={lang} 
+                />
+              )}
+              {currentTab === 'settings' && (
+                <SystemSettings 
+                  lang={lang} 
+                  onChangeLang={(l) => { setLang(l); localStorage.setItem('jx_lang', l); showToast(l === 'zh' ? '语言已切换至中文' : 'Language switched to English', "info"); }} 
+                  onUpdateConfig={(c) => wrapAsync(() => api.config.update(c), lang === 'zh' ? '系统全局配置已存档' : 'Global config saved')} 
+                />
+              )}
+            </div>
+          )}
+        </div>
+      </main>
+    </div>
   );
 };
 

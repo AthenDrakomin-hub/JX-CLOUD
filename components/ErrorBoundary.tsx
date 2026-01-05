@@ -2,7 +2,6 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCcw, ShieldAlert, Sparkles } from 'lucide-react';
 import { translations, Language } from '../translations';
-import { ErrorHandler, AppError } from '../services/errorHandler';
 
 interface Props {
   children?: ReactNode;
@@ -11,7 +10,7 @@ interface Props {
 
 interface State {
   hasError: boolean;
-  error?: AppError;
+  error?: Error;
 }
 
 // Error Boundary component to catch rendering errors and display a fallback UI
@@ -31,14 +30,11 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   public static getDerivedStateFromError(error: Error): State {
-    const appError = ErrorHandler.logError(error, 'ErrorBoundary');
-    return { hasError: true, error: appError };
+    return { hasError: true, error };
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Uncaught error:', error, errorInfo);
-    // 记录错误到错误处理服务
-    ErrorHandler.logError(error, 'ErrorBoundary');
   }
 
   private handleReset = () => {

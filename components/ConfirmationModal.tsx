@@ -26,8 +26,8 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  const cancelLabel = translations[lang].cancelLabel || translations.zh.cancelLabel;
-  const defaultConfirmLabel = translations[lang].confirmLabel || translations.zh.confirmLabel;
+  const cancelLabel = lang === 'zh' ? '取消' : 'Cancel';
+  const defaultConfirmLabel = lang === 'zh' ? '确认' : 'Confirm';
 
   const confirmBtnClass = confirmVariant === 'danger' 
     ? 'bg-red-600 hover:bg-red-700 shadow-red-100' 

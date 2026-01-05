@@ -1,339 +1,239 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { Dish, MaterialImage } from '../types';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { Dish, User, UserRole } from '../types';
 import { translations, Language } from '../translations';
 import { 
-  Plus, Edit3, Trash2, Search, X, Eye, EyeOff, 
-  Star, Flame, Save, Package, ChevronRight, Filter, Smartphone,
-  FileText, Tag, DollarSign, Image as ImageIcon,
-  // Added missing Globe icon
-  Globe
+  Plus, Search, X, Star, Save, Package, 
+  Settings2, Trash2, Edit3, 
+  Utensils, ChevronRight, ExternalLink,
+  ChevronDown, AlertCircle, Loader2, Eye, Grid, ListFilter,
+  Layers, ShoppingBag, UploadCloud, Check,
+  Image as ImageIcon
 } from 'lucide-react';
-import { CATEGORIES } from '../constants';
-import ConfirmationModal from './ConfirmationModal';
+import { api } from '../services/api';
+import { s3Service } from '../services/s3Service';
 import OptimizedImage from './OptimizedImage';
-import GuestOrder from './GuestOrder';
 
 interface MenuManagementProps {
   dishes: Dish[];
-  materials: MaterialImage[];
-  onAddDish: (dish: Dish) => void;
-  onUpdateDish: (dish: Dish) => void;
-  onDeleteDish: (id: string) => void;
-  onAddMaterial: (image: MaterialImage) => void;
-  onDeleteMaterial: (id: string) => void;
+  currentUser: User | null;
+  onAddDish: (dish: Dish) => Promise<void>;
+  onUpdateDish: (dish: Dish) => Promise<void>;
+  onDeleteDish: (id: string) => Promise<void>;
   lang: Language;
 }
 
 const MenuManagement: React.FC<MenuManagementProps> = ({ 
-  dishes, onAddDish, onUpdateDish, onDeleteDish, lang 
+  dishes, currentUser, onAddDish, onUpdateDish, onDeleteDish, lang 
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
+  const [customCategories, setCustomCategories] = useState<string[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [editingDish, setEditingDish] = useState<Dish | null>(null);
-  const [tempImageUrl, setTempImageUrl] = useState('');
-  const [isRecommended, setIsRecommended] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState<{ isOpen: boolean; dishId: string | null }>({ isOpen: false, dishId: null });
   
-  const t = (key: string) => (translations[lang] as any)[key] || (translations.zh as any)[key] || key;
+  // Upload state
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadedUrl, setUploadedUrl] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // 根据当前语言环境获取菜品名称的辅助函数
-  const getDishName = (dish: Dish): string => {
-    if (lang === 'en' && dish.nameEn) {
-      return dish.nameEn;
-    } else if (lang === 'tl' && dish.nameEn) { // 菲律宾语也使用英文名称
-      return dish.nameEn;
-    }
-    return dish.name; // 默认使用中文名称
-  };
+  const t = (key: keyof typeof translations.zh) => (translations[lang] as any)[key] || (translations.zh as any)[key] || key;
+  
+  useEffect(() => {
+    api.categories.getAll().then(setCustomCategories);
+  }, []);
 
   const filteredDishes = useMemo(() => {
-    return dishes.filter(d => {
-      const dishName = getDishName(d); // 使用当前语言环境的菜名进行搜索
-      const matchSearch = dishName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          d.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          (d.nameEn || '').toLowerCase().includes(searchTerm.toLowerCase());
+    return (dishes || []).filter(d => {
+      const matchSearch = (d.name || '').toLowerCase().includes(searchTerm.toLowerCase());
       const matchCategory = activeCategory === 'All' || d.category === activeCategory;
       return matchSearch && matchCategory;
     });
-  }, [dishes, searchTerm, activeCategory, lang]);
+  }, [dishes, searchTerm, activeCategory]);
 
-  const categoryCounts = useMemo(() => {
-    const counts: { [key: string]: number } = { All: dishes.length };
-    dishes.forEach(d => {
-      counts[d.category] = (counts[d.category] || 0) + 1;
-    });
-    return counts;
-  }, [dishes]);
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const dishData: Dish = {
-      id: editingDish?.id || `dish-${Date.now()}`,
-      name: formData.get('name') as string,
-      nameEn: formData.get('nameEn') as string,
-      description: formData.get('description') as string,
-      price: Number(formData.get('price')),
-      category: formData.get('category') as string,
-      stock: Number(formData.get('stock')),
-      imageUrl: tempImageUrl || (formData.get('imageUrl') as string) || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c',
-      isAvailable: editingDish ? editingDish.isAvailable : true,
-      isRecommended: isRecommended,
-      calories: editingDish?.calories || 0,
-      allergens: editingDish?.allergens || []
-    };
-
-    if (editingDish) {
-      console.log('Updating dish:', dishData);
-      onUpdateDish(dishData);
-    } else {
-      console.log('Adding dish:', dishData);
-      onAddDish(dishData);
-    }
-    closeModal();
-  };
-
-  const openModal = (dish: Dish | null = null) => {
-    if (dish) {
-      setEditingDish(dish);
-      setTempImageUrl(dish.imageUrl);
-      setIsRecommended(!!dish.isRecommended);
-    } else {
-      setEditingDish(null);
-      setTempImageUrl('');
-      setIsRecommended(false);
-    }
+  const handleOpenModal = (dish: Dish | null) => {
+    setEditingDish(dish);
+    setUploadedUrl(dish?.imageUrl || '');
     setIsModalOpen(true);
   };
 
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setIsPreviewOpen(false);
-    setEditingDish(null);
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const key = await s3Service.uploadFile(file);
+      // Construct public URL - using the base from s3Service.ts logic
+      const publicUrlBase = `https://zlbemopcgjohrnyyiwvs.supabase.co/storage/v1/object/public/jiangxiyunchu/`;
+      const url = `${publicUrlBase}${key}`;
+      setUploadedUrl(url);
+    } catch (err) {
+      alert('Upload failed. Please check your connection.');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
-    <div className="space-y-12 pb-24">
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-10 bg-white p-12 rounded-[4rem] border border-slate-100 shadow-sm">
-        <div className="space-y-4">
-           <div className="flex items-center space-x-3 text-[#d4af37]">
-              <div className="w-8 h-[2px] bg-[#d4af37] rounded-full" />
-              <span className="text-xs font-black uppercase tracking-[0.4em]">{t('curatedMenu')}</span>
+    <div className="flex flex-col lg:flex-row gap-10 relative pb-20">
+      {/* Sidebar Categories */}
+      <aside className="w-full lg:w-72 shrink-0 space-y-8 sticky top-28 h-fit no-print">
+        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-premium space-y-6">
+           <div className="flex items-center justify-between px-2">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">品类资产索引</p>
+              <Grid size={14} className="text-blue-500" />
            </div>
-           <h2 className="text-6xl font-serif italic text-slate-900 tracking-tighter leading-tight">{t('kitchenGallery')}</h2>
+           <nav className="space-y-1">
+              {['All', ...customCategories].map((cat) => (
+                <button key={cat} onClick={() => setActiveCategory(cat)} className={`w-full text-left px-5 py-4 rounded-2xl font-bold text-sm transition-all flex items-center justify-between group ${activeCategory === cat ? 'bg-blue-600 text-white shadow-xl shadow-blue-100' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}>
+                  <div className="flex items-center space-x-3">
+                    <Layers size={14} className={activeCategory === cat ? 'text-white' : 'text-slate-300 group-hover:text-blue-500'} />
+                    <span>{cat === 'All' ? '全部资产' : cat}</span>
+                  </div>
+                  <span className={`text-[9px] px-2.5 py-1 rounded-lg font-black ${activeCategory === cat ? 'bg-white/20' : 'bg-slate-100 text-slate-400'}`}>
+                    {(dishes||[]).filter(d=>cat==='All'||d.category===cat).length}
+                  </span>
+                </button>
+              ))}
+           </nav>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center gap-6">
-          <button 
-            onClick={() => setIsPreviewOpen(true)}
-            className="h-20 px-8 bg-slate-50 border border-slate-200 text-slate-600 rounded-[2.5rem] font-black text-xs uppercase tracking-widest flex items-center justify-center space-x-3 hover:bg-slate-100 transition-all active:scale-95 shadow-sm"
-          >
-            <Smartphone size={18} />
-            <span>{t('diningPreview')}</span>
-          </button>
-          <div className="relative group w-full lg:w-72">
-            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#d4af37] transition-all" size={20} />
-            <input 
-              type="text" 
-              placeholder={t('searchDishes')}
-              className="w-full pl-14 pr-8 py-6 bg-slate-50 border border-transparent rounded-[2.5rem] text-sm outline-none focus:bg-white focus:ring-8 focus:ring-slate-50 transition-all font-bold shadow-sm"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <button 
-            onClick={() => openModal()}
-            className="bg-[#0f172a] text-white h-20 px-10 rounded-[2.5rem] font-black text-xs uppercase tracking-[0.3em] flex items-center justify-center space-x-4 shadow-2xl hover:bg-[#d4af37] transition-all active:scale-95 group shrink-0"
-          >
-            <Plus size={20} />
-            <span>{t('addDish')}</span>
-          </button>
+        <div className="bg-slate-900 p-8 rounded-[2.5rem] text-white space-y-6 shadow-2xl relative overflow-hidden">
+           <div className="absolute -top-10 -right-10 w-40 h-40 bg-blue-600/10 blur-3xl rounded-full" />
+           <div className="relative z-10 space-y-5">
+              <div className="flex items-center space-x-3 text-blue-400">
+                <ShoppingBag size={20} />
+                <h4 className="text-lg font-bold tracking-tight">模拟点餐预览</h4>
+              </div>
+              <p className="text-[10px] text-slate-400 font-medium leading-relaxed">
+                实时模拟菲律宾本地宾客扫描二维码后看到的移动端界面。
+              </p>
+              <button 
+                onClick={() => window.open(`${window.location.origin}${window.location.pathname}?room=PREVIEW_MODE`, '_blank')}
+                className="w-full py-4.5 bg-white/10 hover:bg-white text-white hover:text-slate-950 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center space-x-3 active-scale border border-white/5"
+              >
+                <Eye size={14} />
+                <span>进入宾客预览页</span>
+              </button>
+           </div>
+        </div>
+      </aside>
+
+      <div className="flex-1 space-y-10">
+        <div className="bg-white p-8 rounded-[3rem] border border-slate-200 shadow-premium flex flex-col md:flex-row items-center justify-between gap-6 sticky top-28 z-30 backdrop-blur-xl bg-white/90 no-print">
+           <div className="flex items-center space-x-5">
+              <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shadow-inner border border-blue-100"><Utensils size={24} /></div>
+              <div><h2 className="text-2xl font-black text-slate-950 leading-none">菜品资产档案</h2><p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">International Menu Management</p></div>
+           </div>
+           <div className="flex items-center gap-4 w-full md:w-auto">
+              <div className="relative flex-1 md:w-64 group"><Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} /><input type="text" placeholder="检索商品名..." className="w-full pl-14 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm outline-none font-bold focus:bg-white focus:border-blue-500 transition-all shadow-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div>
+              <button onClick={() => handleOpenModal(null)} className="px-8 h-14 bg-slate-950 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center space-x-3 shadow-xl hover:bg-blue-600 transition-all active-scale shrink-0"><Plus size={20} /><span>录入新商品</span></button>
+           </div>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-8">
+           {filteredDishes.map((dish, idx) => (
+             <div key={dish.id} className="group bg-white rounded-[3.5rem] border-2 border-slate-100 shadow-sm hover:border-blue-500 hover:shadow-2xl transition-all duration-700 cursor-pointer overflow-hidden flex flex-col h-full animate-fade-up" style={{ animationDelay: `${idx * 50}ms` }} onClick={() => handleOpenModal(dish)}>
+                <div className="relative aspect-square overflow-hidden bg-slate-100 p-2">
+                   <OptimizedImage src={dish.imageUrl} alt={dish.name} className="w-full h-full object-cover rounded-[3rem] transition-transform duration-[3s] group-hover:scale-110" />
+                   {dish.isRecommended && <div className="absolute top-6 left-6 p-2.5 bg-amber-500 text-white rounded-2xl shadow-xl animate-pulse border-2 border-white"><Star size={14} fill="currentColor" /></div>}
+                   <div className="absolute bottom-6 right-6 px-4 py-1.5 bg-slate-950/80 backdrop-blur-md text-white rounded-xl text-[9px] font-black uppercase tracking-widest">
+                     库存: {dish.stock}
+                   </div>
+                </div>
+                <div className="p-8 flex flex-col flex-1">
+                   <div>
+                      <h4 className="font-black text-slate-950 text-xl tracking-tight leading-tight truncate">{dish.name}</h4>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 mb-6">{dish.category}</p>
+                   </div>
+                   <div className="mt-auto flex items-end justify-between border-t border-slate-50 pt-6">
+                      <div className="flex flex-col">
+                        <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest">Unit Value (PHP)</span>
+                        <span className="text-3xl font-serif italic text-blue-700">₱{dish.price}</span>
+                      </div>
+                      <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-blue-50 group-hover:text-blue-500 transition-all"><Edit3 size={18} /></div>
+                   </div>
+                </div>
+             </div>
+           ))}
         </div>
       </div>
-
-      <div className="flex items-center space-x-3 overflow-x-auto no-scrollbar pb-2 px-2 -mx-2">
-        {['All', ...CATEGORIES].map((cat) => (
-          <button
-            key={cat}
-            onClick={() => setActiveCategory(cat)}
-            className={`px-8 py-4 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center space-x-3 shrink-0 border
-              ${activeCategory === cat 
-                ? 'bg-slate-900 text-white border-transparent shadow-xl translate-y-[-2px]' 
-                : 'bg-white text-slate-400 border-slate-100 hover:text-slate-900 hover:border-slate-200 shadow-sm'}`}
-          >
-            <span>{cat === 'All' ? t('allCategories') : 
-                  cat === 'Main' ? t('mainCategory') :
-                  cat === 'Seafood' ? t('seafoodCategory') :
-                  cat === 'Staple' ? t('stapleCategory') :
-                  cat === 'Soup' ? t('soupCategory') :
-                  cat === 'Drink' ? t('drinkCategory') :
-                  cat === 'Dessert' ? t('dessertCategory') : cat}</span>
-            <span className={`px-2 py-0.5 rounded-full text-[9px] ${activeCategory === cat ? 'bg-white/20 text-[#d4af37]' : 'bg-slate-50 text-slate-400'}`}>
-              {categoryCounts[cat] || 0}
-            </span>
-          </button>
-        ))}
-      </div>
-
-      {filteredDishes.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-40 bg-white/40 rounded-[4rem] border border-dashed border-slate-200">
-           <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center text-slate-200 mb-6">
-              <Filter size={32} />
-           </div>
-           <p className="text-sm font-black text-slate-400 uppercase tracking-widest">{t('noMatchingDishes')}</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-12">
-          {filteredDishes.map((dish, idx) => (
-            <div 
-              key={dish.id} 
-              className={`group bg-white rounded-[3.5rem] border border-slate-50 shadow-sm hover:shadow-2xl transition-all duration-700 hover:-translate-y-4 cursor-pointer animate-in fade-in slide-in-from-bottom-8 ${dish.isAvailable === false ? 'opacity-60 grayscale' : ''}`}
-              style={{ animationDelay: `${idx * 80}ms` }}
-              onClick={() => openModal(dish)}
-            >
-              <div className="relative aspect-[5/4] rounded-t-[3.5rem] overflow-hidden m-2 bg-slate-100">
-                <OptimizedImage src={dish.imageUrl} alt={dish.name} aspectRatio="h-full w-full" className="transition-all duration-1000 group-hover:scale-110" />
-                <div className="absolute top-6 left-6 flex flex-col space-y-2">
-                    <div className="px-4 py-2 bg-slate-900/60 backdrop-blur-md text-white rounded-full text-[8px] font-black uppercase tracking-[0.3em] border border-white/10">
-                      {dish.category === 'Main' ? t('mainCategory') :
-                       dish.category === 'Seafood' ? t('seafoodCategory') :
-                       dish.category === 'Staple' ? t('stapleCategory') :
-                       dish.category === 'Soup' ? t('soupCategory') :
-                       dish.category === 'Drink' ? t('drinkCategory') :
-                       dish.category === 'Dessert' ? t('dessertCategory') : dish.category}
-                    </div>
-                    {dish.isRecommended && <div className="px-4 py-2 bg-[#d4af37] text-white rounded-full shadow-lg text-[8px] font-black uppercase tracking-[0.3em] flex items-center space-x-1"><Star size={8} fill="white" /> <span>推荐</span></div>}
-                </div>
-                <div className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 transition-all duration-500 flex items-center justify-center backdrop-blur-sm" onClick={e => e.stopPropagation()}>
-                    <div className="flex space-x-4 translate-y-6 group-hover:translate-y-0 transition-transform duration-500">
-                      <button onClick={() => openModal(dish)} className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-slate-950 shadow-2xl hover:bg-[#d4af37] hover:text-white transition-all"><Edit3 size={20} /></button>
-                      <button onClick={() => onUpdateDish({ ...dish, isAvailable: !dish.isAvailable })} className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xl transition-all ${dish.isAvailable !== false ? 'bg-white text-slate-950' : 'bg-emerald-500 text-white'}`}>{dish.isAvailable !== false ? <EyeOff size={20} /> : <Eye size={20} />}</button>
-                      <button onClick={() => setConfirmDelete({ isOpen: true, dishId: dish.id })} className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-red-500 shadow-2xl hover:bg-red-500 hover:text-white transition-all"><Trash2 size={20} /></button>
-                    </div>
-                </div>
-              </div>
-
-              <div className="p-8 space-y-8">
-                <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <h4 className="text-2xl font-bold text-slate-900 tracking-tight truncate max-w-[150px]">{getDishName(dish)}</h4>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">{dish.name} / {dish.nameEn || dish.name}</p>
-                    </div>
-                    <p className="text-2xl font-serif italic text-[#d4af37] tracking-tighter">₱{dish.price}</p>
-                </div>
-
-                <div className="p-5 bg-slate-50 rounded-3xl flex items-center justify-between border border-slate-100">
-                    <div className="flex items-center space-x-3">
-                      <Package size={14} className="text-slate-400" />
-                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">存量</span>
-                    </div>
-                    <span className={`text-sm font-black ${dish.stock < 10 ? 'text-red-500 animate-pulse' : 'text-slate-900'}`}>{dish.stock} 份</span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-6">
-          <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-3xl animate-in fade-in duration-500" onClick={closeModal} />
-          <form onSubmit={handleSubmit} className="relative w-full max-w-5xl bg-white rounded-[4rem] shadow-2xl overflow-hidden flex flex-col lg:flex-row animate-in zoom-in-95 duration-700 max-h-[95vh]">
-             <div className="lg:w-1/2 bg-slate-950 relative border-r border-slate-50 hidden lg:block">
-                <OptimizedImage src={tempImageUrl || editingDish?.imageUrl || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c'} alt="Preview" aspectRatio="h-full w-full" className="opacity-40" />
-                <div className="absolute inset-0 flex flex-col justify-end p-20 text-white">
-                   <h4 className="text-6xl font-serif italic tracking-tighter leading-tight">JX Kitchen Hub</h4>
-                   <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.5em] mt-4">{t('coreMenuManagement')}</p>
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-md overflow-y-auto no-print">
+          <form onSubmit={async (e) => { 
+            e.preventDefault(); 
+            const fd = new FormData(e.currentTarget); 
+            const data: Dish = {
+              ...editingDish, 
+              id: editingDish?.id || `d-${Date.now()}`, 
+              name: fd.get('name') as string, 
+              category: fd.get('category') as string, 
+              price: Number(fd.get('price')), 
+              stock: Number(fd.get('stock')), 
+              imageUrl: uploadedUrl || fd.get('img') as string, 
+              isAvailable: true
+            }; 
+            editingDish ? await onUpdateDish(data) : await onAddDish(data); 
+            setIsModalOpen(false); 
+          }} className="relative w-full max-w-xl bg-white rounded-[4rem] shadow-2xl overflow-hidden border border-slate-200 animate-in zoom-in-95 flex flex-col max-h-[95vh]">
+                <div className="p-10 border-b border-slate-200 flex items-center justify-between bg-slate-50 sticky top-0 z-10">
+                   <div><h3 className="text-2xl font-black text-slate-900 tracking-tighter">{editingDish ? '维护商品档案' : '录入新视觉资产'}</h3><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">JX-Kitchen Core Registry</p></div>
+                   <button type="button" onClick={() => setIsModalOpen(false)} className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white border border-slate-200 text-slate-400 hover:text-slate-950 transition-all hover:shadow-md"><X size={24} /></button>
                 </div>
-             </div>
-             <div className="lg:w-1/2 p-12 lg:p-16 space-y-8 overflow-y-auto no-scrollbar bg-white">
-                <div className="flex items-center justify-between">
-                   <h3 className="text-3xl font-bold text-slate-900 tracking-tight">{editingDish ? t('editDishAsset') : t('addNewDish')}</h3>
-                   <button type="button" onClick={closeModal} className="w-12 h-12 flex items-center justify-center rounded-2xl bg-slate-50 text-slate-400 hover:bg-slate-950 hover:text-white transition-all"><X size={24} /></button>
-                </div>
-                
-                <div className="space-y-6">
-                   <div className="grid grid-cols-2 gap-6">
-                      <div className="space-y-3">
-                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2"><Tag size={12}/> {t('chineseName')}</label>
-                         <input name="name" defaultValue={editingDish?.name} required className="w-full px-6 py-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-[#d4af37] transition-all font-bold" />
-                      </div>
-                      <div className="space-y-3">
-                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2"><DollarSign size={12}/> 售价 (PHP)</label>
-                         <input name="price" type="number" step="0.01" defaultValue={editingDish?.price} required className="w-full px-6 py-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-[#d4af37] transition-all font-black" />
-                      </div>
-                   </div>
-
-                   <div className="space-y-3">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2"><Globe size={12}/> {t('englishName')}</label>
-                      <input name="nameEn" defaultValue={editingDish?.nameEn} className="w-full px-6 py-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-[#d4af37] transition-all font-bold" />
-                   </div>
-
-                   <div className="space-y-3">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2"><FileText size={12}/> 详细描述 / Flavor Profile</label>
-                      <textarea name="description" defaultValue={editingDish?.description} rows={3} className="w-full px-6 py-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-[#d4af37] transition-all font-medium no-scrollbar resize-none" placeholder={t('dishDescriptionPlaceholder')} />
-                   </div>
-
-                   <div className="grid grid-cols-2 gap-6">
-                      <div className="space-y-3">
-                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2"><Filter size={12}/> {t('dishCategory')}</label>
-                         <select name="category" defaultValue={editingDish?.category || CATEGORIES[0]} className="w-full px-6 py-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-[#d4af37] transition-all font-black appearance-none cursor-pointer">
-                            {CATEGORIES.map(cat => <option key={cat} value={cat}>
-                              {cat === 'Main' ? t('mainCategory') :
-                               cat === 'Seafood' ? t('seafoodCategory') :
-                               cat === 'Staple' ? t('stapleCategory') :
-                               cat === 'Soup' ? t('soupCategory') :
-                               cat === 'Drink' ? t('drinkCategory') :
-                               cat === 'Dessert' ? t('dessertCategory') : cat}
-                            </option>)}
-                         </select>
-                      </div>
-                      <div className="space-y-3">
-                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2"><Package size={12}/> {t('initialInventory')}</label>
-                         <input name="stock" type="number" defaultValue={editingDish?.stock || 0} required className="w-full px-6 py-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-[#d4af37] transition-all font-black" />
-                      </div>
-                   </div>
-
-                   <div className="space-y-3">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2"><ImageIcon size={12}/> 图片资源链接</label>
-                      <input name="imageUrl" value={tempImageUrl} onChange={e => setTempImageUrl(e.target.value)} placeholder="Unsplash 或云端 URL..." className="w-full px-6 py-4 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-[#d4af37] transition-all font-bold text-xs" />
-                   </div>
-
-                   <div className={`p-6 rounded-3xl border-2 flex items-center justify-between transition-all ${isRecommended ? 'bg-amber-50 border-amber-100 shadow-inner' : 'bg-slate-50 border-transparent'}`}>
-                      <div className="flex items-center space-x-3">
-                         <Flame className={isRecommended ? 'text-[#d4af37]' : 'text-slate-300'} size={20} />
-                         <span className="text-sm font-black text-slate-900">设为主厨推荐精品</span>
-                      </div>
-                      <button type="button" onClick={() => setIsRecommended(!isRecommended)} className={`w-14 h-7 rounded-full relative transition-all ${isRecommended ? 'bg-[#d4af37]' : 'bg-slate-200'}`}>
-                         <div className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-md transition-all ${isRecommended ? 'right-1' : 'left-1'}`} />
+                <div className="p-12 space-y-8 overflow-y-auto no-scrollbar flex-1 bg-white">
+                   {/* Preview Area */}
+                   <div className="relative aspect-video rounded-3xl overflow-hidden bg-slate-100 border-2 border-slate-100 group">
+                      {uploadedUrl ? (
+                        <img src={uploadedUrl} className="w-full h-full object-cover" alt="Preview" />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-slate-300">
+                          <ImageIcon size={48} className="opacity-20 mb-4" />
+                          <p className="text-[10px] font-black uppercase tracking-widest">No Image Asset Selected</p>
+                        </div>
+                      )}
+                      <button 
+                        type="button" 
+                        onClick={() => fileInputRef.current?.click()}
+                        className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center text-white space-x-3 backdrop-blur-sm"
+                      >
+                        {isUploading ? <Loader2 size={24} className="animate-spin" /> : <UploadCloud size={24} />}
+                        <span className="font-black text-xs uppercase tracking-widest">{isUploading ? 'Uploading...' : 'Upload New Asset'}</span>
                       </button>
+                      <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept="image/*" />
                    </div>
-                </div>
 
-                <div className="pt-6 border-t border-slate-50 flex items-center space-x-6">
-                   <button type="button" onClick={closeModal} className="text-xs font-black text-slate-400 uppercase tracking-widest px-4 hover:text-slate-950">{t('cancelLabel')}</button>
-                   <button type="submit" className="flex-1 bg-slate-950 text-white py-6 rounded-3xl font-black text-xs uppercase tracking-[0.3em] shadow-2xl hover:bg-[#d4af37] transition-all active:scale-95 flex items-center justify-center space-x-3">
-                      <Save size={18} />
-                      <span>{editingDish ? t('saveChanges') : t('addNewDish')}</span>
-                   </button>
+                   <div className="space-y-3"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">商品中文全名</label><input name="name" defaultValue={editingDish?.name} required className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white focus:border-blue-500 font-bold text-lg transition-all" /></div>
+                   <div className="grid grid-cols-2 gap-8">
+                      <div className="space-y-3"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">零售价格 (PHP)</label><input name="price" type="number" defaultValue={editingDish?.price} required className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-black text-xl text-blue-700" /></div>
+                      <div className="space-y-3"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">资产归属分类</label><select name="category" defaultValue={editingDish?.category || 'Land & Sea'} className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-bold appearance-none cursor-pointer">{customCategories.map(c=><option key={c} value={c}>{c}</option>)}</select></div>
+                   </div>
+                   
+                   <div className="space-y-3">
+                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">视觉图路径 (Cloud URL)</label>
+                     <div className="flex gap-2">
+                       <input 
+                         name="img" 
+                         value={uploadedUrl} 
+                         onChange={(e) => setUploadedUrl(e.target.value)} 
+                         required 
+                         placeholder="https://..." 
+                         className="flex-1 px-8 py-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-bold text-[11px] truncate" 
+                       />
+                       {uploadedUrl && <div className="px-4 py-5 bg-emerald-50 text-emerald-600 rounded-2xl border border-emerald-100 flex items-center justify-center"><Check size={20} /></div>}
+                     </div>
+                   </div>
+
+                   <div className="space-y-3"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">生产环境库存水位</label><input name="stock" type="number" defaultValue={editingDish?.stock} required className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-black text-lg" /></div>
                 </div>
-             </div>
+                <div className="p-10 border-t border-slate-100 bg-slate-50 flex gap-4 sticky bottom-0 z-10">
+                   <button type="submit" disabled={isUploading} className="flex-1 py-6 bg-slate-950 text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.4em] hover:bg-blue-600 transition-all shadow-xl active-scale flex items-center justify-center space-x-3 disabled:opacity-50"><Save size={20} /><span>确认保存资产档案</span></button>
+                   {editingDish && <button type="button" onClick={() => { if(confirm('彻底下架此商品？')) { onDeleteDish(editingDish.id); setIsModalOpen(false); }}} className="px-8 text-red-500 hover:bg-red-50 rounded-[2rem] transition-all hover:shadow-sm"><Trash2 size={24} /></button>}
+                </div>
           </form>
         </div>
       )}
-
-      <ConfirmationModal 
-        isOpen={confirmDelete.isOpen}
-        title={t('deleteDishAsset')}
-        message={t('confirmDeleteDish')}
-        confirmVariant="danger"
-        onConfirm={() => { if(confirmDelete.dishId) onDeleteDish(confirmDelete.dishId); setConfirmDelete({ isOpen: false, dishId: null }); }}
-        onCancel={() => setConfirmDelete({ isOpen: false, dishId: null })}
-        lang={lang}
-      />
     </div>
   );
 };

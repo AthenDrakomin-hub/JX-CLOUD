@@ -1,524 +1,205 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  Sparkles, Settings, RotateCcw, Scale, Shield, 
-  ChevronDown, ChevronUp, ChevronRight, ShieldAlert, Zap, Globe, ShieldCheck,
-  Database, Save, Copyright, Gavel, Eye, RefreshCw, Cloud,
-  Download, FileText, Printer, CheckCircle, Activity, Server, HardDrive,
-  ShoppingBag, UtensilsCrossed, Users, MapPin, Share2, Link2, Send, Terminal,
-  Fingerprint, Key, QrCode, Smartphone, CheckCircle2, AlertCircle, X,
-  Loader2, CloudUpload, ArrowRight, Wifi, WifiOff, Link
+  Settings, Printer, Save, Sun, Moon, Type, 
+  Activity, Trash2, ShieldCheck, Monitor, 
+  Palette, Maximize2, CaseSensitive, Layout,
+  Eye, CheckCircle2, AlertCircle, Sparkles, Volume2, VolumeX
 } from 'lucide-react';
 import { translations, Language } from '../translations';
 import { api } from '../services/api';
-import { isDemoMode, supabaseUrl, supabase } from '../services/supabaseClient';
-import { SystemConfig, OrderStatus, PaymentMethod, User } from '../types';
-import ConfirmationModal from './ConfirmationModal';
-import { notificationService } from '../services/notification';
-import { QRCodeSVG } from 'qrcode.react';
-import MFAFixer from './MFAFixer';
+import { SystemConfig } from '../types';
 
 interface SystemSettingsProps {
   lang: Language;
   onChangeLang: (lang: Language) => void;
-  currentUser?: User;
-  onUpdateCurrentUser?: (user: User) => void;
+  onUpdateConfig: (config: SystemConfig) => Promise<void>;
 }
 
-const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, onChangeLang, currentUser, onUpdateCurrentUser }) => {
-  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
-  const [config, setConfig] = useState<SystemConfig>({ 
-    hotelName: '江西云厨', version: '3.5',
-    serviceChargeRate: 0, exchangeRateCNY: 0, exchangeRateUSDT: 0,
-    isWebhookEnabled: false, webhookUrl: ''
-  });
-  const [dbStats, setDbStats] = useState({ orders: 0, dishes: 0, users: 0, rooms: 0, status: 'Loading...' });
+const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, onChangeLang, onUpdateConfig }) => {
+  const [config, setConfig] = useState<SystemConfig | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [isTestingWebhook, setIsTestingWebhook] = useState(false);
-  
-  const [healthStatus, setHealthStatus] = useState<'testing' | 'online' | 'offline'>('testing');
-  const [latency, setLatency] = useState<number | null>(null);
-
-  const [isMigrating, setIsMigrating] = useState(false);
-  const [migrationLog, setMigrationLog] = useState<string[]>([]);
-  const [migrationStep, setMigrationStep] = useState(0);
-
-  const [isMfaModalOpen, setIsMfaModalOpen] = useState(false);
-  const [mfaStep, setMfaStep] = useState(1);
-  const [mfaSecret, setMfaSecret] = useState('');
-  const [mfaOtpauthUrl, setMfaOtpauthUrl] = useState('');
-  const [mfaVerifyCode, setMfaVerifyCode] = useState('');
-  const [isMfaVerifying, setIsMfaVerifying] = useState(false);
-  const [mfaError, setMfaError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'display' | 'infrastructure'>('display');
 
   const t = (key: keyof typeof translations.zh) => (translations[lang] as any)[key] || (translations.zh as any)[key] || key;
 
   useEffect(() => {
     api.config.get().then(setConfig);
-    refreshDbStats();
-    checkCloudHealth();
   }, []);
 
-  const checkCloudHealth = async () => {
-    if (isDemoMode) {
-      setHealthStatus('offline');
-      return;
-    }
-    setHealthStatus('testing');
-    const start = performance.now();
-    try {
-      const { error } = await supabase.from('config').select('id').limit(1);
-      const end = performance.now();
-      if (error) throw error;
-      setLatency(Math.round(end - start));
-      setHealthStatus('online');
-    } catch (e) {
-      console.error('Cloud health check failed:', e);
-      setHealthStatus('offline');
-    }
-  };
-
-  const refreshDbStats = async () => {
-    const stats = await api.db.getStats();
-    setDbStats(stats as any);
-  };
-
-  const handleSaveConfig = async () => {
+  const handleSave = async () => {
+    if (!config) return;
     setIsSaving(true);
-    await api.config.update(config);
+    await onUpdateConfig(config);
     setIsSaving(false);
-    notificationService.send('策略更新', '系统配置已保存。', 'SYSTEM_ALERT');
+    alert(lang === 'zh' ? '配置已保存' : 'Settings saved');
   };
 
-  const handleMigration = async () => {
-    setIsMigrating(true);
-    setMigrationLog(['初始化数据迁移枢纽...']);
-    setMigrationStep(10);
-    
-    await api.migration.run((msg) => {
-      setMigrationLog(prev => [msg, ...prev]);
-      setMigrationStep(s => Math.min(s + 20, 95));
-    });
-    
-    setMigrationStep(100);
-    setTimeout(() => {
-      setIsMigrating(false);
-      setMigrationStep(0);
-      refreshDbStats();
-      checkCloudHealth();
-      alert('一键迁移成功！本地虚拟数据已与云端完成镜像同步。');
-    }, 800);
-  };
-
-  const handleTestWebhook = async () => {
-    if (!config.webhookUrl) return;
-    setIsTestingWebhook(true);
-    const testOrder: any = {
-      id: 'TEST-' + Math.random().toString(36).substr(2, 6).toUpperCase(),
-      roomId: '888',
-      totalAmount: 999,
-      paymentMethod: PaymentMethod.CASH,
-      items: [{ name: 'Webhook 测试', quantity: 1, price: 999 }]
-    };
-    await notificationService.triggerWebhook(testOrder, config.webhookUrl);
-    setTimeout(() => {
-      setIsTestingWebhook(false);
-      alert('测试数据已发出。');
-    }, 1000);
-  };
-
-  const startMfaSetup = async () => {
-    try {
-      const mfaModule = await import('../services/mfaService');
-      const { secret, otpauthUrl } = mfaModule.mfaService.generateMfaConfig(currentUser?.username || 'user');
-      setMfaSecret(secret);
-      setMfaOtpauthUrl(otpauthUrl);
-      setMfaStep(1);
-      setIsMfaModalOpen(true);
-      setMfaError(null);
-      setMfaVerifyCode('');
-    } catch (error) {
-      console.error('Failed to generate MFA secret:', error);
-      setMfaError('生成MFA密钥失败，请重试。');
-    }
-  };
-
-  const verifyMfaSetup = async () => {
-    if (!currentUser || !onUpdateCurrentUser || !mfaSecret) return;
-    setIsMfaVerifying(true);
-    setMfaError(null);
-    
-    try {
-      // 使用真实的TOTP验证
-      const totpModule = await import('../services/totp');
-      const isValid = await totpModule.TOTP.verify(mfaSecret, mfaVerifyCode);
-      
-      if (isValid) {
-        const updatedUser: User = {
-          ...currentUser,
-          twoFactorEnabled: true,
-          mfaSecret: mfaSecret
-        };
-        await api.users.update(updatedUser);
-        onUpdateCurrentUser(updatedUser);
-        setMfaStep(3);
-      } else {
-        setMfaError('验证码无效。请确保您的 App 已正确绑定密钥。');
-      }
-    } catch (error) {
-      console.error('MFA verification failed during setup:', error);
-      setMfaError('验证过程中出现错误，请重试。');
-    }
-    
-    setIsMfaVerifying(false);
-  };
-
-  const disableMfa = async () => {
-    if (!currentUser || !onUpdateCurrentUser || !confirm('停用双因素认证将降低您的账号安全性。确定吗？')) return;
-    const updatedUser: User = { ...currentUser, twoFactorEnabled: false, mfaSecret: undefined };
-    await api.users.update(updatedUser);
-    onUpdateCurrentUser(updatedUser);
-  };
-
-  const maskedUrl = supabaseUrl ? `${supabaseUrl.substring(0, 12)}***${supabaseUrl.substring(supabaseUrl.length - 12)}` : '未配置云端终点';
+  if (!config) return null;
 
   return (
-    <div className="space-y-16 pb-24">
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
-        <div className="space-y-2">
-           <div className="flex items-center space-x-2 text-[#d4af37]">
-              <Sparkles size={14} />
-              <span className="text-xs font-black uppercase tracking-[0.4em]">{t('systemConfig')}</span>
+    <div className="space-y-10 animate-fade-up">
+      <div className="bg-white p-12 rounded-[4rem] border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-8 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 blur-[80px] rounded-full" />
+        <div className="flex items-center space-x-6 relative z-10">
+           <div className="w-16 h-16 bg-slate-900 text-blue-500 rounded-3xl flex items-center justify-center shadow-2xl border-4 border-white"><Settings size={32} /></div>
+           <div>
+              <h2 className="text-3xl font-black text-slate-900 tracking-tight uppercase leading-none">{t('settings')}</h2>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-2">Station Orchestrator</p>
            </div>
-           <h2 className="text-5xl font-serif italic text-slate-900 tracking-tighter">{t('settings')}</h2>
         </div>
-        <button 
-          onClick={handleSaveConfig}
-          disabled={isSaving}
-          className="flex items-center space-x-3 px-8 py-4 bg-slate-900 text-white rounded-full font-black text-xs uppercase tracking-widest hover:bg-[#d4af37] transition-all shadow-2xl active:scale-95 disabled:opacity-50"
-        >
-          {isSaving ? <Activity size={16} className="animate-spin" /> : <Save size={16} />}
-          <span>保存更改</span>
+        
+        <div className="flex bg-slate-100 p-1.5 rounded-[2rem] border border-slate-200 relative z-10">
+          <button onClick={() => setActiveTab('display')} className={`px-8 py-3.5 rounded-[1.5rem] font-black text-[11px] uppercase tracking-widest transition-all ${activeTab === 'display' ? 'bg-white text-slate-950 shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}>显示与播报</button>
+          <button onClick={() => setActiveTab('infrastructure')} className={`px-8 py-3.5 rounded-[1.5rem] font-black text-[11px] uppercase tracking-widest transition-all ${activeTab === 'infrastructure' ? 'bg-white text-slate-950 shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}>基础设施</button>
+        </div>
+
+        <button onClick={handleSave} disabled={isSaving} className="px-12 py-5 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-900 transition-all flex items-center gap-3 shadow-xl active:scale-95 relative z-10">
+          {isSaving ? <Activity className="animate-spin" size={18} /> : <Save size={18} />}
+          <span>{t('save')}</span>
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-        <div className="lg:col-span-2 space-y-12">
-          
-          <section className="bg-white rounded-[4rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col">
-             <div className="p-12 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
-                <div className="flex items-center space-x-5">
-                   <div className="w-14 h-14 bg-slate-950 text-[#d4af37] rounded-2xl flex items-center justify-center shadow-lg">
-                      <Settings size={24} />
-                   </div>
-                   <div>
-                      <h3 className="text-xl font-black uppercase tracking-widest text-slate-900">{t('generalSettings')}</h3>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Localization & Preferences</p>
-                   </div>
-                </div>
-             </div>
-             <div className="p-12 space-y-10">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                   <div className="space-y-3">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('hotelName')}</label>
-                      <input 
-                        value={config.hotelName} 
-                        onChange={(e) => setConfig({ ...config, hotelName: e.target.value })}
-                        className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-[#d4af37]/10 transition-all font-bold text-slate-900" 
-                      />
-                   </div>
-                   <div className="space-y-3">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('systemDisplayLanguage')}</label>
-                      <div className="relative">
-                        <Globe size={18} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <select 
-                          value={lang} 
-                          onChange={(e) => onChangeLang(e.target.value as Language)}
-                          className="w-full pl-16 pr-8 py-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-[#d4af37]/10 transition-all font-black text-slate-900 appearance-none cursor-pointer"
-                        >
-                           <option value="zh">{t('simplifiedChinese')}</option>
-                           <option value="en">English (International)</option>
-                           <option value="tl">Tagalog (Pilipino)</option>
-                        </select>
-                        <ChevronDown size={20} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                      </div>
-                   </div>
-                </div>
-             </div>
-          </section>
-
-          <section className="bg-white rounded-[4rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col relative group">
-             <div className="p-12 border-b border-slate-50 flex items-center justify-between bg-[#020617] text-white">
-                <div className="flex items-center space-x-5">
-                   <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-colors ${healthStatus === 'online' ? 'bg-emerald-500 text-white' : healthStatus === 'testing' ? 'bg-amber-500 animate-pulse' : 'bg-red-500'}`}>
-                      {healthStatus === 'online' ? <Wifi size={24} /> : <WifiOff size={24} />}
-                   </div>
-                   <div>
-                      <h3 className="text-xl font-black uppercase tracking-widest">云端数据库连接监测</h3>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Live Supabase Connectivity</p>
-                   </div>
-                </div>
-                <div className="text-right">
-                   <div className={`text-[10px] font-black uppercase tracking-widest mb-1 ${healthStatus === 'online' ? 'text-emerald-500' : 'text-red-500'}`}>
-                      {healthStatus === 'online' ? `已连接 (延迟 ${latency}ms)` : '离线模式 / 连接异常'}
-                   </div>
-                   <button onClick={checkCloudHealth} className="text-[9px] font-black text-slate-500 hover:text-white uppercase tracking-widest underline decoration-[#d4af37]">重新拨号自检</button>
-                </div>
-             </div>
-             <div className="p-10 space-y-8 bg-slate-50/30">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                   <div className="p-6 bg-white rounded-3xl border border-slate-100 space-y-2 shadow-sm">
-                      <div className="flex items-center space-x-3 text-slate-400 mb-2">
-                         <Link size={14} />
-                         <span className="text-[10px] font-black uppercase tracking-widest">集成终点 (EndPoint)</span>
-                      </div>
-                      <code className="text-[11px] font-mono font-bold text-slate-700 bg-slate-50 px-3 py-1.5 rounded-lg block truncate">{maskedUrl}</code>
-                   </div>
-                   <div className="p-6 bg-white rounded-3xl border border-slate-100 space-y-2 shadow-sm">
-                      <div className="flex items-center space-x-3 text-slate-400 mb-2">
-                         <ShieldCheck size={14} />
-                         <span className="text-[10px] font-black uppercase tracking-widest">{t('authStatus')}</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                         <div className={`w-2 h-2 rounded-full ${healthStatus === 'online' ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
-                         <span className="text-xs font-bold text-slate-900">{healthStatus === 'online' ? '已授权：生产密钥有效' : '未授权：请配置 VITE_SUPABASE_ANON_KEY'}</span>
-                      </div>
-                   </div>
-                </div>
-                
-                {healthStatus !== 'online' && !isDemoMode && (
-                  <div className="p-6 bg-red-50 rounded-3xl border border-red-100 flex items-start space-x-4 animate-in slide-in-from-top-2">
-                     <AlertCircle className="text-red-500 shrink-0 mt-1" size={20} />
-                     <div className="space-y-1">
-                        <p className="text-sm font-bold text-red-700">检测到连接中断</p>
-                        <p className="text-xs text-red-600/70 leading-relaxed">系统无法通过云端终点验证。请检查 Vercel/Vite 环境变量配置是否包含有效的 Supabase URL 及 Anon Key。若无配置，系统将回退至 VirtualDB 本地模拟模式。</p>
+      {activeTab === 'display' ? (
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
+          <div className="xl:col-span-7 space-y-8">
+            {/* 自动化语音播报模块 */}
+            <section className="bg-slate-950 p-10 lg:p-12 rounded-[4rem] text-white space-y-10 relative overflow-hidden">
+               <div className="absolute -top-10 -right-10 w-40 h-40 bg-blue-600/20 blur-3xl rounded-full" />
+               <div className="relative z-10 flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                     <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center text-blue-400"><Volume2 size={28} /></div>
+                     <div>
+                        <h3 className="text-xl font-black uppercase tracking-widest">订单语音提醒</h3>
+                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Native Web Speech Engine</p>
                      </div>
                   </div>
-                )}
-             </div>
-          </section>
-
-          <section className="bg-white rounded-[4rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col relative group">
-             <div className="p-12 border-b border-slate-50 flex items-center justify-between bg-slate-950 text-white">
-                <div className="flex items-center space-x-5">
-                   <div className="w-14 h-14 bg-[#d4af37] text-slate-950 rounded-2xl flex items-center justify-center shadow-lg animate-pulse">
-                      <CloudUpload size={24} />
-                   </div>
-                   <div>
-                      <h3 className="text-xl font-black uppercase tracking-widest">{t('dataMigrationHub')}</h3>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Virtual to Cloud Migration</p>
-                   </div>
-                </div>
-                <div className="flex flex-col items-end">
-                   <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500 mb-1">{t('systemStatus')}: {dbStats.status}</span>
-                   <span className="text-[9px] font-black uppercase tracking-widest text-slate-600">{t('roomsReady')}</span>
-                </div>
-             </div>
-             <div className="p-12 space-y-8">
-                {isMigrating ? (
-                  <div className="space-y-6 animate-in fade-in duration-500">
-                    <div className="w-full h-4 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
-                       <div className="h-full bg-emerald-500 transition-all duration-700" style={{ width: `${migrationStep}%` }} />
-                    </div>
-                    <div className="bg-slate-900 rounded-2xl p-6 font-mono text-[10px] text-emerald-400 space-y-1 max-h-40 overflow-y-auto no-scrollbar">
-                       {migrationLog.map((log, i) => <div key={i} className="flex items-center space-x-2"><ArrowRight size={10} /><span>{log}</span></div>)}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-10">
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" checked={config.voiceBroadcastEnabled} onChange={(e) => setConfig({...config, voiceBroadcastEnabled: e.target.checked})} className="sr-only peer" />
+                    <div className="w-14 h-7 bg-white/10 rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all shadow-inner"></div>
+                  </label>
+               </div>
+               
+               {config.voiceBroadcastEnabled && (
+                 <div className="space-y-6 animate-in slide-in-from-top-4">
                     <div className="space-y-4">
-                       <h4 className="text-2xl font-bold text-slate-900 tracking-tight">一键同步至生产数据库</h4>
-                       <p className="text-sm text-slate-400 leading-relaxed max-w-sm">
-                         {t('localStorageMigration')}
-                       </p>
+                       <div className="flex justify-between px-2">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">播报音量调节</label>
+                          <span className="text-xs font-black text-blue-400">{Math.round(config.voiceVolume * 100)}%</span>
+                       </div>
+                       <input 
+                         type="range" min="0" max="1" step="0.1" 
+                         value={config.voiceVolume} 
+                         onChange={(e) => setConfig({...config, voiceVolume: parseFloat(e.target.value)})}
+                         className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                       />
                     </div>
-                    <button 
-                      onClick={handleMigration}
-                      disabled={healthStatus !== 'online'}
-                      className="bg-slate-900 text-white h-24 px-12 rounded-[2.5rem] font-black text-xs uppercase tracking-[0.4em] shadow-2xl hover:bg-[#d4af37] disabled:bg-slate-200 disabled:text-slate-400 transition-all active:scale-95 shrink-0 flex items-center justify-center space-x-4 group"
-                    >
-                       <RefreshCw size={24} className="group-hover:rotate-180 transition-transform duration-700" />
-                       <span>{healthStatus === 'online' ? '立即开始一键转移' : '请先建立云端连接'}</span>
-                    </button>
-                  </div>
-                )}
-             </div>
-          </section>
+                    <div className="p-6 bg-white/5 rounded-3xl border border-white/5 flex items-center gap-4">
+                       <CheckCircle2 size={16} className="text-emerald-500" />
+                       <p className="text-[11px] text-slate-400 leading-relaxed font-medium">当新订单到达时，系统将通过本地语音引擎自动朗读房间号。此功能在内网环境下完全可用。</p>
+                    </div>
+                 </div>
+               )}
+            </section>
 
-          <section className="bg-white rounded-[4rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col">
-             <div className="p-12 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
-                <div className="flex items-center space-x-5">
-                   <div className="w-14 h-14 bg-emerald-500 text-white rounded-2xl flex items-center justify-center shadow-lg">
-                      <Fingerprint size={24} />
-                   </div>
-                   <div>
-                      <h3 className="text-xl font-black uppercase tracking-widest text-slate-900">双因素认证 (2FA)</h3>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Multi-Factor Authentication</p>
-                   </div>
-                </div>
-                <div className={`px-5 py-2 rounded-full border flex items-center space-x-2 ${currentUser?.twoFactorEnabled ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-slate-100 border-transparent text-slate-400'}`}>
-                   <ShieldCheck size={12} />
-                   <span className="text-[9px] font-black uppercase tracking-widest">{currentUser?.twoFactorEnabled ? '认证已激活' : '尚未绑定'}</span>
-                </div>
-             </div>
-             <div className="p-12 space-y-8">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                   <div className="space-y-2">
-                      <h4 className="text-lg font-bold text-slate-900">{t('authenticatorSecurity')}</h4>
-                      <p className="text-xs text-slate-500 leading-relaxed max-w-md">{t('authenticatorDesc')}</p>
-                   </div>
-                   {currentUser?.twoFactorEnabled ? (
-                      <button onClick={disableMfa} className="px-8 py-4 border-2 border-red-100 text-red-500 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all">{t('disableProtection')}</button>
-                   ) : (
-                      <button onClick={startMfaSetup} className="px-10 py-5 bg-emerald-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl hover:bg-slate-900 transition-all">{t('scanAndEnable')}</button>
-                   )}
-                </div>
-             </div>
-          </section>
+            <section className="bg-white p-10 lg:p-12 rounded-[4rem] border border-slate-100 shadow-sm space-y-10">
+              <div className="flex items-center space-x-4 text-blue-600">
+                <Palette size={28} />
+                <h3 className="text-xl font-black uppercase tracking-widest">排版布局偏好</h3>
+              </div>
 
-          <section className="bg-white rounded-[4rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col">
-             <div className="p-12 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
-                <div className="flex items-center space-x-5">
-                   <div className="w-14 h-14 bg-indigo-500 text-white rounded-2xl flex items-center justify-center shadow-lg">
-                      <Share2 size={24} />
-                   </div>
-                   <div>
-                      <h3 className="text-xl font-black uppercase tracking-widest text-slate-900">消息推送 (Webhooks)</h3>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">External Dispatcher</p>
-                   </div>
-                </div>
-                <button 
-                  onClick={() => setConfig({ ...config, isWebhookEnabled: !config.isWebhookEnabled })}
-                  className={`w-10 h-5 rounded-full relative transition-all ${config.isWebhookEnabled ? 'bg-indigo-600' : 'bg-slate-300'}`}
-                >
-                   <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${config.isWebhookEnabled ? 'right-1' : 'left-1'}`} />
-                </button>
-             </div>
-             <div className="p-12 space-y-10">
+              <div className="space-y-10">
                 <div className="space-y-4">
-                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Webhook URL</label>
-                   <div className="relative">
-                      <Terminal className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                      <input 
-                        value={config.webhookUrl} 
-                        onChange={(e) => setConfig({ ...config, webhookUrl: e.target.value })}
-                        placeholder="https://oapi.dingtalk.com/..." 
-                        className="w-full pl-16 pr-6 py-6 bg-slate-50 rounded-2xl border border-slate-200 font-mono text-xs text-slate-600 outline-none focus:bg-white transition-all shadow-inner" 
-                      />
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] ml-2">字体族选择</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    {['Noto Sans SC', 'Inter', 'Microsoft YaHei'].map(f => (
+                      <button key={f} onClick={() => setConfig({...config, fontFamily: f})} className={`py-4 rounded-2xl border-2 font-bold text-xs transition-all ${config.fontFamily === f ? 'bg-blue-600 border-blue-600 text-white shadow-lg' : 'bg-slate-50 border-slate-100 text-slate-500 hover:border-slate-300'}`}>
+                        {f === 'Noto Sans SC' ? '思源黑体' : f === 'Microsoft YaHei' ? '微软雅黑' : f}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex justify-between px-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">全局字号</label>
+                    <span className="text-sm font-black text-blue-600">{config.fontSizeBase}px</span>
+                  </div>
+                  <input 
+                    type="range" min="12" max="24" step="1" 
+                    value={config.fontSizeBase} 
+                    onChange={(e) => setConfig({...config, fontSizeBase: parseInt(e.target.value)})}
+                    className="w-full h-3 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                  />
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <div className="xl:col-span-5">
+             <div className="sticky top-32 space-y-8">
+                <div className="bg-white p-10 rounded-[4rem] border-4 border-slate-100 shadow-2xl space-y-8 relative overflow-hidden">
+                   <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/5 blur-3xl rounded-full" />
+                   <div className="flex items-center justify-between px-2">
+                      <h4 className="text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><Eye size={16} /> 预览</h4>
+                      <Sparkles size={16} className="text-blue-500 animate-pulse" />
+                   </div>
+
+                   <div className="p-8 rounded-[2.5rem] space-y-6" 
+                        style={{ 
+                          fontFamily: config.fontFamily, 
+                          fontSize: `${config.fontSizeBase}px`,
+                          fontWeight: config.fontWeightBase,
+                          lineHeight: config.lineHeightBase,
+                          color: config.theme === 'custom' ? config.textColorMain : 'inherit'
+                        }}>
+                      <h2 className="text-2xl font-black">预览文本展示</h2>
+                      <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                        <p className="text-sm font-bold">确保文字大小在各类屏幕上清晰可见。</p>
+                      </div>
                    </div>
                 </div>
-                <button onClick={handleTestWebhook} disabled={!config.webhookUrl || isTestingWebhook} className="flex items-center space-x-3 px-8 py-4 bg-white border-2 border-indigo-100 text-indigo-600 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all">
-                   {isTestingWebhook ? <Loader2 className="animate-spin" size={14} /> : <Send size={14} />}
-                   <span>发送测试数据</span>
-                </button>
-             </div>
-          </section>
-        </div>
-
-        <div className="space-y-12">
-           <section className="bg-slate-900 rounded-[4rem] p-12 text-white shadow-2xl border border-white/5 overflow-hidden">
-              <div className="absolute top-0 right-0 w-40 h-40 bg-[#d4af37]/5 blur-3xl rounded-full" />
-              <div className="flex items-center space-x-3 text-red-500 mb-8">
-                 <HardDrive size={20} />
-                 <span className="text-xs font-black uppercase tracking-widest">危险隔离区</span>
-              </div>
-              <h3 className="text-2xl font-serif italic mb-6">初始化系统存储</h3>
-              <p className="text-xs text-slate-400 mb-10 leading-relaxed">{t('resetLocalCache')}</p>
-              <button 
-                onClick={() => setIsResetConfirmOpen(true)}
-                className="w-full py-5 bg-red-600 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-white hover:text-red-600 transition-all shadow-xl"
-              >
-                {t('clearLocalCache')}
-              </button>
-           </section>
-           
-           <section className="bg-white rounded-[4rem] p-12 border border-slate-100 shadow-sm space-y-8">
-              <div className="flex items-center space-x-3 text-slate-400">
-                 <Server size={20} />
-                 <span className="text-xs font-black uppercase tracking-widest">数据库资产统计</span>
-              </div>
-              <div className="space-y-6">
-                 <div className="flex justify-between items-end border-b border-slate-50 pb-4">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('cloudRegisteredRooms')}</span>
-                    <span className="text-2xl font-black text-slate-900">{dbStats.rooms}</span>
-                 </div>
-                 <div className="flex justify-between items-end border-b border-slate-50 pb-4">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('menuAssets')}</span>
-                    <span className="text-2xl font-black text-slate-900">{dbStats.dishes}</span>
-                 </div>
-                 <div className="flex justify-between items-end border-b border-slate-50 pb-4">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">累计审计流水</span>
-                    <span className="text-2xl font-black text-slate-900">{dbStats.orders}</span>
-                 </div>
-              </div>
-           </section>
-           
-           {/* MFA修复工具 */}
-           <MFAFixer currentUser={currentUser!} lang={lang} />
-        </div>
-      </div>
-
-      {isMfaModalOpen && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-6">
-          <div className="absolute inset-0 bg-slate-950/95 backdrop-blur-2xl animate-in fade-in duration-500" onClick={() => setIsMfaModalOpen(false)} />
-          <div className="relative w-full max-w-md bg-white rounded-[4rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500">
-             <div className="p-10 lg:p-12 text-center space-y-8">
-                {mfaStep === 1 && (
-                  <>
-                    <div className="flex justify-center"><div className="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-[2rem] flex items-center justify-center shadow-inner"><QrCode size={40} /></div></div>
-                    <div className="space-y-2">
-                       <h3 className="text-2xl font-bold text-slate-900">1. 扫码绑定 App</h3>
-                       <p className="text-xs text-slate-400 leading-relaxed px-4">使用手机 Authenticator 扫描下方二维码。此步骤仅为第一阶段。</p>
-                    </div>
-                    <div className="p-8 bg-slate-50 rounded-[3rem] inline-block border border-slate-100 shadow-inner">
-                       <QRCodeSVG value={mfaOtpauthUrl} size={180} level="H" />
-                    </div>
-                    <button onClick={() => setMfaStep(2)} className="w-full py-6 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-xl hover:bg-emerald-600 transition-all">{t('nextStepVerification')}</button>
-                  </>
-                )}
-                {mfaStep === 2 && (
-                  <>
-                    <div className="flex justify-center"><div className="w-20 h-20 bg-amber-50 text-amber-500 rounded-[2rem] flex items-center justify-center shadow-inner"><Smartphone size={40} /></div></div>
-                    <div className="space-y-2">
-                       <h3 className="text-2xl font-bold text-slate-900">2. {t('activateVerificationCode')}</h3>
-                       <p className="text-xs text-slate-400 px-4">{t('enterSixDigitCode')}</p>
-                    </div>
-                    <input 
-                      type="text" 
-                      maxLength={6}
-                      value={mfaVerifyCode} 
-                      onChange={e => setMfaVerifyCode(e.target.value)} 
-                      placeholder="000000"
-                      className="w-full py-6 bg-slate-50 border-2 border-slate-100 rounded-[2rem] text-center text-5xl font-black tracking-[0.4em] outline-none focus:border-emerald-500 focus:bg-white transition-all placeholder-slate-200"
-                    />
-                    {mfaError && <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest">{mfaError}</p>}
-                    <button onClick={verifyMfaSetup} disabled={isMfaVerifying || mfaVerifyCode.length < 6} className="w-full py-6 bg-emerald-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-xl hover:bg-slate-900 transition-all disabled:opacity-50">
-                       {isMfaVerifying ? <Loader2 className="animate-spin mx-auto" /> : '激活 2FA 保护'}
-                    </button>
-                  </>
-                )}
-                {mfaStep === 3 && (
-                  <div className="py-8 text-center">
-                    <div className="flex justify-center mb-10"><div className="w-28 h-28 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center shadow-lg"><CheckCircle2 size={64} /></div></div>
-                    <h3 className="text-3xl font-bold text-slate-900 mb-4 tracking-tight">{t('activationSuccess')}</h3>
-                    <button onClick={() => setIsMfaModalOpen(false)} className="w-full py-6 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-xl hover:bg-[#d4af37] transition-all">{t('completeSetup')}</button>
-                  </div>
-                )}
              </div>
           </div>
         </div>
-      )}
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+          <section className="bg-white p-12 rounded-[4rem] border border-slate-100 shadow-sm space-y-10">
+            <div className="flex items-center space-x-4 text-amber-600">
+              <Printer size={28} />
+              <h3 className="text-xl font-black uppercase tracking-widest">{t('printerConfig')}</h3>
+            </div>
+            <div className="space-y-8">
+              <div className="grid grid-cols-2 gap-8">
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">{t('printerIp')}</label>
+                  <input value={config.printerIp} onChange={e => setConfig({...config, printerIp: e.target.value})} className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-mono text-slate-900 font-bold focus:border-blue-600 outline-none transition-all" placeholder="192.168.1.100" />
+                </div>
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">{t('printerPort')}</label>
+                  <input value={config.printerPort} onChange={e => setConfig({...config, printerPort: e.target.value})} className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-mono text-slate-900 font-bold focus:border-blue-600 outline-none transition-all" placeholder="9100" />
+                </div>
+              </div>
+            </div>
+          </section>
 
-      <ConfirmationModal 
-        isOpen={isResetConfirmOpen}
-        title={t('initializeSystemStorage')}
-        message={t('confirmClearCache')}
-        confirmLabel={t('confirmClear')}
-        confirmVariant="danger"
-        onConfirm={() => { localStorage.clear(); window.location.reload(); }}
-        onCancel={() => setIsResetConfirmOpen(false)}
-        lang={lang}
-      />
+          <section className="bg-white p-12 rounded-[4rem] border border-slate-100 shadow-sm space-y-10">
+             <div className="flex items-center space-x-4 text-emerald-600">
+                <ShieldCheck size={28} />
+                <h3 className="text-xl font-black uppercase tracking-widest">安全架构</h3>
+             </div>
+             <div className="space-y-8">
+                <div className="space-y-4 pt-4">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] ml-2">系统主语言</label>
+                  <div className="flex gap-4">
+                    <button onClick={() => onChangeLang('zh')} className={`flex-1 py-5 rounded-2xl border-2 font-black text-[10px] uppercase transition-all ${lang === 'zh' ? 'bg-slate-950 border-slate-950 text-white shadow-lg' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>简体中文</button>
+                    <button onClick={() => onChangeLang('en')} className={`flex-1 py-5 rounded-2xl border-2 font-black text-[10px] uppercase transition-all ${lang === 'en' ? 'bg-slate-950 border-slate-950 text-white shadow-lg' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>English</button>
+                  </div>
+                </div>
+             </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,0 +1,154 @@
+[
+  {
+    "path": [1],
+    "level": 1,
+    "category_id": 1,
+    "category_name": "主食套餐类",
+    "category_group": "主食套餐类",
+    "parent_id_backup": null
+  },
+  {
+    "path": [1, 2],
+    "level": 2,
+    "category_id": 2,
+    "category_name": "扒饭系列",
+    "category_group": "主食套餐类",
+    "parent_id_backup": 1
+  },
+  {
+    "path": [1, 3],
+    "level": 2,
+    "category_id": 3,
+    "category_name": "意面系列",
+    "category_group": "主食套餐类",
+    "parent_id_backup": 1
+  },
+  {
+    "path": [1, 4],
+    "level": 2,
+    "category_id": 4,
+    "category_name": "汤饭系列",
+    "category_group": "主食套餐类",
+    "parent_id_backup": 1
+  },
+  {
+    "path": [5],
+    "level": 1,
+    "category_id": 5,
+    "category_name": "中式主食类",
+    "category_group": "中式主食类",
+    "parent_id_backup": null
+  },
+  {
+    "path": [5, 6],
+    "level": 2,
+    "category_id": 6,
+    "category_name": "面食类",
+    "category_group": "中式主食类",
+    "parent_id_backup": 5
+  },
+  {
+    "path": [5, 7],
+    "level": 2,
+    "category_id": 7,
+    "category_name": "炒饭类",
+    "category_group": "中式主食类",
+    "parent_id_backup": 5
+  },
+  {
+    "path": [8],
+    "level": 1,
+    "category_id": 8,
+    "category_name": "中式炒菜类",
+    "category_group": "中式炒菜类",
+    "parent_id_backup": null
+  },
+  {
+    "path": [8, 9],
+    "level": 2,
+    "category_id": 9,
+    "category_name": "辣味炒菜",
+    "category_group": "中式炒菜类",
+    "parent_id_backup": 8
+  },
+  {
+    "path": [8, 10],
+    "level": 2,
+    "category_id": 10,
+    "category_name": "家常炒菜",
+    "category_group": "中式炒菜类",
+    "parent_id_backup": 8
+  },
+  {
+    "path": [11],
+    "level": 1,
+    "category_id": 11,
+    "category_name": "粤式菜品",
+    "category_group": "粤式菜品",
+    "parent_id_backup": null
+  },
+  {
+    "path": [11, 12],
+    "level": 2,
+    "category_id": 12,
+    "category_name": "蒸菜类",
+    "category_group": "粤式菜品",
+    "parent_id_backup": 11
+  },
+  {
+    "path": [11, 13],
+    "level": 2,
+    "category_id": 13,
+    "category_name": "煲仔类",
+    "category_group": "粤式菜品",
+    "parent_id_backup": 11
+  },
+  {
+    "path": [11, 14],
+    "level": 2,
+    "category_id": 14,
+    "category_name": "特色炒菜",
+    "category_group": "粤式菜品",
+    "parent_id_backup": 11
+  },
+  {
+    "path": [15],
+    "level": 1,
+    "category_id": 15,
+    "category_name": "特色菜品",
+    "category_group": "特色菜品",
+    "parent_id_backup": null
+  },
+  {
+    "path": [15, 16],
+    "level": 2,
+    "category_id": 16,
+    "category_name": "酸菜鱼系列",
+    "category_group": "特色菜品",
+    "parent_id_backup": 15
+  },
+  {
+    "path": [15, 17],
+    "level": 2,
+    "category_id": 17,
+    "category_name": "经典菜品",
+    "category_group": "特色菜品",
+    "parent_id_backup": 15
+  },
+  {
+    "path": [18],
+    "level": 1,
+    "category_id": 18,
+    "category_name": "基础主食",
+    "category_group": "基础主食",
+    "parent_id_backup": null
+  },
+  {
+    "path": [19],
+    "level": 1,
+    "category_id": 19,
+    "category_name": "海鲜",
+    "category_group": "menu",
+    "parent_id_backup": null
+  }
+]

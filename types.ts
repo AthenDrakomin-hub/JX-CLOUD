@@ -1,15 +1,60 @@
-/* Copyright (c) 2025 Jiangxi Star Hotel. 保留所有权利. */
 
 export enum UserRole {
-  ADMIN = 'admin',      // 系统管理员 (唯一)
-  MANAGER = 'manager',  // 总经理
-  STAFF = 'staff',      // 员工
-  PARTNER = 'partner'   // 合作伙伴
+  ADMIN = 'admin',      
+  STAFF = 'staff',
+  MAINTAINER = 'maintainer' 
 }
 
-export enum RoomStatus {
-  READY = 'ready',
-  ORDERING = 'ordering'
+export type AppModule = 
+  | 'dashboard' | 'rooms' | 'orders' | 'menu' | 'finance' 
+  | 'partners' | 'users' | 'settings' | 'database' 
+  | 'images' | 'inventory' | 'payments' | 'supply_chain';
+
+export interface CRUDPermissions {
+  enabled: boolean; 
+  c: boolean; r: boolean; u: boolean; d: boolean; 
+}
+
+export interface User {
+  id: string;
+  email?: string; // 对齐 DB
+  username: string;
+  password?: string; 
+  role: UserRole;
+  name: string; // 映射 DB full_name
+  lastLogin?: string;
+  modulePermissions?: Partial<Record<AppModule, CRUDPermissions>>;
+  ipWhitelist?: string[]; 
+  isOnline?: boolean;         
+}
+
+export interface SystemConfig {
+  hotelName: string; // DB hotel_name
+  version: string;
+  theme: 'light' | 'dark' | 'custom';
+  fontFamily: string;
+  fontSizeBase: number;
+  fontWeightBase: number;
+  lineHeightBase: number;
+  letterSpacing: number;
+  contrastStrict: boolean;
+  textColorMain: string;
+  bgColorMain: string;
+  printerIp: string;
+  printerPort: string;
+  autoPrintOrder: boolean;
+  autoPrintReceipt: boolean;
+  voiceBroadcastEnabled: boolean;
+  voiceVolume: number;
+  serviceChargeRate: number; // 对齐 DB
+}
+
+export interface OrderItem {
+  dishId: string;
+  name: string;
+  quantity: number;
+  price: number;
+  partnerId?: string;
 }
 
 export enum OrderStatus {
@@ -23,69 +68,54 @@ export enum OrderStatus {
 export enum PaymentMethod {
   GCASH = 'GCash',
   MAYA = 'Maya',
-  GRABPAY = 'GrabPay',
-  CARD = 'Credit/Debit Card',
-  SIGN_BILL = 'Room Charge',
   CASH = 'Cash'
 }
 
-export interface PaymentMethodConfig {
-  id: string;
-  name: string;
-  type: PaymentMethod;
-  isActive: boolean;
-  instructions?: string;
-  iconType: 'smartphone' | 'wallet' | 'banknote' | 'credit-card';
+export enum RoomStatus {
+  READY = 'ready',
+  ORDERING = 'ordering'
 }
 
-export type PermissionKey = 
-  | 'manage_menu'      
-  | 'view_finance'     
-  | 'process_orders'   
-  | 'manage_staff'     
-  | 'system_config'    
-  | 'material_assets'; 
-
-export interface User {
+export interface Order {
   id: string;
-  username: string;
-  password?: string; 
-  role: UserRole;
+  roomId: string; // DB room_id
+  items: OrderItem[];
+  totalAmount: number; // DB total_amount
+  status: OrderStatus;
+  paymentMethod: PaymentMethod; // DB payment_method
+  createdAt: string;
+  updatedAt: string;
+  taxAmount: number; // DB tax_amount
+}
+
+export interface Category {
+  id: number;
   name: string;
-  lastLogin?: string;
-  permissions: PermissionKey[];
-  isLocked?: boolean;
-  ipWhitelist?: string[];
-  twoFactorEnabled?: boolean; 
-  mfaSecret?: string;         
-  isOnline?: boolean;         // 新增：在线状态追踪
-  partnerId?: string;         // 合作伙伴ID（如果是合作伙伴用户）
+  parent_id: number | null;
+  level: number;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Dish {
   id: string;
   name: string;
-  nameEn?: string;
-  description?: string;
+  nameEn?: string; // DB name_en
   price: number;
-  category: string;
+  category: string; // 保留原有字段
+  category_id?: number; // 新增层级分类ID
   stock: number;
-  imageUrl: string;
+  imageUrl: string; // DB image_url
+  isAvailable?: boolean; // DB is_available
+  description?: string;
   isRecommended?: boolean;
-  isAvailable?: boolean;
-  calories?: number;
-  allergens?: string[];
-  partnerId?: string;         // 所属合作伙伴ID（多租户支持）
+  partnerId?: string; // DB partner_id
 }
 
-export interface Ingredient {
+export interface HotelRoom {
   id: string;
-  name: string;
-  unit: string;
-  stock: number;
-  minStock: number;
-  category: string;
-  lastRestocked?: string;
+  status?: RoomStatus;
 }
 
 export interface MaterialImage {
@@ -93,76 +123,48 @@ export interface MaterialImage {
   url: string;
   name: string;
   category: string;
-  fileSize?: string;
-  dimensions?: string;
-  mimeType?: string;
+  fileSize?: string; // 对齐 DB
+  dimensions?: string; // 对齐 DB
 }
 
-export interface HotelRoom {
+export interface Partner {
   id: string;
-  status?: RoomStatus;
-  activeSessionId?: string;
-}
-
-export interface OrderItem {
-  dishId: string;
   name: string;
-  quantity: number;
-  price: number;
-  partnerId?: string;         // 订单项所属合作伙伴ID
-}
-
-export interface Order {
-  id: string;
-  roomId: string;
-  items: OrderItem[];
-  totalAmount: number;
-  status: OrderStatus;
-  paymentMethod: PaymentMethod;
-  createdAt: string;
-  updatedAt: string;
-  estimatedTime?: number;
-  taxAmount: number;
-  serviceCharge?: number;
-  partnerId?: string;         // 订单所属合作伙伴ID（多租户支持）
+  ownerName: string;
+  status: 'active' | 'suspended';
+  commissionRate: number;
+  balance: number;
+  totalSales: number;
+  authorizedCategories: string[];
+  joinedAt: string;
+  userId: string;
+  contact: string;
+  email: string;
 }
 
 export interface Expense {
   id: string;
-  category: string;
   amount: number;
+  category: string;
   description: string;
   date: string;
 }
 
-export interface SecurityLog {
+export interface Ingredient {
   id: string;
-  userId: string;
-  action: string;
-  details?: string;
-  timestamp: string;
-  ip: string;
-  location?: string;
-  riskLevel?: 'Low' | 'Medium' | 'High';
+  name: string;
+  unit: string;
+  stock: number;
+  minStock: number; // DB min_stock
+  category: string;
+  lastRestocked: string; // DB last_restocked
 }
 
-export interface SystemConfig {
-  hotelName: string;
-  version: string;
-  serviceChargeRate: number; 
-  exchangeRateCNY: number;   
-  exchangeRateUSDT: number;  
-  webhookUrl?: string;        // 新增：Webhook 推送地址
-  isWebhookEnabled?: boolean; // 新增：是否启用推送
-}
-
-// 密码重置相关类型
-export interface PasswordResetRequest {
-  username: string;
-  newPassword: string;
-}
-
-export interface PasswordResetResponse {
-  success: boolean;
-  message: string;
+export interface PaymentMethodConfig {
+  id: string;
+  name: string;
+  type: PaymentMethod;
+  isActive: boolean; // DB is_active
+  iconType: string; // DB icon_type
+  instructions?: string;
 }

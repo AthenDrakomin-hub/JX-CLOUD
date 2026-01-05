@@ -1,14 +1,13 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Dish, Order, OrderStatus, PaymentMethod, PaymentMethodConfig, SystemConfig } from '../types';
+import { Dish, Order, OrderStatus, PaymentMethod, PaymentMethodConfig } from '../types';
 import { translations, Language, getTranslation } from '../translations';
 import { api } from '../services/api';
-import { CATEGORIES } from '../constants';
 import { 
   Plus, Minus, Globe, Search,
   ChevronRight, ShoppingCart, 
   Flame, Loader2, CheckCircle2,
-  Banknote, Wallet, CreditCard, BellRing, Filter
+  ArrowLeft, CreditCard, Filter, Smartphone, Banknote, Wallet
 } from 'lucide-react';
 
 interface GuestOrderProps {
@@ -20,9 +19,10 @@ interface GuestOrderProps {
   onRescan: () => void;
 }
 
-const GuestOrder: React.FC<GuestOrderProps> = ({ roomId, dishes, onSubmitOrder, lang, onToggleLang, onRescan }) => {
+const GuestOrder: React.FC<GuestOrderProps> = ({ roomId, dishes, onSubmitOrder, lang, onToggleLang }) => {
   const [cart, setCart] = useState<{ [dishId: string]: number }>({});
   const [activeCategory, setActiveCategory] = useState('All');
+  const [dynamicCategories, setDynamicCategories] = useState<string[]>([]);
   const [isCheckout, setIsCheckout] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -30,258 +30,192 @@ const GuestOrder: React.FC<GuestOrderProps> = ({ roomId, dishes, onSubmitOrder, 
   const [selectedPayment, setSelectedPayment] = useState<PaymentMethod | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   
-  const t = (key: keyof typeof translations.zh) => getTranslation(lang, key);
-  const C = t('currency');
+  const t = (key: string) => getTranslation(lang, key);
   
-  // 根据当前语言环境获取菜品名称的辅助函数
-  const getDishName = (dish: Dish): string => {
-    if (lang === 'en' && dish.nameEn) {
-      return dish.nameEn;
-    } else if (lang === 'tl' && dish.nameEn) { // 菲律宾语也使用英文名称
-      return dish.nameEn;
-    }
-    return dish.name; // 默认使用中文名称
+  const tc = (cat: string) => {
+    if (cat === 'All') return '全部分类 / All';
+    return cat;
   };
+  const C = t('currency');
 
   useEffect(() => {
     fetchInitialData();
   }, []);
 
   const fetchInitialData = async () => {
-    const pAll = await api.payments.getAll();
-    const active = pAll.filter((p: PaymentMethodConfig) => p.isActive);
+    const [pAll, cats] = await Promise.all([api.payments.getAll(), api.categories.getAll()]);
+    const active = pAll.filter(p => p.isActive);
     setAvailablePayments(active);
+    setDynamicCategories(cats);
     if (active.length > 0) setSelectedPayment(active[0].type);
   };
 
-  const visibleDishes = useMemo(() => dishes.filter(d => d.isAvailable !== false), [dishes]);
-
   const filteredDishes = useMemo(() => {
-    return visibleDishes.filter(d => {
-      const dishName = getDishName(d); // 使用当前语言环境的菜名进行搜索
-      const matchSearch = dishName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          d.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          (d.nameEn || '').toLowerCase().includes(searchTerm.toLowerCase());
+    return dishes.filter(d => {
+      const matchSearch = d.name.toLowerCase().includes(searchTerm.toLowerCase()) || (d.nameEn || '').toLowerCase().includes(searchTerm.toLowerCase());
       const matchCategory = activeCategory === 'All' || d.category === activeCategory;
-      return matchSearch && matchCategory;
+      return matchSearch && matchCategory && d.isAvailable !== false;
     });
-  }, [visibleDishes, searchTerm, activeCategory, lang]);
+  }, [dishes, searchTerm, activeCategory]);
 
   const cartItems = useMemo(() => {
-    return (Object.entries(cart) as [string, number][])
-      .filter(([_, qty]) => qty > 0)
-      .map(([id, qty]) => {
-        const dish = visibleDishes.find(d => d.id === id);
-        return { dish, quantity: qty };
-      })
-      .filter(item => item.dish !== undefined);
-  }, [cart, visibleDishes]);
+    return Object.entries(cart).filter(([_, qty]) => (qty as number) > 0).map(([id, qty]) => {
+      const dish = dishes.find(d => d.id === id);
+      return { dish, quantity: qty as number };
+    }).filter(item => item.dish !== undefined);
+  }, [cart, dishes]);
 
   const subtotal = useMemo(() => cartItems.reduce((sum, item) => sum + (item.dish!.price * item.quantity), 0), [cartItems]);
-  const totalAmount = subtotal * 1.12; // Simple 12% VAT logic for demo
+  const totalAmount = subtotal * 1.12; 
 
-  const handlePlaceOrder = async () => {
-    if (!selectedPayment) return;
-    setIsProcessing(true);
-    await new Promise(r => setTimeout(r, 1500));
-    
-    const newOrder: Partial<Order> = {
-      roomId,
-      items: cartItems.map(item => ({
-        dishId: item.dish!.id,
-        name: getDishName(item.dish!),
-        quantity: item.quantity,
-        price: item.dish!.price
-      })),
-      totalAmount: Math.round(totalAmount),
-      taxAmount: Math.round(subtotal * 0.12),
-      status: OrderStatus.PENDING,
-      paymentMethod: selectedPayment,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    try {
-      await onSubmitOrder(newOrder);
-      setIsSuccess(true);
-    } catch (e) {
-      alert('Order Failed.');
-    } finally {
-      setIsProcessing(false);
+  const getMethodIcon = (iconType: string) => {
+    switch (iconType) {
+      case 'smartphone': return <Smartphone size={20} />;
+      case 'wallet': return <Wallet size={20} />;
+      case 'banknote': return <Banknote size={20} />;
+      default: return <CreditCard size={20} />;
     }
-  };
-
-  const QuantitySelector = ({ dishId }: { dishId: string }) => {
-    const qty = cart[dishId] || 0;
-    if (qty === 0) {
-      return (
-        <button onClick={() => setCart(p => ({...p, [dishId]: 1}))} className="px-6 py-2 bg-slate-900 text-white rounded-full font-black text-[10px] uppercase tracking-widest shadow-lg">
-          <Plus size={14} className="inline mr-1" />{t('addToCart')}
-        </button>
-      );
-    }
-    return (
-      <div className="flex items-center p-1 bg-slate-100 rounded-full">
-        <button onClick={() => setCart(p => ({...p, [dishId]: Math.max(0, qty - 1)}))} className="w-8 h-8 flex items-center justify-center text-slate-500"><Minus size={14} /></button>
-        <span className="w-8 text-center text-sm font-black">{qty}</span>
-        <button onClick={() => setCart(p => ({...p, [dishId]: qty + 1}))} className="w-8 h-8 bg-slate-900 text-white rounded-full flex items-center justify-center shadow-md"><Plus size={14} /></button>
-      </div>
-    );
   };
 
   if (isSuccess) {
     return (
-      <div className="min-h-screen bg-[#0f172a] flex flex-col items-center justify-center p-8 text-center">
-        <div className="w-24 h-24 bg-emerald-500/20 text-[#d4af37] rounded-[2.5rem] flex items-center justify-center mb-10 shadow-[0_0_50px_rgba(212,175,55,0.4)] animate-bounce border border-[#d4af37]/30">
-          <CheckCircle2 size={48} />
-        </div>
-        <h2 className="text-4xl font-serif italic text-white mb-4 tracking-tighter">{t('orderSuccess')}</h2>
-        <p className="text-slate-300 mb-12">{t('orderProcessing').replace('{roomId}', roomId)}</p>
-        <button onClick={() => { setIsSuccess(false); setIsCheckout(false); setCart({}); }} className="px-12 py-5 bg-[#d4af37] text-white rounded-full font-black text-xs uppercase tracking-[0.3em] shadow-2xl">{t('continueOrdering')}</button>
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-8 text-center">
+        <div className="w-24 h-24 bg-emerald-500/20 text-emerald-500 rounded-[2.5rem] flex items-center justify-center mb-10 shadow-xl border-2 border-emerald-500/30 animate-bounce"><CheckCircle2 size={48} /></div>
+        <h2 className="text-3xl font-bold text-white mb-2">下单成功 / Success</h2>
+        <p className="text-slate-400 mb-12">{`房间 ${roomId} 订单已确认。`} <br/> {`Room ${roomId} order confirmed.`}</p>
+        <button onClick={() => { setIsSuccess(false); setIsCheckout(false); setCart({}); }} className="px-12 py-5 bg-blue-600 text-white rounded-full font-black text-xs uppercase tracking-widest shadow-2xl">继续点餐 / Order More</button>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col max-w-lg mx-auto relative shadow-2xl font-sans text-slate-900 overflow-hidden">
-      <header className="bg-white/80 px-8 py-6 sticky top-0 z-[60] flex items-center justify-between border-b border-slate-50 backdrop-blur-2xl">
+    <div className="min-h-screen bg-white flex flex-col max-w-lg mx-auto relative shadow-2xl font-sans text-slate-900 border-x border-slate-300">
+      <header className="bg-white/90 px-8 py-6 sticky top-0 z-[60] flex items-center justify-between border-b border-slate-300 backdrop-blur-2xl">
         <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 bg-slate-950 rounded-2xl flex items-center justify-center text-[#d4af37] shadow-xl font-black text-lg italic font-serif">
-            {roomId}
-          </div>
-          <h1 className="text-xl font-serif italic tracking-tighter text-slate-900 leading-none">{t('jxCloud')}</h1>
+          <div className="w-12 h-12 bg-slate-950 rounded-2xl flex items-center justify-center text-blue-500 shadow-xl font-black text-lg italic border border-slate-800">{roomId}</div>
+          <h1 className="text-xl font-serif italic text-slate-900 leading-none">JX Cloud | 江西云厨</h1>
         </div>
+        <button onClick={onToggleLang} className="px-4 h-10 bg-slate-100 rounded-xl border border-slate-200 text-slate-900 font-bold text-[10px] flex items-center gap-2 active:bg-blue-600 active:text-white transition-all shadow-sm">
+          <Globe size={14} />
+          {lang === 'zh' ? 'EN Mode' : '中文模式'}
+        </button>
       </header>
 
       {!isCheckout ? (
-        <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar bg-[#fcfcfc] pb-40">
+        <div className="flex flex-1 flex-col overflow-y-auto no-scrollbar bg-slate-50/30 pb-40">
            <div className="p-6">
               <div className="relative group">
-                  <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#d4af37]" size={18} />
-                  <input type="text" placeholder={t('searchDishes')} className="w-full pl-14 pr-6 py-5 bg-white border border-slate-100 rounded-[2rem] text-sm outline-none shadow-sm focus:ring-8 focus:ring-slate-50 transition-all" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                  <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                  <input type="text" placeholder="搜索菜品 (Search Dishes)..." className="w-full pl-14 pr-6 py-5 bg-white border border-slate-300 rounded-[2rem] text-sm outline-none shadow-sm focus:ring-8 focus:ring-blue-50/50 transition-all font-bold" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
               </div>
            </div>
 
-           {/* 吸顶分类栏 */}
-           <div className="sticky top-[89px] z-50 bg-white/90 backdrop-blur-xl border-y border-slate-50 px-6 py-4 flex items-center space-x-3 overflow-x-auto no-scrollbar shadow-sm">
-              <button
-                onClick={() => setActiveCategory('All')}
-                className={`px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all shrink-0
-                  ${activeCategory === 'All' ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
-              >
-                {t('allCategories')}
-              </button>
-              {CATEGORIES.map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => setActiveCategory(cat)}
-                  className={`px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all shrink-0
-                    ${activeCategory === cat ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
-                >
-                  {cat}
-                </button>
+           <div className="sticky top-[89px] z-50 bg-white/95 backdrop-blur-xl border-y border-slate-300 px-6 py-4 flex items-center space-x-3 overflow-x-auto no-scrollbar shadow-sm">
+              <button onClick={() => setActiveCategory('All')} className={`px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all shrink-0 border ${activeCategory === 'All' ? 'bg-blue-600 border-blue-700 text-white shadow-lg' : 'bg-white border-slate-200 text-slate-500'}`}>{tc('All')}</button>
+              {dynamicCategories.map(cat => (
+                <button key={cat} onClick={() => setActiveCategory(cat)} className={`px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all shrink-0 border ${activeCategory === cat ? 'bg-blue-600 border-blue-700 text-white shadow-lg' : 'bg-white border-slate-200 text-slate-500'}`}>{cat}</button>
               ))}
            </div>
 
            <div className="p-6 space-y-10">
-              <div className="space-y-8">
-                  <div className="px-2 flex items-center justify-between">
-                    <h2 className="text-lg font-black uppercase tracking-widest text-slate-900">{activeCategory === 'All' ? t('curatedMenu') : activeCategory}</h2>
-                    <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">{filteredDishes.length} {t('itemsCount')}</span>
-                  </div>
-                  
-                  {filteredDishes.length === 0 ? (
-                    <div className="py-20 flex flex-col items-center justify-center text-slate-300">
-                       <Filter size={48} className="opacity-20 mb-4" />
-                       <p className="text-xs font-black uppercase tracking-[0.2em]">{t('noRelatedDishes')}</p>
+              {filteredDishes.length === 0 ? (
+                <div className="py-20 flex flex-col items-center justify-center text-slate-300"><Filter size={48} className="opacity-20 mb-4" /><p className="text-xs font-black uppercase tracking-widest">No Matches / 暂无结果</p></div>
+              ) : (
+                filteredDishes.map((dish) => (
+                  <div key={dish.id} className="group animate-in fade-in slide-in-from-bottom-4">
+                    <div className="relative aspect-[4/3] rounded-[3rem] overflow-hidden shadow-premium mb-6 bg-slate-200 border-2 border-white">
+                        <img src={dish.imageUrl} className="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-110" alt={dish.name} />
+                        {dish.isRecommended && <div className="absolute top-6 left-6 bg-blue-600 text-white text-[9px] font-black uppercase px-4 py-2 rounded-full shadow-2xl flex items-center border border-blue-500"><Flame size={12} className="mr-1" /> Chef's Pick</div>}
+                        {dish.stock <= 0 && <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center text-white font-black text-sm uppercase tracking-[0.3em]">Sold Out / 售罄</div>}
                     </div>
-                  ) : (
-                    <div className="grid grid-cols-1 gap-12">
-                      {filteredDishes.map((dish, idx) => (
-                        <div key={dish.id} className="group animate-in fade-in slide-in-from-bottom-8" style={{ animationDelay: `${idx * 100}ms` }}>
-                          <div className="relative aspect-[4/3] rounded-[3.5rem] overflow-hidden shadow-xl mb-6 bg-slate-100">
-                              <img src={dish.imageUrl} className="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-110" alt={getDishName(dish)} loading="lazy" />
-                              {dish.isRecommended && <div className="absolute top-8 left-8 bg-slate-950 text-[#d4af37] text-[10px] font-black uppercase px-5 py-2.5 rounded-full shadow-2xl flex items-center border border-white/5 backdrop-blur-md"><Flame size={16} className="mr-2" /> {t('curatedRecommendation')}</div>}
-                          </div>
-                          <div className="flex items-center justify-between px-2">
-                              <div className="space-y-1">
-                                <h3 className="text-2xl font-bold text-slate-900 tracking-tight">{getDishName(dish)}</h3>
-                                <p className="text-xs font-black text-slate-400 uppercase tracking-widest leading-none mb-3">{dish.name} / {dish.nameEn || dish.name}</p>
-                                <p className="text-2xl font-serif italic text-slate-900 tracking-tighter">{C}{Math.round(dish.price)}</p>
-                              </div>
-                              <div className="shrink-0">
-                                <QuantitySelector dishId={dish.id} />
-                              </div>
-                          </div>
+                    <div className="flex items-start justify-between px-2">
+                        <div className="space-y-1 flex-1">
+                          {/* 双语名称并排显示 */}
+                          <h3 className="text-xl font-bold text-slate-950 tracking-tight leading-tight">
+                            {dish.name}
+                          </h3>
+                          <p className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-3 mt-1">
+                            {dish.nameEn || dish.name}
+                          </p>
+                          <p className="text-2xl font-serif italic text-blue-700">{C}{Math.round(dish.price)}</p>
                         </div>
-                      ))}
+                        <div className="shrink-0 flex items-center gap-4">
+                           {dish.stock > 0 && (
+                             cart[dish.id] ? (
+                               <div className="flex items-center bg-slate-100 rounded-full border p-1">
+                                 <button onClick={() => setCart(p => ({...p, [dish.id]: Math.max(0, p[dish.id]-1)}))} className="w-10 h-10 flex items-center justify-center text-slate-500"><Minus size={18} /></button>
+                                 <span className="w-8 text-center font-black">{cart[dish.id]}</span>
+                                 <button onClick={() => setCart(p => ({...p, [dish.id]: Math.min(dish.stock, p[dish.id]+1)}))} className="w-10 h-10 bg-slate-950 text-white rounded-full flex items-center justify-center"><Plus size={18} /></button>
+                               </div>
+                             ) : (
+                               <button onClick={() => setCart(p => ({...p, [dish.id]: 1}))} className="px-8 py-3 bg-slate-950 text-white rounded-full font-black text-[10px] uppercase tracking-widest shadow-xl">点餐 / ADD</button>
+                             )
+                           )}
+                        </div>
                     </div>
-                  )}
-              </div>
+                  </div>
+                ))
+              )}
            </div>
            
            {subtotal > 0 && (
              <div className="fixed bottom-10 left-1/2 -translate-x-1/2 w-full max-w-lg px-8 z-40">
-               <button onClick={() => setIsCheckout(true)} className="w-full bg-slate-950 text-white h-20 rounded-[2.5rem] flex items-center justify-between px-8 font-black shadow-[0_30px_60px_-10px_rgba(0,0,0,0.6)] active:scale-95 transition-all border border-white/20 animate-in slide-in-from-bottom duration-300">
+               <button onClick={() => setIsCheckout(true)} className="w-full bg-slate-950 text-white h-20 rounded-[2.5rem] flex items-center justify-between px-8 font-black shadow-2xl active-scale transition-all border-2 border-slate-800 animate-in slide-in-from-bottom">
                  <div className="flex items-center space-x-4">
-                   <div className="w-12 h-12 bg-[#d4af37] rounded-2xl flex items-center justify-center text-slate-950 shadow-lg">
-                     <ShoppingCart size={24} />
-                   </div>
+                   <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white"><ShoppingCart size={24} /></div>
                    <div className="flex flex-col text-left">
-                     <span className="text-[10px] uppercase tracking-[0.3em] opacity-60">Total</span>
+                     <span className="text-[10px] uppercase tracking-widest text-slate-500">应付总计 / TOTAL</span>
                      <span className="text-xl font-serif italic">{C}{Math.round(totalAmount)}</span>
                    </div>
                  </div>
-                 <ChevronRight size={24} className="text-[#d4af37]" />
+                 <div className="flex items-center gap-2 text-blue-500"><span className="text-[10px] tracking-widest uppercase">结算 / CHECKOUT</span><ChevronRight size={24} /></div>
                </button>
              </div>
            )}
         </div>
       ) : (
         <div className="flex-1 flex flex-col bg-white animate-in slide-in-from-right duration-500 p-8">
-           <div className="flex items-center space-x-4 mb-10">
-             <button onClick={() => setIsCheckout(false)} className="w-12 h-12 flex items-center justify-center bg-slate-100 rounded-2xl text-slate-900">
-               <ChevronRight className="rotate-180" size={24} />
-             </button>
-             <h2 className="text-3xl font-bold tracking-tighter">{t('confirmBill')}</h2>
-           </div>
+           <button onClick={() => setIsCheckout(false)} className="w-12 h-12 flex items-center justify-center bg-slate-100 rounded-2xl text-slate-900 border border-slate-200 active-scale mb-10"><ArrowLeft size={24} /></button>
+           <h2 className="text-2xl font-bold tracking-tighter mb-1">订单确认 / Confirm Order</h2>
+           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-10">请核对账单 / Verify Billing Details</p>
            
            <div className="flex-1 space-y-8 overflow-y-auto no-scrollbar pb-32">
-              <div className="bg-slate-50 rounded-[3rem] p-10 space-y-4">
-                 <div className="flex justify-between items-center text-slate-500">
-                    <span className="text-xs font-black uppercase tracking-widest">{t('subtotal')}</span>
-                    <span className="font-bold">{C}{Math.round(subtotal)}</span>
-                 </div>
-                 <div className="flex justify-between items-center text-slate-500">
-                    <span className="text-xs font-black uppercase tracking-widest">{t('tax')}</span>
-                    <span className="font-bold">{C}{Math.round(subtotal * 0.12)}</span>
-                 </div>
-                 <div className="pt-6 border-t border-slate-200 flex justify-between items-center">
-                    <span className="text-sm font-black text-slate-900 uppercase tracking-widest">{t('total')}</span>
-                    <span className="text-4xl font-serif italic text-[#d4af37]">{C}{Math.round(totalAmount)}</span>
+              <div className="bg-slate-50 rounded-[3rem] p-8 space-y-4 border-2 border-slate-200 shadow-inner">
+                 {cartItems.map((item, idx) => (
+                    <div key={idx} className="flex justify-between items-center py-2 border-b border-slate-200 border-dashed last:border-0">
+                       <div className="pr-4">
+                        <p className="font-bold text-slate-950">{item.dish?.name}</p>
+                        <p className="text-[10px] text-slate-400 font-medium uppercase">{item.dish?.nameEn || item.dish?.name}</p>
+                       </div>
+                       <span className="font-black text-blue-700 shrink-0">x{item.quantity}</span>
+                    </div>
+                 ))}
+                 <div className="pt-6 mt-4 space-y-2 border-t border-slate-300">
+                    <div className="flex justify-between text-xs text-slate-500"><span>小计 / Subtotal</span><span>{C}{Math.round(subtotal)}</span></div>
+                    <div className="flex justify-between text-xs text-slate-500"><span>税费 / Tax (12%)</span><span>{C}{Math.round(subtotal * 0.12)}</span></div>
+                    <div className="pt-4 flex justify-between items-center"><span className="text-sm font-black text-slate-950 uppercase">应付总计 / Total Bill</span><span className="text-4xl font-serif italic text-blue-700">{C}{Math.round(totalAmount)}</span></div>
                  </div>
               </div>
 
-              <div className="space-y-6">
-                <p className="text-xs font-black text-slate-500 uppercase tracking-widest ml-2">{t('paymentMethod')}</p>
-                <div className="grid grid-cols-1 gap-3">
-                   {availablePayments.map(method => (
-                      <button 
-                        key={method.id} 
-                        onClick={() => setSelectedPayment(method.type)} 
-                        className={`p-6 rounded-[2.5rem] border-2 flex items-center justify-between transition-all ${selectedPayment === method.type ? 'border-[#d4af37] bg-amber-50/40' : 'border-slate-50 hover:bg-slate-50'}`}
-                      >
-                         <span className="font-black uppercase tracking-widest text-sm text-slate-900">{method.name}</span>
-                         {selectedPayment === method.type && <CheckCircle2 size={24} className="text-[#d4af37]" />}
-                      </button>
-                   ))}
-                </div>
+              <div className="space-y-4">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">支付方式 / Payment Method</p>
+                {availablePayments.map(method => (
+                  <button key={method.id} onClick={() => setSelectedPayment(method.type)} className={`w-full p-6 rounded-[2.5rem] border-2 flex items-center justify-between transition-all ${selectedPayment === method.type ? 'border-blue-600 bg-blue-50/50' : 'border-slate-200 bg-white'}`}>
+                     <div className="flex items-center space-x-4">
+                        <div className={`p-3 rounded-xl ${selectedPayment === method.type ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                            {getMethodIcon(method.iconType)}
+                        </div>
+                        <span className="font-bold uppercase tracking-widest text-xs">{method.name}</span>
+                     </div>
+                     {selectedPayment === method.type && <CheckCircle2 size={24} className="text-blue-600" />}
+                  </button>
+                ))}
               </div>
            </div>
 
-           <div className="p-8 bg-white safe-area-bottom absolute bottom-0 left-0 w-full border-t border-slate-50">
-             <button onClick={handlePlaceOrder} disabled={isProcessing || !selectedPayment} className="w-full h-20 rounded-[2.5rem] font-black text-sm uppercase tracking-[0.3em] bg-slate-950 text-white shadow-2xl flex items-center justify-center space-x-4 active:scale-95 transition-all disabled:opacity-50">
-               {isProcessing ? <Loader2 size={24} className="animate-spin text-[#d4af37]" /> : <span>{t('processSecurePayment')}</span>}
+           <div className="p-8 bg-white absolute bottom-0 left-0 w-full border-t border-slate-300">
+             <button onClick={async () => { if(!selectedPayment) return; setIsProcessing(true); await onSubmitOrder({ roomId, items: cartItems.map(i=>({dishId:i.dish!.id, name:i.dish!.name, quantity:i.quantity, price:i.dish!.price})), totalAmount: Math.round(totalAmount), status: OrderStatus.PENDING, paymentMethod: selectedPayment, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }); setIsSuccess(true); setIsProcessing(false); }} disabled={isProcessing || !selectedPayment} className="w-full h-20 rounded-[2.5rem] font-black text-sm uppercase tracking-widest bg-slate-950 text-white shadow-2xl flex items-center justify-center space-x-4 active-scale transition-all">
+               {isProcessing ? <Loader2 size={24} className="animate-spin text-blue-500" /> : <span>提交订单 / PLACE ORDER</span>}
              </button>
            </div>
         </div>

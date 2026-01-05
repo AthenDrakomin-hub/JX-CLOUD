@@ -1,13 +1,7 @@
-/* Copyright (c) 2025 Jiangxi Star Hotel. 保留所有权利. */
 
-import { Order, Dish, HotelRoom, Expense, User, OrderStatus, RoomStatus, MaterialImage, SecurityLog, UserRole, PaymentMethod, PaymentMethodConfig, SystemConfig, Ingredient, PasswordResetRequest, PasswordResetResponse } from '../types';
-import { ROOM_NUMBERS } from '../constants';
-import { supabase, isDemoMode, supabaseUrl } from './supabaseClient';
-import { notificationService } from './notification';
-
-/**
- * 江西云厨 - 混合动力存储引擎 (Reliability Layer)
- */
+import { Partner, Order, Dish, HotelRoom, Expense, User, OrderStatus, MaterialImage, PaymentMethodConfig, SystemConfig, Ingredient, RoomStatus, PaymentMethod, UserRole, Category } from '../types';
+import { INITIAL_DISHES, ROOM_NUMBERS, INITIAL_USERS, CATEGORIES as DEFAULT_CATEGORIES } from '../constants';
+import { supabase, isDemoMode } from './supabaseClient';
 
 const STORAGE_KEYS = {
   ROOMS: 'jx_virtual_rooms',
@@ -18,7 +12,10 @@ const STORAGE_KEYS = {
   SYNC_QUEUE: 'jx_pending_sync',
   CONFIG: 'jx_virtual_config',
   MATERIALS: 'jx_virtual_materials',
-  TRANSLATIONS: 'jx_virtual_translations'
+  PARTNERS: 'jx_virtual_partners',
+  TRANSLATIONS: 'jx_virtual_translations',
+  CATEGORIES: 'jx_virtual_categories',
+  INGREDIENTS: 'jx_virtual_ingredients'
 };
 
 const VirtualDB = {
@@ -28,594 +25,143 @@ const VirtualDB = {
   },
   set: <T>(key: string, value: T): void => {
     localStorage.setItem(key, JSON.stringify(value));
-  },
-  queueForSync: (action: string, table: string, payload: any) => {
-    const queue = VirtualDB.get<any[]>(STORAGE_KEYS.SYNC_QUEUE, []);
-    
-    // 生成唯一键用于去重
-    const key = `${table}:${payload.id ?? JSON.stringify(payload)}`;
-    
-    // 移除相同键的先前操作
-    const filtered = queue.filter(q => q.key !== key);
-    
-    // 添加新操作
-    filtered.push({ key, action, table, payload, timestamp: Date.now() });
-    VirtualDB.set(STORAGE_KEYS.SYNC_QUEUE, filtered);
   }
 };
 
-// 辅助函数：检查边缘功能是否可用
-const checkEdgeFunctionStatus = async (): Promise<boolean> => {
-  try {
-    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/dish-crud-api/dishes?limit=1`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-        'Content-Type': 'application/json',
-      },
-    });
-    return response.ok;
-  } catch (error) {
-    console.error('Edge function status check failed:', error);
-    return false;
-  }
-};
-
-// 网络请求重试机制
-const retryRequest = async <T>(
-  requestFn: () => Promise<T>, 
-  maxRetries: number = 3, 
-  delay: number = 1000
-): Promise<T> => {
-  let lastError: any;
-
-  for (let i = 0; i < maxRetries; i++) {
-    try {
-      return await requestFn();
-    } catch (error) {
-      lastError = error;
-      
-      // 如果是认证错误，不应重试
-      if (error.status === 401 || error.message?.includes('unauthorized')) {
-        throw error;
-      }
-
-      // 如果是网络错误，进行重试（除了最后一次）
-      if ((error.name === 'TypeError' || error.message?.includes('Failed to fetch')) && i < maxRetries - 1) {
-        // 指数退避延迟
-        await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
-      } else {
-        break; // 非网络错误或达到最大重试次数，停止重试
-      }
-    }
-  }
-
-  throw lastError;
-};
-
-// 通用API请求处理函数
-const handleApiResponse = async <T>(response: Response, context?: string): Promise<T> => {
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    const errorMessage = errorData.message || `API请求失败: ${response.status} ${response.statusText}`;
-    
-    const error = new Error(errorMessage) as any;
-    error.status = response.status;
-    error.context = context;
-    
-    throw error;
-  }
-  
-  return response.json();
+const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number = 3000): Promise<T> => {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Cloud Request Timeout')), timeoutMs))
+  ]);
 };
 
 export const api = {
-  auth: {
-    // 重置密码功能
-    resetPassword: async (data: { token: string; newPassword: string }) => {
-      if (isDemoMode) return { success: true };
-      
-      try {
-        const response = await fetch(`${supabaseUrl}/functions/v1/users-admin/reset-password`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(data)
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Failed to reset password: ${response.status} ${response.statusText}`);
-        }
-        
-        return await response.json();
-      } catch (error) {
-        console.error('Error resetting password:', error);
-        throw error;
-      }
+  getClientIp: async (): Promise<string> => {
+    try {
+      const response = await fetch('https://api.ipify.org?format=json');
+      const data = await response.json();
+      return data.ip;
+    } catch (e) {
+      return '127.0.0.1';
     }
   },
-  
+
   db: {
-    getStats: async () => {
-      if (isDemoMode) return { orders: 0, dishes: 0, users: 0, rooms: 0, status: 'Virtual' };
-      try {
-        // 更严格的连接测试：先执行一个简单的查询验证连接
-        const { error: healthCheckError } = await supabase.from('users').select('id').limit(1);
-        
-        if (healthCheckError) {
-          throw healthCheckError;
-        }
-        
-        const [o, d, u, r] = await Promise.all([
-          supabase.from('orders').select('*', { count: 'exact', head: true }),
-          supabase.from('dishes').select('*', { count: 'exact', head: true }),
-          supabase.from('users').select('*', { count: 'exact', head: true }),
-          supabase.from('rooms').select('*', { count: 'exact', head: true })
-        ]);
-        
-        // 检查是否有任何查询失败
-        const hasError = [o, d, u, r].some(result => result.error);
-        
-        if (hasError) {
-          return { orders: 0, dishes: 0, users: 0, rooms: 0, status: 'Sync Error' };
-        }
-        
-        return { 
-          orders: o.count || 0, 
-          dishes: d.count || 0, 
-          users: u.count || 0, 
-          rooms: r.count || 0, 
-          status: 'Cloud Active' 
-        };
-      } catch (e) {
-        console.error('Database connection error:', e);
-        return { orders: 0, dishes: 0, users: 0, rooms: 0, status: 'Sync Error' };
-      }
+    getRows: async (table: string): Promise<any[]> => {
+      const { data, error } = await supabase.from(table).select('*').limit(100);
+      if (error) throw error;
+      return data || [];
     },
-    
-    // 获取当前用户信息的函数，使用新的边缘函数
-    getCurrentUser: async (): Promise<User | null> => {
-      if (isDemoMode) return null;
-      
-      try {
-        // 从 Supabase 获取当前会话
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          console.log('No active session found');
-          return null;
-        }
-        
-        // 使用重试机制调用边缘函数
-        const result = await retryRequest(async () => {
-          const response = await fetch(`${supabaseUrl}/functions/v1/get-current-user`, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${session.access_token}`,
-              'Content-Type': 'application/json',
-              'Prefer': 'return=representation',
-            },
-          });
-          
-          if (!response.ok) {
-            if (response.status === 401) {
-              console.warn('JWT verification failed - unauthorized');
-              return null;
-            }
-            throw new Error(`Failed to fetch current user: ${response.status} ${response.statusText}`);
-          }
-          
-          return response;
-        });
-        
-        if (result === null) {
-          return null;
-        }
-        
-        const payload = await result.json();
-        const row = payload.user ?? payload;
-        
-        if (!row) {
-          return null;
-        }
-        
-        // 将返回的数据转换为 User 类型，不包含敏感字段
-        return {
-          id: row.id,
-          username: row.username,
-          name: row.name,
-          role: row.role,
-          password: undefined, // 不在客户端暴露密码
-          permissions: row.permissions,
-          ipWhitelist: row.ip_whitelist,
-          twoFactorEnabled: row.two_factor_enabled,
-          mfaSecret: undefined, // 不在客户端暴露MFA密钥
-          isOnline: row.is_online,
-          isLocked: row.is_locked,
-          lastLogin: row.last_login
-        };
-      } catch (error) {
-        console.error('Error getting current user:', error);
-        return null;
-      }
+    insertRow: async (table: string, row: any) => {
+      const { error } = await supabase.from(table).insert(row);
+      if (error) throw error;
     },
-    
-    // 选择或登录用户的函数，使用新的边缘函数
-    selectOrLoginUser: async (credentials?: { username: string; password: string }): Promise<User | null> => {
-      if (isDemoMode) return null;
-      
-      try {
-        // 从 Supabase 获取当前会话
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        // 仅在有会话时使用access_token调用
-        if (!session) {
-          console.warn('No session - select/login requires authentication');
-          return null;
-        }
-        
-        // 使用新的 select-or-login-user 边缘函数
-        const response = await fetch(`${supabaseUrl}/functions/v1/select-or-login-user`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(credentials || {})
-        });
-        
-        if (!response.ok) {
-          if (response.status === 401) {
-            console.warn('User authentication failed');
-            return null;
-          }
-          throw new Error(`Failed to select or login user: ${response.status} ${response.statusText}`);
-        }
-        
-        const payload = await response.json();
-        const row = payload.user ?? payload;
-        
-        if (!row) {
-          return null;
-        }
-        
-        // 将返回的数据转换为 User 类型，不包含敏感字段
-        return {
-          id: row.id,
-          username: row.username,
-          name: row.name,
-          role: row.role,
-          password: undefined, // 不在客户端暴露密码
-          permissions: row.permissions,
-          ipWhitelist: row.ip_whitelist,
-          twoFactorEnabled: row.two_factor_enabled,
-          mfaSecret: undefined, // 不在客户端暴露MFA密钥
-          isOnline: row.is_online,
-          isLocked: row.is_locked,
-          lastLogin: row.last_login
-        };
-      } catch (error) {
-        console.error('Error in select or login user:', error);
-        return null;
-      }
+    updateRow: async (table: string, id: any, row: any) => {
+      // 特殊处理 ID 字段名为 id 或 username 的情况
+      const idKey = table === 'users' ? 'email' : 'id';
+      const { error } = await supabase.from(table).update(row).eq(idKey, id);
+      if (error) throw error;
     },
-    
-    // 新增：实时连接状态检测
-    getConnectionStatus: async () => {
-      if (isDemoMode) return { status: 'Virtual', connected: false };
-      
-      try {
-        // 检查网络状态
-        if (!navigator.onLine) {
-          return { status: 'Offline', connected: false };
-        }
-        
-        // 执行一个简单的查询来验证连接
-        const { error } = await supabase.from('users').select('id').limit(1);
-        
-        if (error) {
-          console.error('Connection test failed:', error);
-          return { status: 'Connection Failed', connected: false };
-        }
-        
-        return { status: 'Connected', connected: true };
-      } catch (e) {
-        console.error('Connection status check failed:', e);
-        return { status: 'Connection Failed', connected: false };
+    deleteRow: async (table: string, id: any) => {
+      const idKey = table === 'users' ? 'email' : 'id';
+      const { error } = await supabase.from(table).delete().eq(idKey, id);
+      if (error) throw error;
+    }
+  },
+
+  // Fix: Added categories module to resolve property 'categories' does not exist error
+  categories: {
+    getAll: async (): Promise<string[]> => {
+      if (!isDemoMode) {
+        const { data } = await supabase.from('categories').select('name').order('name');
+        if (data && data.length > 0) return data.map(c => c.name);
       }
+      return VirtualDB.get<string[]>(STORAGE_KEYS.CATEGORIES, DEFAULT_CATEGORIES);
     },
-    
-    // 设置用户密码
-    setUserPassword: async (username: string, newPassword: string): Promise<PasswordResetResponse> => {
-      if (isDemoMode) {
-        console.log(`演示模式：设置用户 ${username} 的密码`);
-        return { success: true, message: 'Password updated successfully in demo mode' };
+    getAllHierarchical: async (): Promise<Category[]> => {
+      if (!isDemoMode) {
+        const { data } = await supabase.from('categories').select('*').order('display_order');
+        if (data) return data.map(c => ({
+          id: c.id,
+          name: c.name,
+          parent_id: c.parent_id,
+          level: c.level || 0,
+          display_order: c.display_order || 0,
+          created_at: c.created_at,
+          updated_at: c.updated_at
+        }));
       }
-      
-      try {
-        // 在前端环境中，我们没有直接的会话访问权限，但需要传递认证信息
-        // 这里我们使用 localStorage 中存储的 token
-        const sessionData = localStorage.getItem('supabase.auth.token');
-        let token = '';
-        
-        if (sessionData) {
-          try {
-            const sessionObj = JSON.parse(sessionData);
-            token = sessionObj.currentSession?.access_token || '';
-          } catch (e) {
-            console.error('Failed to parse session data:', e);
-          }
-        }
-        
-        // 使用新的 set-user-password 边缘函数（部署在 Vercel 上）
-        const response = await fetch('/api/set-user-password', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            username,
-            newPassword
-          })
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Failed to set user password: ${response.status} ${response.statusText}`);
-        }
-        
-        const result: PasswordResetResponse = await response.json();
-        return result;
-      } catch (error) {
-        console.error('Error setting user password:', error);
-        throw error;
-      }
+      // 返回扁平化格式用于层级树构建
+      const categories = VirtualDB.get<string[]>(STORAGE_KEYS.CATEGORIES, DEFAULT_CATEGORIES);
+      return categories.map((name, index) => ({
+        id: index + 1,
+        name: name,
+        parent_id: null,
+        level: 0,
+        display_order: index,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }));
     },
-    
-    // 订单处理API，使用新的边缘函数
-    processOrder: async (order: Order) => {
-      if (isDemoMode) return order;
-      
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
+    getAllHierarchicalFlat: async (): Promise<any[]> => {
+      // 返回扁平格式的分类数据，包含path、level、parent_id等字段，用于构建层级树
+      if (!isDemoMode) {
+        // 从数据库获取分类数据
+        const { data } = await supabase.from('categories').select(`
+          id,
+          name,
+          parent_id,
+          level,
+          display_order
+        `).order('display_order');
         
-        if (!session) {
-          throw new Error('No active session');
+        if (data) {
+          // 将数据转换为扁平格式，包含path、level、category_id等字段
+          return data.map(c => ({
+            category_id: c.id,
+            category_name: c.name,
+            category_group: c.name, // 使用名称作为分组
+            parent_id_backup: c.parent_id,
+            level: c.level || 0,
+            path: [c.id] // 简化的path，实际应用中可能需要更复杂的路径构建
+          }));
         }
-        
-        const response = await fetch(`${supabaseUrl}/functions/v1/order-processing-api`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(order)
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Failed to process order: ${response.status} ${response.statusText}`);
-        }
-        
-        return await response.json();
-      } catch (error) {
-        console.error('Error processing order via edge function:', error);
-        // 如果边缘函数失败，返回原始订单以供后续处理
-        return order;
       }
+      // 演示模式下返回示例数据
+      const categories = VirtualDB.get<string[]>(STORAGE_KEYS.CATEGORIES, DEFAULT_CATEGORIES);
+      return categories.map((name, index) => ({
+        category_id: index + 1,
+        category_name: name,
+        category_group: name,
+        parent_id_backup: null,
+        level: 0,
+        path: [index + 1]
+      }));
     },
-    
-    // 订单通知API，使用新的边缘函数
-    notifyOrder: async (orderEvent: { orderId: string; eventType: string; payload?: any }) => {
-      if (isDemoMode) return true;
-      
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          throw new Error('No active session');
+    saveAll: async (categories: string[]) => {
+      if (!isDemoMode) {
+        // Clear existing and replace with new set
+        await supabase.from('categories').delete().neq('name', '___'); 
+        if (categories.length > 0) {
+          await supabase.from('categories').insert(categories.map(name => ({ name })));
         }
-        
-        const response = await fetch(`${supabaseUrl}/functions/v1/order-notification`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(orderEvent)
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Failed to notify order: ${response.status} ${response.statusText}`);
-        }
-        
-        return await response.json();
-      } catch (error) {
-        console.error('Error notifying order via edge function:', error);
-        return false;
       }
+      VirtualDB.set(STORAGE_KEYS.CATEGORIES, categories);
     },
-    
-    // 支付处理API，使用新的边缘函数
-    processPayment: async (paymentData: { order_id: string; method: string; amount: number }) => {
-      if (isDemoMode) return { success: true, provider_response: { provider: paymentData.method, payment_id: `mock_${Date.now()}`, status: 'pending' } };
-      
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          throw new Error('No active session');
+    saveHierarchical: async (categories: Category[]) => {
+      if (!isDemoMode) {
+        // 保存层级分类结构
+        await supabase.from('categories').delete().neq('name', '___');
+        if (categories.length > 0) {
+          const mappedCategories = categories.map(cat => ({
+            id: cat.id,
+            name: cat.name,
+            parent_id: cat.parent_id,
+            level: cat.level,
+            display_order: cat.display_order
+          }));
+          await supabase.from('categories').upsert(mappedCategories);
         }
-        
-        const response = await fetch(`${supabaseUrl}/functions/v1/payment-processing/process`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(paymentData)
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Failed to process payment: ${response.status} ${response.statusText}`);
-        }
-        
-        return await response.json();
-      } catch (error) {
-        console.error('Error processing payment via edge function:', error);
-        throw error;
-      }
-    },
-    
-    // 支付验证API，使用新的边缘函数
-    verifyPayment: async (verificationData: { payment_id: string; provider: string }) => {
-      if (isDemoMode) return { success: true, status: 'confirmed' };
-      
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          throw new Error('No active session');
-        }
-        
-        const response = await fetch(`${supabaseUrl}/functions/v1/payment-verification/verify`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(verificationData)
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Failed to verify payment: ${response.status} ${response.statusText}`);
-        }
-        
-        return await response.json();
-      } catch (error) {
-        console.error('Error verifying payment via edge function:', error);
-        throw error;
-      }
-    },
-    
-    // 获取支持的支付方式
-    getPaymentMethods: async () => {
-      if (isDemoMode) return { methods: ['gcash', 'maya', 'card'] };
-      
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          throw new Error('No active session');
-        }
-        
-        const response = await fetch(`${supabaseUrl}/functions/v1/payment-processing/methods`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Failed to get payment methods: ${response.status} ${response.statusText}`);
-        }
-        
-        return await response.json();
-      } catch (error) {
-        console.error('Error getting payment methods via edge function:', error);
-        throw error;
-      }
-    },
-    
-    // 从订单处理API获取支付方式
-    getPaymentMethodsFromOrderApi: async () => {
-      if (isDemoMode) return [];
-      
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          throw new Error('No active session');
-        }
-        
-        const response = await fetch(`${supabaseUrl}/functions/v1/order-processing-api/methods`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Failed to get payment methods: ${response.status} ${response.statusText}`);
-        }
-        
-        return await response.json();
-      } catch (error) {
-        console.error('Error getting payment methods from order API:', error);
-        throw error;
-      }
-    },
-    
-    // 创建支付记录
-    createPayment: async (paymentData: { user_id: string; order_id: string; method_id: string; amount: number; proof_url?: string; note?: string }) => {
-      if (isDemoMode) return { id: `demo_payment_${Date.now()}`, ...paymentData };
-      
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          throw new Error('No active session');
-        }
-        
-        const response = await fetch(`${supabaseUrl}/functions/v1/order-processing-api/payments`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(paymentData)
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Failed to create payment: ${response.status} ${response.statusText}`);
-        }
-        
-        return await response.json();
-      } catch (error) {
-        console.error('Error creating payment via edge function:', error);
-        throw error;
-      }
-    },
-    
-    // 获取支付记录
-    getPayment: async (paymentId: string) => {
-      if (isDemoMode) return { id: paymentId, status: 'confirmed' };
-      
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          throw new Error('No active session');
-        }
-        
-        const response = await fetch(`${supabaseUrl}/functions/v1/order-processing-api/payments/${paymentId}`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Failed to get payment: ${response.status} ${response.statusText}`);
-        }
-        
-        return await response.json();
-      } catch (error) {
-        console.error('Error getting payment via edge function:', error);
-        throw error;
       }
     }
   },
@@ -623,214 +169,121 @@ export const api = {
   rooms: {
     getAll: async (): Promise<HotelRoom[]> => {
       if (!isDemoMode) {
-        try {
-          const { data } = await supabase.from('rooms').select('*').order('id');
-          if (data && data.length > 0) return data;
-        } catch (e) {
-          console.error('Error fetching rooms:', e);
-        }
+        const { data } = await supabase.from('rooms').select('*').order('id');
+        if (data && data.length > 0) return data;
       }
-      // 在非演示模式下，如果没有本地房间数据，则返回空数组，强制从云端获取真实房间数据
-      const localRooms = VirtualDB.get<HotelRoom[]>(STORAGE_KEYS.ROOMS, []);
-      if (localRooms.length > 0 || isDemoMode) {
-        return localRooms;
-      } else {
-        // 返回空数组，让应用等待云端数据
-        return [];
-      }
+      return VirtualDB.get<HotelRoom[]>(STORAGE_KEYS.ROOMS, ROOM_NUMBERS.map(id=>({id, status: RoomStatus.READY})));
     },
     update: async (room: HotelRoom) => {
-      const rooms = VirtualDB.get<HotelRoom[]>(STORAGE_KEYS.ROOMS, []);
-      VirtualDB.set(STORAGE_KEYS.ROOMS, rooms.map(r => r.id === room.id ? room : r));
-      
       if (!isDemoMode) {
-        try {
-          const { error } = await supabase.from('rooms').upsert({ id: room.id, status: room.status });
-          if (error) throw error;
-        } catch (e) {
-          VirtualDB.queueForSync('UPSERT', 'rooms', room);
-        }
+        await supabase.from('rooms').upsert({ id: room.id, status: room.status, updated_at: new Date().toISOString() });
       }
     }
   },
-  
+
+  partners: {
+    getAll: async (): Promise<Partner[]> => {
+      if (!isDemoMode) {
+        const { data } = await supabase.from('partners').select('*').order('name');
+        if (data) return data.map(p => ({
+          id: p.id,
+          name: p.name,
+          ownerName: p.owner_name,
+          status: p.status,
+          commissionRate: Number(p.commission_rate),
+          balance: Number(p.balance),
+          totalSales: Number(p.total_sales),
+          authorizedCategories: p.authorized_categories || [],
+          joinedAt: p.joined_at,
+          userId: p.user_id,
+          contact: p.contact,
+          email: p.email
+        }));
+      }
+      return VirtualDB.get<Partner[]>(STORAGE_KEYS.PARTNERS, []);
+    },
+    create: async (p: Partner) => {
+      if (!isDemoMode) {
+        await supabase.from('partners').insert({
+          id: p.id, name: p.name, owner_name: p.ownerName, 
+          status: p.status, commission_rate: p.commissionRate,
+          authorized_categories: p.authorizedCategories, user_id: p.userId,
+          contact: p.contact, email: p.email
+        });
+      }
+    },
+    update: async (p: Partner) => {
+       if (!isDemoMode) {
+        await supabase.from('partners').update({
+          name: p.name, owner_name: p.ownerName, status: p.status,
+          commission_rate: p.commissionRate, authorized_categories: p.authorizedCategories,
+          contact: p.contact, email: p.email
+        }).eq('id', p.id);
+      }
+    },
+    delete: async (id: string) => {
+      if (!isDemoMode) await supabase.from('partners').delete().eq('id', id);
+    }
+  },
+
+  ingredients: {
+    getAll: async (): Promise<Ingredient[]> => {
+      if (!isDemoMode) {
+        const { data } = await supabase.from('ingredients').select('*').order('name');
+        if (data) return data.map(i => ({
+          id: i.id, name: i.name, unit: i.unit,
+          stock: Number(i.stock), minStock: Number(i.min_stock),
+          category: i.category, lastRestocked: i.last_restocked
+        }));
+      }
+      return [];
+    },
+    create: async (i: Ingredient) => {
+      if (!isDemoMode) {
+        await supabase.from('ingredients').insert({
+          id: i.id, name: i.name, unit: i.unit,
+          stock: i.stock, min_stock: i.minStock, category: i.category
+        });
+      }
+    },
+    update: async (i: Ingredient) => {
+      if (!isDemoMode) {
+        await supabase.from('ingredients').update({
+          name: i.name, unit: i.unit, stock: i.stock, 
+          min_stock: i.minStock, category: i.category
+        }).eq('id', i.id);
+      }
+    },
+    delete: async (id: string) => {
+      if (!isDemoMode) await supabase.from('ingredients').delete().eq('id', id);
+    }
+  },
+
   orders: {
     getAll: async (): Promise<Order[]> => {
       if (!isDemoMode) {
-        try {
-          const { data } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
-          if (data) {
-            return data.map((o: any) => ({
-              id: o.id,
-              roomId: o.room_id,
-              items: o.items,
-              totalAmount: Number(o.total_amount),
-              taxAmount: Number(o.tax_amount),
-              serviceCharge: Number(o.service_charge || 0),
-              status: o.status,
-              paymentMethod: o.payment_method,
-              createdAt: o.created_at,
-              updatedAt: o.updated_at
-            }));
-          }
-        } catch (e) {
-          console.error('Error fetching orders:', e);
-        }
+        const { data } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+        if (data) return data.map(o => ({
+          id: o.id, roomId: o.room_id, items: o.items,
+          totalAmount: Number(o.total_amount), taxAmount: Number(o.tax_amount),
+          status: o.status as OrderStatus, paymentMethod: o.payment_method as PaymentMethod,
+          createdAt: o.created_at, updatedAt: o.updated_at
+        }));
       }
-      return VirtualDB.get<Order[]>(STORAGE_KEYS.ORDERS, []);
+      return [];
     },
-    create: async (order: Order) => {
-      try {
-        // 数据验证
-        if (!order.roomId || !order.items || order.items.length === 0) {
-          throw new Error('订单数据不完整：缺少房间ID或订单项目');
-        }
-        
-        if (order.totalAmount <= 0) {
-          throw new Error('订单总金额必须大于0');
-        }
-        
-        // 检查订单项目是否有效
-        for (const item of order.items) {
-          if (!item.dishId || item.quantity <= 0 || item.price < 0) {
-            throw new Error('订单项目数据无效');
-          }
-        }
-        
-        const orders = VirtualDB.get<Order[]>(STORAGE_KEYS.ORDERS, []);
-        VirtualDB.set(STORAGE_KEYS.ORDERS, [order, ...orders]);
-        
-        if (!isDemoMode) {
-          try {
-            // 使用重试机制处理订单
-            await retryRequest(async () => {
-              // 使用新的订单处理边缘函数
-              const processedOrder = await api.db.processOrder(order);
-              
-              // 更新房间状态
-              const { error: roomUpdateError } = await supabase
-                .from('rooms')
-                .update({ status: RoomStatus.ORDERING })
-                .eq('id', order.roomId);
-                
-              if (roomUpdateError) {
-                console.error('Failed to update room status:', roomUpdateError);
-                // 即使房间状态更新失败，订单仍应创建
-              }
-              
-              return processedOrder;
-            });
-          } catch (e) {
-            console.error('Failed to process order via edge function:', e);
-            VirtualDB.queueForSync('INSERT', 'orders', order);
-          }
-        }
-        
-        // Send notification to kitchen
-        try {
-          notificationService.send('新订单', `房间 ${order.roomId} 发起点餐 ₱${order.totalAmount}`, 'NEW_ORDER');
-        } catch (e) {
-          console.error('Failed to send notification:', e);
-        }
-        
-        // Trigger webhook if enabled
-        try {
-          const config = await api.config.get();
-          if (config.isWebhookEnabled && config.webhookUrl) {
-            await notificationService.triggerWebhook(order, config.webhookUrl);
-          }
-        } catch (e) {
-          console.warn('Failed to get config or trigger webhook:', e);
-        }
-        
-        // 使用新的订单通知边缘函数
-        try {
-          await api.db.notifyOrder({
-            orderId: order.id,
-            eventType: 'NEW_ORDER',
-            payload: { roomId: order.roomId, totalAmount: order.totalAmount }
-          });
-        } catch (e) {
-          console.warn('Failed to send order notification via edge function:', e);
-        }
-      } catch (error) {
-        console.error('Failed to create order:', error);
-        throw error;
+    create: async (o: Order) => {
+      if (!isDemoMode) {
+        await supabase.from('orders').insert({
+          id: o.id, room_id: o.roomId, items: o.items,
+          total_amount: o.totalAmount, tax_amount: o.taxAmount,
+          status: o.status, payment_method: o.paymentMethod
+        });
       }
     },
-    updateStatus: async (orderId: string, status: OrderStatus) => {
-      try {
-        const orders = VirtualDB.get<Order[]>(STORAGE_KEYS.ORDERS, []);
-        VirtualDB.set(STORAGE_KEYS.ORDERS, orders.map(o => o.id === orderId ? { ...o, status, updatedAt: new Date().toISOString() } : o));
-        
-        if (!isDemoMode) {
-          try {
-            // 使用新的订单处理边缘函数
-            const { data: { session } } = await supabase.auth.getSession();
-            
-            if (session) {
-              const response = await fetch(`${supabaseUrl}/functions/v1/order-processing-api`, {
-                method: 'PATCH',
-                headers: {
-                  'Authorization': `Bearer ${session.access_token}`,
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ id: orderId, status, updated_at: new Date().toISOString() })
-              });
-              
-              if (!response.ok) {
-                throw new Error(`Failed to update order status: ${response.status} ${response.statusText}`);
-              }
-              
-              if (status === OrderStatus.COMPLETED || status === OrderStatus.CANCELLED) {
-                 const { data, error } = await supabase.from('orders').select('room_id').eq('id', orderId).single();
-                 if (error) {
-                   console.error('Failed to get order room ID:', error);
-                 } else if (data) {
-                   const { error: roomUpdateError } = await supabase.from('rooms').update({ status: RoomStatus.READY }).eq('id', (data as any).room_id);
-                   if (roomUpdateError) {
-                     console.error('Failed to update room status:', roomUpdateError);
-                   }
-                 }
-              }
-            }
-          } catch (e) {
-            console.error('Error updating order status via edge function:', e);
-            VirtualDB.queueForSync('UPDATE_STATUS', 'orders', { orderId, status });
-          }
-        }
-        
-        // Send notification about order status update
-        try {
-          const order = orders.find(o => o.id === orderId);
-          if (order) {
-            const statusText = {
-              [OrderStatus.PENDING]: '待处理',
-              [OrderStatus.PREPARING]: '制作中',
-              [OrderStatus.DELIVERING]: '配送中',
-              [OrderStatus.COMPLETED]: '已完成',
-              [OrderStatus.CANCELLED]: '已取消'
-            }[status] || status;
-            
-            notificationService.send('订单状态更新', `订单 ${orderId} 状态更新为: ${statusText}`, 'ORDER_UPDATE');
-          }
-        } catch (e) {
-          console.error('Failed to send notification:', e);
-        }
-        
-        // 使用新的订单通知边缘函数
-        try {
-          await api.db.notifyOrder({
-            orderId,
-            eventType: 'STATUS_UPDATE',
-            payload: { status, updatedAt: new Date().toISOString() }
-          });
-        } catch (e) {
-          console.warn('Failed to send order notification via edge function:', e);
-        }
-      } catch (error) {
-        console.error('Failed to update order status:', error);
-        throw error;
+    updateStatus: async (id: string, status: OrderStatus) => {
+      if (!isDemoMode) {
+        await supabase.from('orders').update({ status, updated_at: new Date().toISOString() }).eq('id', id);
       }
     }
   },
@@ -838,404 +291,109 @@ export const api = {
   dishes: {
     getAll: async (): Promise<Dish[]> => {
       if (!isDemoMode) {
-        try {
-          // 使用新的 dish-crud-api 边缘功能
-          const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/dish-crud-api/dishes?limit=1000`, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-              'Content-Type': 'application/json',
-            },
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            if (data && Array.isArray(data)) {
-              return data.map((d: any) => ({
-                id: d.id,
-                name: d.name,
-                nameEn: d.name_en,
-                description: d.description,
-                price: Number(d.price),
-                category: d.category,
-                stock: Number(d.stock),
-                imageUrl: d.image_url,
-                isRecommended: d.is_recommended,
-                isAvailable: d.is_available,
-                calories: d.calories,
-                allergens: d.allergens
-              }));
-            }
-          } else {
-            console.error(`Failed to fetch dishes: ${response.status} ${response.statusText}`);
-          }
-        } catch (error) {
-          console.error('Failed to fetch dishes from edge function:', error);
-        }
+        const { data } = await supabase.from('dishes').select('*').order('name');
+        if (data) return data.map(d => ({
+          id: d.id, name: d.name, nameEn: d.name_en,
+          price: Number(d.price), category: d.category,
+          stock: d.stock, imageUrl: d.image_url, isAvailable: d.is_available,
+          partnerId: d.partner_id
+        }));
       }
-      // 首先尝试从本地存储获取数据，如果本地没有数据且不是演示模式，则返回空数组等待云端数据
-      const localDishes = VirtualDB.get<Dish[]>(STORAGE_KEYS.DISHES, []);
-      if (localDishes.length > 0 || isDemoMode) {
-        return localDishes;
-      } else {
-        // 在非演示模式下，如果没有本地数据，则返回空数组，让应用等待云端数据
-        return [];
+      return INITIAL_DISHES;
+    },
+    create: async (d: Dish) => {
+      if (!isDemoMode) {
+        await supabase.from('dishes').insert({
+          id: d.id, name: d.name, name_en: d.nameEn,
+          price: d.price, category: d.category, stock: d.stock,
+          image_url: d.imageUrl, is_available: d.isAvailable, partner_id: d.partnerId
+        });
       }
     },
-    create: async (dish: Dish) => {
-      const payload = {
-        id: dish.id,
-        name: dish.name,
-        name_en: dish.nameEn,
-        description: dish.description,
-        price: dish.price,
-        category: dish.category,
-        stock: dish.stock,
-        image_url: dish.imageUrl,
-        is_available: dish.isAvailable,
-        is_recommended: dish.isRecommended,
-        calories: dish.calories,
-        allergens: dish.allergens
-      };
-      
+    update: async (d: Dish) => {
       if (!isDemoMode) {
-        try {
-          // 使用新的 dish-crud-api 边缘功能
-          const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/dish-crud-api/dish`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload)
-          });
-          
-          if (!response.ok) {
-            throw new Error(`Failed to create dish: ${response.statusText}`);
-          }
-        } catch (error) {
-          console.error('Failed to create dish via edge function:', error);
-          // 添加到同步队列以供后续处理
-          VirtualDB.queueForSync('INSERT', 'dishes', dish);
-        }
+        await supabase.from('dishes').update({
+          name: d.name, name_en: d.nameEn, price: d.price,
+          category: d.category, stock: d.stock, image_url: d.imageUrl,
+          is_available: d.isAvailable, partner_id: d.partnerId
+        }).eq('id', d.id);
       }
-      
-      const dishes = VirtualDB.get<Dish[]>(STORAGE_KEYS.DISHES, []);
-      VirtualDB.set(STORAGE_KEYS.DISHES, [...dishes, dish]);
-    },
-    update: async (dish: Dish) => {
-      const payload = {
-        name: dish.name,
-        name_en: dish.nameEn,
-        description: dish.description,
-        price: dish.price,
-        category: dish.category,
-        stock: dish.stock,
-        image_url: dish.imageUrl,
-        is_available: dish.isAvailable,
-        is_recommended: dish.isRecommended,
-        calories: dish.calories,
-        allergens: dish.allergens
-      };
-      
-      if (!isDemoMode) {
-        try {
-          // 使用新的 dish-crud-api 边缘功能
-          const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/dish-crud-api/dish/${dish.id}`, {
-            method: 'PATCH',
-            headers: {
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload)
-          });
-          
-          if (!response.ok) {
-            throw new Error(`Failed to update dish: ${response.statusText}`);
-          }
-        } catch (error) {
-          console.error('Failed to update dish via edge function:', error);
-          // 添加到同步队列以供后续处理
-          VirtualDB.queueForSync('UPDATE', 'dishes', dish);
-        }
-      }
-      
-      const dishes = VirtualDB.get<Dish[]>(STORAGE_KEYS.DISHES, []);
-      VirtualDB.set(STORAGE_KEYS.DISHES, dishes.map(d => d.id === dish.id ? dish : d));
     },
     delete: async (id: string) => {
-      if (!isDemoMode) {
-        try {
-          // 使用新的 dish-crud-api 边缘功能
-          const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/dish-crud-api/dish/${id}`, {
-            method: 'DELETE',
-            headers: {
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-              'Content-Type': 'application/json',
-            },
-          });
-          
-          if (!response.ok) {
-            throw new Error(`Failed to delete dish: ${response.statusText}`);
-          }
-        } catch (error) {
-          console.error('Failed to delete dish via edge function:', error);
-          // 添加到同步队列以供后续处理
-          VirtualDB.queueForSync('DELETE', 'dishes', { id });
-        }
-      }
-      
-      const dishes = VirtualDB.get<Dish[]>(STORAGE_KEYS.DISHES, []);
-      VirtualDB.set(STORAGE_KEYS.DISHES, dishes.filter(d => d.id !== id));
+      if (!isDemoMode) await supabase.from('dishes').delete().eq('id', id);
     }
   },
 
   users: {
     getAll: async (): Promise<User[]> => {
       if (!isDemoMode) {
-        // 仅选择非敏感列，避免返回密码和MFA密钥
-        const { data } = await supabase.from('users').select('id,username,name,role,permissions,two_factor_enabled,is_online,is_locked,ip_whitelist,last_login');
-        if (data) {
-          return data.map((u: any) => ({
-            id: u.id,
-            username: u.username,
-            name: u.name,
-            role: u.role,
-            password: undefined, // 不返回密码
-            permissions: u.permissions,
-            twoFactorEnabled: u.two_factor_enabled,
-            mfaSecret: undefined, // 不返回MFA密钥
-            isOnline: u.is_online,
-            isLocked: u.is_locked,
-            ipWhitelist: u.ip_whitelist,
-            lastLogin: u.last_login
-          }));
-        }
+        const { data } = await supabase.from('users').select('*');
+        if (data) return data.map(u => ({
+          id: u.id, username: u.email, name: u.full_name,
+          role: u.metadata?.role || UserRole.STAFF,
+          modulePermissions: u.metadata?.permissions || {}
+        }));
       }
-      // 在非演示模式下，如果没有本地用户数据，则返回空数组，强制从云端获取真实用户数据
-      const localUsers = VirtualDB.get<User[]>(STORAGE_KEYS.USERS, []);
-      if (localUsers.length > 0 || isDemoMode) {
-        return localUsers;
-      } else {
-        // 返回空数组，让应用等待云端数据
-        return [];
+      return INITIAL_USERS;
+    },
+    create: async (u: User) => {
+      if (!isDemoMode) {
+        await supabase.from('users').insert({
+          id: u.id, email: u.username, full_name: u.name,
+          metadata: { role: u.role, permissions: u.modulePermissions }
+        });
       }
     },
-    create: async (user: User) => {
-      const payload = {
-        id: user.id,
-        username: user.username,
-        password: user.password, // 注意：实际部署时，密码应该在服务端进行哈希处理
-        role: user.role,
-        name: user.name,
-        permissions: user.permissions,
-        ip_whitelist: user.ipWhitelist,
-        two_factor_enabled: user.twoFactorEnabled,
-        mfa_secret: user.mfaSecret, // 注意：实际部署时，MFA密钥不应该通过客户端传递
-        is_online: user.isOnline,
-        is_locked: user.isLocked
-      };
-      if (!isDemoMode) await supabase.from('users').insert(payload);
-      const users = VirtualDB.get<User[]>(STORAGE_KEYS.USERS, []);
-      VirtualDB.set(STORAGE_KEYS.USERS, [...users, {
-        ...user,
-        password: undefined, // 在本地存储中不保存密码
-        mfaSecret: undefined  // 在本地存储中不保存MFA密钥
-      }]);
-    },
-    update: async (user: User) => {
-      const payload = {
-        username: user.username,
-        password: user.password, // 注意：实际部署时，密码应该在服务端进行哈希处理
-        role: user.role,
-        name: user.name,
-        permissions: user.permissions,
-        ip_whitelist: user.ipWhitelist,
-        two_factor_enabled: user.twoFactorEnabled,
-        mfa_secret: user.mfaSecret, // 注意：实际部署时，MFA密钥不应该通过客户端传递
-        is_online: user.isOnline,
-        is_locked: user.isLocked
-      };
-      if (!isDemoMode) await supabase.from('users').update(payload).eq('id', user.id);
-      const users = VirtualDB.get<User[]>(STORAGE_KEYS.USERS, []);
-      VirtualDB.set(STORAGE_KEYS.USERS, users.map(u => u.id === user.id ? {
-        ...user,
-        password: undefined, // 在本地存储中不保存密码
-        mfaSecret: undefined  // 在本地存储中不保存MFA密钥
-      } : u));
+    update: async (u: User) => {
+       if (!isDemoMode) {
+        await supabase.from('users').update({
+          email: u.username, full_name: u.name,
+          metadata: { role: u.role, permissions: u.modulePermissions }
+        }).eq('id', u.id);
+      }
     },
     delete: async (id: string) => {
       if (!isDemoMode) await supabase.from('users').delete().eq('id', id);
-      const users = VirtualDB.get<User[]>(STORAGE_KEYS.USERS, []);
-      VirtualDB.set(STORAGE_KEYS.USERS, users.filter(u => u.id !== id));
-    },
-    setOnlineStatus: async (userId: string, isOnline: boolean) => {
-      if (!isDemoMode) await supabase.from('users').update({ is_online: isOnline, last_login: new Date().toISOString() }).eq('id', userId);
-      const users = VirtualDB.get<User[]>(STORAGE_KEYS.USERS, []);
-      VirtualDB.set(STORAGE_KEYS.USERS, users.map(u => u.id === userId ? { ...u, isOnline, lastLogin: new Date().toISOString() } : u));
-    }
-  },
-
-  config: {
-    get: async (): Promise<SystemConfig> => {
-      if (!isDemoMode) {
-        const { data } = await supabase.from('config').select('*').eq('id', 'global').single();
-        if (data) {
-          return {
-            hotelName: data.hotel_name,
-            version: data.version,
-            serviceChargeRate: Number(data.service_charge_rate),
-            exchangeRateCNY: Number(data.exchange_rate_cny),
-            exchangeRateUSDT: Number(data.exchange_rate_usdt),
-            webhookUrl: data.webhook_url,
-            isWebhookEnabled: data.is_webhook_enabled
-          };
-        }
-      }
-      return VirtualDB.get(STORAGE_KEYS.CONFIG, { hotelName: '江西云厨', version: '3.5' } as any);
-    },
-    update: async (config: SystemConfig) => {
-      const payload = {
-        hotel_name: config.hotelName,
-        version: config.version,
-        service_charge_rate: config.serviceChargeRate,
-        exchange_rate_cny: config.exchangeRateCNY,
-        exchange_rate_usdt: config.exchangeRateUSDT,
-        webhook_url: config.webhookUrl,
-        is_webhook_enabled: config.isWebhookEnabled,
-        updated_at: new Date().toISOString()
-      };
-      if (!isDemoMode) await supabase.from('config').upsert({ id: 'global', ...payload });
-      VirtualDB.set(STORAGE_KEYS.CONFIG, config);
     }
   },
 
   expenses: {
-    getAll: async () => {
+    getAll: async (): Promise<Expense[]> => {
       if (!isDemoMode) {
-        const { data } = await supabase.from('expenses').select('*');
+        const { data } = await supabase.from('expenses').select('*').order('date', { ascending: false });
         if (data) return data;
       }
-      return VirtualDB.get<Expense[]>(STORAGE_KEYS.EXPENSES, []);
+      return [];
     },
-    create: async (expense: Expense) => {
-      if (!isDemoMode) await supabase.from('expenses').insert(expense);
-      const expenses = VirtualDB.get<Expense[]>(STORAGE_KEYS.EXPENSES, []);
-      VirtualDB.set(STORAGE_KEYS.EXPENSES, [expense, ...expenses]);
+    create: async (e: Expense) => {
+      if (!isDemoMode) await supabase.from('expenses').insert(e);
     },
     delete: async (id: string) => {
       if (!isDemoMode) await supabase.from('expenses').delete().eq('id', id);
-      const expenses = VirtualDB.get<Expense[]>(STORAGE_KEYS.EXPENSES, []);
-      VirtualDB.set(STORAGE_KEYS.EXPENSES, expenses.filter(e => e.id !== id));
     }
   },
 
   materials: {
-    getAll: async () => {
+    getAll: async (): Promise<MaterialImage[]> => {
       if (!isDemoMode) {
         const { data } = await supabase.from('material_images').select('*');
-        if (data) {
-          return data.map((m: any) => ({
-            ...m,
-            fileSize: m.file_size
-          }));
-        }
+        if (data) return data.map(m => ({
+          id: m.id, url: m.url, name: m.name, category: m.category,
+          fileSize: m.file_size, dimensions: m.dimensions
+        }));
       }
-      return VirtualDB.get<MaterialImage[]>(STORAGE_KEYS.MATERIALS, []);
+      return [];
     },
     create: async (m: MaterialImage) => {
-      const payload = {
-        id: m.id,
-        url: m.url,
-        name: m.name,
-        category: m.category,
-        file_size: m.fileSize,
-        dimensions: m.dimensions
-      };
-      if (!isDemoMode) await supabase.from('material_images').insert(payload);
-      const materials = VirtualDB.get<MaterialImage[]>(STORAGE_KEYS.MATERIALS, []);
-      VirtualDB.set(STORAGE_KEYS.MATERIALS, [...materials, m]);
+       if (!isDemoMode) {
+        await supabase.from('material_images').insert({
+          id: m.id, url: m.url, name: m.name, category: m.category,
+          file_size: m.fileSize, dimensions: m.dimensions
+        });
+      }
     },
     delete: async (id: string) => {
       if (!isDemoMode) await supabase.from('material_images').delete().eq('id', id);
-      const materials = VirtualDB.get<MaterialImage[]>(STORAGE_KEYS.MATERIALS, []);
-      VirtualDB.set(STORAGE_KEYS.MATERIALS, materials.filter(m => m.id !== id));
-    }
-  },
-
-  logs: {
-    getAll: async () => {
-      if (!isDemoMode) {
-        const { data } = await supabase.from('security_logs').select('*').order('timestamp', { ascending: false }).limit(200);
-        if (data) {
-          return data.map((l: any) => ({
-            id: l.id,
-            userId: l.user_id,
-            action: l.action,
-            details: l.details,
-            timestamp: l.timestamp,
-            ip: l.ip,
-            riskLevel: l.risk_level
-          }));
-        }
-      }
-      return [];
-    },
-    add: async (log: SecurityLog) => {
-      if (!isDemoMode) {
-        const payload = {
-          user_id: log.userId,
-          action: log.action,
-          details: log.details,
-          ip: log.ip,
-          risk_level: log.riskLevel || 'Low',
-          timestamp: new Date().toISOString()
-        };
-        const { error } = await supabase.from('security_logs').insert(payload);
-        if (error) console.warn('Supabase Log Error:', error);
-      }
-    }
-  },
-
-  ingredients: {
-    getAll: async () => {
-      if (!isDemoMode) {
-        const { data } = await supabase.from('ingredients').select('*');
-        if (data) {
-          return data.map((i: any) => ({
-            ...i,
-            minStock: i.min_stock,
-            lastRestocked: i.last_restocked
-          }));
-        }
-      }
-      return [];
-    },
-    create: async (ing: Ingredient) => {
-      const payload = {
-        id: ing.id,
-        name: ing.name,
-        unit: ing.unit,
-        stock: ing.stock,
-        min_stock: ing.minStock,
-        category: ing.category,
-        last_restocked: ing.lastRestocked
-      };
-      if (!isDemoMode) await supabase.from('ingredients').insert(payload);
-    },
-    update: async (ing: Ingredient) => {
-      const payload = {
-        name: ing.name,
-        unit: ing.unit,
-        stock: ing.stock,
-        min_stock: ing.minStock,
-        category: ing.category,
-        last_restocked: ing.lastRestocked
-      };
-      if (!isDemoMode) await supabase.from('ingredients').update(payload).eq('id', ing.id);
-    },
-    delete: async (id: string) => {
-      if (!isDemoMode) await supabase.from('ingredients').delete().eq('id', id);
     }
   },
 
@@ -1243,103 +401,76 @@ export const api = {
     getAll: async () => {
       if (!isDemoMode) {
         const { data } = await supabase.from('payments').select('*');
-        if (data && data.length > 0) {
-          return data.map((p: any) => ({
-            id: p.id,
-            name: p.name,
-            type: p.type as PaymentMethod,
-            isActive: p.is_active,
-            iconType: p.icon_type as any,
-            instructions: p.instructions
-          }));
-        }
+        if (data) return data.map(p => ({
+          id: p.id, name: p.name, type: p.type as PaymentMethod,
+          isActive: p.is_active, iconType: p.icon_type, instructions: p.instructions
+        }));
       }
       return [];
     },
-    update: async (p: PaymentMethodConfig) => {
-      const payload = {
-        name: p.name,
-        is_active: p.isActive,
-        instructions: p.instructions
-      };
-      if (!isDemoMode) await supabase.from('payments').update(payload).eq('id', p.id);
-    },
     toggle: async (id: string) => {
+       const payments = await api.payments.getAll();
+       const target = payments.find(p => p.id === id);
+       if (target && !isDemoMode) {
+         await supabase.from('payments').update({ is_active: !target.isActive }).eq('id', id);
+       }
+    },
+    create: async (p: PaymentMethodConfig) => {
       if (!isDemoMode) {
-        const { data } = await supabase.from('payments').select('is_active').eq('id', id).single();
-        if (data) await supabase.from('payments').update({ is_active: !data.is_active }).eq('id', id);
+        await supabase.from('payments').insert({
+          id: p.id, name: p.name, type: p.type,
+          is_active: p.isActive, icon_type: p.iconType, instructions: p.instructions
+        });
       }
+    },
+    update: async (p: PaymentMethodConfig) => {
+       if (!isDemoMode) {
+        await supabase.from('payments').update({
+          name: p.name, type: p.type, is_active: p.isActive,
+          icon_type: p.iconType, instructions: p.instructions
+        }).eq('id', p.id);
+      }
+    },
+    delete: async (id: string) => {
+      if (!isDemoMode) await supabase.from('payments').delete().eq('id', id);
     }
   },
 
-  translations: {
-    getAll: async () => {
+  config: {
+    get: async (): Promise<SystemConfig> => {
       if (!isDemoMode) {
-        try {
-          const { data } = await supabase.from('translations').select('*');
-          if (data) {
-            // Convert the database format to the expected translation dictionary format
-            const translationDict: any = { zh: {}, en: {}, tl: {} };
-            
-            data.forEach((row: any) => {
-              if (row.key) {
-                if (row.zh) translationDict.zh[row.key] = row.zh;
-                if (row.en) translationDict.en[row.key] = row.en;
-                if (row.tl) translationDict.tl[row.key] = row.tl;
-              }
-            });
-            
-            return translationDict;
-          }
-        } catch (e) {
-          console.warn('Translations fetch failed, using local storage:', e);
-        }
+        const { data } = await supabase.from('config').select('*').eq('id', 'global').single();
+        if (data) return {
+          hotelName: data.hotel_name,
+          version: data.version,
+          theme: data.theme as any,
+          fontFamily: 'Plus Jakarta Sans',
+          fontSizeBase: 16,
+          fontWeightBase: 500,
+          lineHeightBase: 1.5,
+          letterSpacing: 0,
+          contrastStrict: true,
+          textColorMain: '#0f172a',
+          bgColorMain: '#f8fafc',
+          printerIp: data.printer_ip || '192.168.1.100',
+          printerPort: data.printer_port || '9100',
+          autoPrintOrder: true,
+          autoPrintReceipt: true,
+          voiceBroadcastEnabled: true,
+          voiceVolume: 0.8,
+          serviceChargeRate: Number(data.service_charge_rate || 5)
+        };
       }
-      return VirtualDB.get<any>(STORAGE_KEYS.TRANSLATIONS, {});
+      return { hotelName: '江西云厨', version: '5.2.0', theme: 'light' } as any;
     },
-    update: async (dict: any) => VirtualDB.set(STORAGE_KEYS.TRANSLATIONS, dict)
-  },
-
-  migration: {
-    run: async (onProgress: (msg: string) => void) => {
-      if (isDemoMode) {
-        onProgress('错误：未检测到有效的云端连接。');
-        return { success: false };
+    update: async (c: SystemConfig) => {
+      if (!isDemoMode) {
+        await supabase.from('config').update({
+          hotel_name: c.hotelName, version: c.version, theme: c.theme,
+          printer_ip: c.printerIp, printer_port: c.printerPort,
+          service_charge_rate: c.serviceChargeRate, updated_at: new Date().toISOString()
+        }).eq('id', 'global');
       }
-      
-      onProgress('正在封装本地资产...');
-      const localRooms = VirtualDB.get<HotelRoom[]>(STORAGE_KEYS.ROOMS, []);
-      const localDishes = VirtualDB.get<Dish[]>(STORAGE_KEYS.DISHES, []);
-      
-      onProgress(`准备同步 ${localRooms.length} 间客房数据...`);
-      await supabase.from('rooms').upsert(localRooms.map(r => ({ id: r.id, status: r.status })));
-      
-      onProgress(`正在推送 ${localDishes.length} 项菜单资产...`);
-      await supabase.from('dishes').upsert(localDishes.map(d => ({
-        id: d.id,
-        name: d.name,
-        name_en: d.nameEn,
-        description: d.description,
-        price: d.price,
-        category: d.category,
-        stock: d.stock,
-        image_url: d.imageUrl,
-        is_available: d.isAvailable,
-        is_recommended: d.isRecommended
-      })));
-      
-      onProgress('正在对齐全局系统配置...');
-      const localConfig = VirtualDB.get<SystemConfig>(STORAGE_KEYS.CONFIG, {} as any);
-      await supabase.from('config').upsert({ 
-        id: 'global', 
-        hotel_name: localConfig.hotelName,
-        service_charge_rate: localConfig.serviceChargeRate,
-        exchange_rate_cny: localConfig.exchangeRateCNY,
-        exchange_rate_usdt: localConfig.exchangeRateUSDT
-      });
-
-      onProgress('江西云厨：云端同步任务已完成。');
-      return { success: true };
     }
   }
 };

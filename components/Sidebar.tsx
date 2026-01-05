@@ -1,96 +1,98 @@
 
 import React from 'react';
 import { 
-  LayoutDashboard, MapPin, UtensilsCrossed, ChefHat, Wallet, LogOut,
-  Users, Image as ImageIcon, Command, Sparkles, Settings, CreditCard, X
+  LayoutDashboard, MapPin, ChefHat, Database, Wallet, 
+  Users, Settings, ImageIcon, LogOut, CreditCard, 
+  Handshake, Truck, Globe 
 } from 'lucide-react';
+import { translations, Language, getTranslation } from '../translations';
 import { UserRole } from '../types';
-import { translations, Language } from '../translations';
 
 interface SidebarProps {
   currentTab: string;
   setCurrentTab: (tab: string) => void;
-  userRole: UserRole;
+  currentUser: any;
   onLogout: () => void;
   lang: Language;
+  onToggleLang: () => void;
   isOpen: boolean;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab, userRole, onLogout, lang, isOpen }) => {
-  const t = (key: keyof typeof translations.zh) => (translations[lang] as any)[key] || key;
+const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab, currentUser, onLogout, lang, onToggleLang, isOpen }) => {
+  const t = (key: string) => getTranslation(lang, key);
 
-  const menuItems = [
-    { id: 'dashboard', label: t('dashboard'), icon: LayoutDashboard, roles: [UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF] },
-    { id: 'rooms', label: t('rooms'), icon: MapPin, roles: [UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF] },
-    { id: 'orders', label: t('orders'), icon: ChefHat, roles: [UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF] },
-    { id: 'menu', label: t('menu'), icon: UtensilsCrossed, roles: [UserRole.ADMIN, UserRole.MANAGER] },
-    { id: 'materials', label: t('materials'), icon: ImageIcon, roles: [UserRole.ADMIN, UserRole.MANAGER] },
-    { id: 'finance', label: t('finance'), icon: Wallet, roles: [UserRole.ADMIN, UserRole.MANAGER] },
-    { id: 'payments', label: t('payments'), icon: CreditCard, roles: [UserRole.ADMIN, UserRole.MANAGER] },
-    { id: 'users', label: t('users'), icon: Users, roles: [UserRole.ADMIN] },
-    { id: 'settings', label: t('settings'), icon: Settings, roles: [UserRole.ADMIN] },
+  const menu = [
+    { id: 'dashboard', icon: LayoutDashboard },
+    { id: 'rooms', icon: MapPin },
+    { id: 'orders', icon: ChefHat },
+    { id: 'supply_chain', icon: Truck }, 
+    { id: 'financial_hub', icon: Wallet },
+    { id: 'images', icon: ImageIcon },   
+    { id: 'database', icon: Database },
+    { id: 'users', icon: Users },
+    { id: 'settings', icon: Settings }
   ];
 
-  const filteredItems = menuItems.filter(item => item.roles.includes(userRole));
-
   return (
-    <div className={`w-72 bg-[#020617] text-white flex flex-col h-screen fixed left-0 top-0 z-[60] border-r border-white/5 shadow-[25px_0_50px_rgba(0,0,0,0.1)] transition-transform duration-500 ease-in-out lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-      <div className="p-8 lg:p-12">
-        <div className="flex flex-col space-y-3 group">
-           <div className="flex items-center justify-between">
-             <div className="flex items-center space-x-2 text-[#d4af37]">
-                <Sparkles size={14} />
-                <span className="text-[10px] font-black uppercase tracking-[0.4em]">VER 3.1.0</span>
-             </div>
-           </div>
-           <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 lg:w-12 lg:h-12 bg-[#d4af37] rounded-2xl flex items-center justify-center text-[#0f172a] shadow-[0_0_25px_rgba(212,175,55,0.4)] group-hover:rotate-12 transition-transform duration-500 shrink-0">
-                 {/* Fixed: Replaced invalid lg:size prop with responsive className */}
-                 <Command className="w-[22px] h-[22px] lg:w-[26px] lg:h-[26px]" />
-              </div>
-              <h1 className="font-serif italic text-2xl lg:text-3xl tracking-tighter text-white truncate">{t('jxCloud')}</h1>
-           </div>
+    <aside className={`w-72 bg-white border-r border-slate-200 h-screen fixed left-0 top-0 z-50 flex flex-col transition-all duration-500 lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full shadow-2xl'}`}>
+      <div className="p-10 pt-12">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 bg-slate-950 text-blue-500 rounded-2xl flex items-center justify-center font-black italic border-b-2 border-blue-600 shadow-xl">JX</div>
+          <div>
+            <h1 className="text-xl font-black text-slate-900 tracking-tighter leading-none">江西云厨</h1>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Terminal Hub</p>
+          </div>
         </div>
       </div>
-      
-      <nav className="flex-1 px-4 lg:px-8 space-y-2 overflow-y-auto no-scrollbar">
-        <div className="text-[10px] lg:text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] mb-4 lg:mb-8 ml-4 lg:ml-6">{t('registryControls')}</div>
-        {filteredItems.map((item) => {
+
+      <nav className="flex-1 px-6 space-y-1.5 overflow-y-auto no-scrollbar py-4">
+        {menu.map(item => {
           const Icon = item.icon;
           const isActive = currentTab === item.id;
+          
+          const hasPerm = currentUser.role === UserRole.ADMIN || currentUser.modulePermissions?.[item.id]?.enabled;
+          const finalPerm = hasPerm || 
+            (item.id === 'financial_hub' && (currentUser.modulePermissions?.['finance']?.enabled || currentUser.modulePermissions?.['partners']?.enabled || currentUser.modulePermissions?.['payments']?.enabled)) ||
+            (item.id === 'supply_chain' && (currentUser.modulePermissions?.['menu']?.enabled || currentUser.modulePermissions?.['inventory']?.enabled));
+          
+          if (!finalPerm) return null;
+
           return (
-            <button
-              key={item.id}
-              onClick={() => setCurrentTab(item.id)}
-              className={`w-full flex items-center space-x-4 lg:space-x-5 px-4 lg:px-6 py-3 lg:py-4.5 rounded-[1.5rem] lg:rounded-[1.75rem] transition-all duration-500 group relative
+            <button 
+              key={item.id} 
+              onClick={() => setCurrentTab(item.id)} 
+              className={`w-full flex items-center gap-4 px-6 py-4 rounded-[1.75rem] font-black text-[11px] uppercase tracking-widest transition-all relative group
                 ${isActive 
-                  ? 'bg-white/10 text-white shadow-lg' 
-                  : 'text-slate-400 hover:text-white hover:bg-white/5'
-                }`}
+                  ? 'bg-slate-900 text-white shadow-2xl shadow-slate-200' 
+                  : 'text-slate-400 hover:bg-slate-50 hover:text-blue-600'}`}
             >
-              {/* Fixed: Replaced invalid lg:size prop with responsive className */}
-              <Icon className={`w-5 h-5 lg:w-[22px] lg:h-[22px] ${isActive ? 'text-[#d4af37]' : 'group-hover:text-white'} transition-colors`} />
-              <span className={`text-[11px] lg:text-[12px] font-black uppercase tracking-widest truncate ${isActive ? 'opacity-100' : 'opacity-80 group-hover:opacity-100'}`}>{item.label}</span>
-              {isActive && (
-                <div className="absolute right-4 lg:right-6 w-1.5 lg:w-2 h-1.5 lg:h-2 rounded-full bg-[#d4af37] shadow-[0_0_15px_#d4af37]" />
-              )}
+              <Icon size={18} className={isActive ? 'text-blue-500' : 'group-hover:scale-110 transition-transform'} />
+              <span>{t(item.id)}</span>
+              {isActive && <div className="absolute right-4 w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />}
             </button>
           );
         })}
       </nav>
 
-      <div className="p-8 lg:p-10 space-y-5">
-        <div className="h-[1px] bg-white/10 w-full mb-4 lg:mb-6" />
-        <button
-          onClick={onLogout}
-          className="w-full flex items-center space-x-4 lg:space-x-5 px-4 lg:px-6 py-3 lg:py-4.5 rounded-[1.25rem] lg:rounded-[1.5rem] text-slate-500 hover:bg-red-600/15 hover:text-red-400 transition-all group"
+      <div className="p-6 border-t border-slate-50 space-y-2">
+        {/* 全局翻译切换按钮 */}
+        <button 
+          onClick={onToggleLang}
+          className="w-full flex items-center gap-4 px-6 py-3.5 rounded-[1.25rem] text-blue-600 bg-blue-50 font-black text-[10px] uppercase tracking-widest hover:bg-blue-100 transition-all active:scale-95 group"
         >
-          {/* Fixed: Replaced invalid lg:size prop with responsive className */}
-          <LogOut className={`w-[18px] h-[18px] lg:w-5 lg:h-5 group-hover:-translate-x-1 transition-transform`} />
-          <span className="text-[10px] lg:text-[11px] font-black uppercase tracking-widest">{t('signOut')}</span>
+          <Globe size={16} className="group-hover:rotate-12 transition-transform" />
+          <span>{lang === 'zh' ? 'Switch to English' : '切换至中文界面'}</span>
+        </button>
+
+        <button 
+          onClick={onLogout} 
+          className="w-full flex items-center gap-4 px-6 py-3.5 rounded-[1.25rem] text-slate-400 font-black text-[10px] uppercase tracking-widest hover:text-red-500 hover:bg-red-50 transition-all active:scale-95 group"
+        >
+          <LogOut size={16} className="group-hover:-translate-x-1 transition-transform" />
+          <span>{t('signOut')}</span>
         </button>
       </div>
-    </div>
+    </aside>
   );
 };
 

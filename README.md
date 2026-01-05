@@ -1,153 +1,69 @@
-# JX CLOUD (江西云厨) - 酒店餐饮管理系统
 
-## 项目概述
+# 江西云厨终端系统 - 核心数据库配置 (V5.2 生产闭环版)
 
-JX CLOUD 是一套专为酒店餐饮业务设计的综合管理系统，采用 React 19 + TypeScript + Vite 6 构建，结合 Supabase 作为后端服务。系统支持多语言（中文/英文/菲律宾语），具备离线优先架构，即使网络中断也能正常运行。
+本项目是基于 **Supabase (PostgreSQL)** 的全栈餐饮终端系统。
 
-## 核心功能模块
+## 1. 数据库初始化 SQL (全量)
 
-### 1. 用户与安全中心
-- **多角色用户管理**：支持管理员、经理、员工三种角色，具有不同权限级别
-- **IP白名单功能**：可为用户配置IP访问白名单，增强安全性
-- **双因素认证 (2FA)**：基于TOTP算法的MFA，支持Google Authenticator等
-- **账户锁定机制**：支持账户锁定/解锁功能
-- **在线状态管理**：实时跟踪用户在线状态，强制上线功能
-- **安全审计日志**：记录所有用户操作和登录行为
+```sql
+-- 启用必备扩展
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-### 2. 订单管理系统
-- **房间二维码点餐**：客户通过扫描房间二维码进行点餐
-- **订单状态管理**：支持待处理、制作中、配送中、已完成、已取消等状态
-- **实时订单推送**：订单创建后实时推送到后厨终端
-- **订单状态更新通知**：订单状态变更时推送通知
-- **Webhook集成**：支持第三方系统（钉钉、飞书、企业微信）消息推送
+-- 1. 支付网关配置
+CREATE TABLE payment_configs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL,
+  type TEXT NOT NULL, -- 'GCash', 'Maya', 'Cash', 'Alipay', 'Wechat'
+  is_active BOOLEAN DEFAULT TRUE,
+  icon_type TEXT DEFAULT 'credit-card',
+  instructions TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
-### 3. 菜单与库存管理
-- **多语言菜单**：支持中英菲三语菜单展示
-- **库存管理**：实时库存跟踪和管理
-- **菜品分类管理**：支持多种菜品分类
-- **图片素材管理**：支持菜品图片上传和管理
-- **推荐菜品标识**：可设置菜品为推荐菜品
+-- 2. 品类架构
+CREATE TABLE categories (
+  id BIGSERIAL PRIMARY KEY,
+  name TEXT UNIQUE NOT NULL,
+  display_order INTEGER DEFAULT 0
+);
 
-### 4. 支付系统
-- **多支付方式**：支持GCash、Maya、现金、银行卡、USDT、记账到房间等多种支付方式
-- **安全支付处理**：处理安全支付流程
-- **支付状态跟踪**：跟踪支付状态和记录
+-- 3. 食材/物料库存
+CREATE TABLE ingredients (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL,
+  unit TEXT NOT NULL,
+  stock DECIMAL(12,2) DEFAULT 0,
+  min_stock DECIMAL(12,2) DEFAULT 10,
+  category TEXT,
+  last_restocked TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
-### 5. 财务管理系统
-- **营收统计**：实时营收数据统计
-- **支出管理**：记录和管理各项支出
-- **财务报表**：生成财务报表和分析
-- **税率计算**：自动计算12%增值税
+-- 4. 系统全局配置
+CREATE TABLE system_config (
+  id TEXT PRIMARY KEY,
+  theme TEXT DEFAULT 'light',
+  font_size TEXT DEFAULT 'medium',
+  printer_ip TEXT,
+  printer_port TEXT,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+```
 
-### 6. 房间与桌位管理
-- **房间状态管理**：管理房间状态（就绪/点餐中）
-- **房间配置**：支持67个房间（8201-8232, 8301-8332, VIP房间）
-- **实时状态同步**：房间状态实时同步
+## 2. 行级安全 (RLS) 策略
 
-### 7. 系统配置
-- **系统参数配置**：可配置酒店名称、服务费率、汇率等
-- **多语言支持**：支持中文、英文、菲律宾语切换
-- **Webhook配置**：配置第三方消息推送地址
-- **云端连接监测**：实时监测与Supabase的连接状态
+- **用户表**: `CREATE POLICY "Allow Admin Full Access" ON users FOR ALL TO authenticated USING (auth.jwt() ->> 'role' = 'admin');`
+- **订单读取**: `CREATE POLICY "Allow Public Read Orders" ON orders FOR SELECT TO public USING (true);`
 
-## 技术特性
+## 3. 边缘函数 (Edge Functions)
 
-### 前端技术栈
-- **React 19**：最新版React框架，优化并发特性
-- **TypeScript**：全流程类型约束，减少运行时错误
-- **Tailwind CSS**：原子化CSS引擎，提供极致视觉体验
-- **Lucide React**：轻量化矢量图标库
-- **Recharts**：专业级数据可视化引擎
-- **QRCode React**：二维码生成与扫描
-
-### 后端与云服务
-- **Supabase（PostgreSQL）**：核心数据库，PostgREST特性
-- **行级安全 (RLS)**：数据库级安全策略
-- **边缘计算**：Vercel Edge Runtime优化，低延迟响应
-- **实时订阅**：PostgreSQL逻辑复制，实时订单状态更新
-
-### 存储架构
-- **混合存储架构（VirtualDB）**：
-  - 本地存储：离线可靠层，断网时系统正常运行
-  - 云端同步：Supabase云端镜像同步
-- **离线优先**：云端不可用时本地数据自动对齐
-
-### 安全特性
-- **MFA双因素认证**：基于TOTP算法的安全认证
-- **IP白名单验证**：登录IP地址验证机制
-- **审计日志系统**：完整操作记录和追踪
-- **Webhook安全**：第三方推送安全验证
-
-## 部署配置
-
-### 环境配置
-- **Vite构建工具**：毫秒级热更新（HMR）
-- **ESM.sh导入**：无需node_modules，提升部署速度
-- **Vercel部署**：CI/CD流程支持
-- **Supabase集成**：数据库连接配置
-
-### 数据库架构
-
-系统使用 Supabase (PostgreSQL) 作为后端数据库，包含用户、房间、订单、菜品、支付、财务等核心表结构，并配置了完善的行级安全策略（RLS）和索引优化。
-
-## 使用说明
-
-### 系统启动
-1. **环境配置**：设置VITE_SUPABASE_URL和VITE_SUPABASE_ANON_KEY环境变量
-2. **数据库初始化**：在Supabase中运行提供的SQL脚本
-3. **启动应用**：运行`npm run dev`启动开发服务器
-
-### 用户登录
-- 系统支持多角色登录（管理员、经理、员工）
-- 登录凭据由系统管理员配置和分配
-- 支持双因素认证和IP白名单验证
-
-### 业务流程
-1. **客户点餐**：扫描房间二维码进入点餐页面
-2. **订单处理**：订单实时推送到后厨系统
-3. **状态跟踪**：订单状态实时更新和通知
-4. **支付处理**：支持多种支付方式
-5. **财务统计**：自动生成营收和支出报表
-
-### 系统管理
-- **用户管理**：创建、编辑、删除用户账号
-- **菜单管理**：添加、编辑、删除菜单项
-- **库存管理**：跟踪和管理食材库存
-- **系统配置**：配置酒店参数和支付设置
-
-## 核心竞争力
-
-这套系统不仅仅是一个管理工具，它通过VirtualDB镜像技术解决了许多中小酒店最担心的"断网无法营业"的问题。即使云端不可用，本地数据在重新联网后自动对齐，这是目前纯SaaS系统所不具备的。同时，系统提供了完整的多语言支持、IP白名单安全验证、实时订单推送等企业级功能。
-
-## 协议与版权信息
-
-### 版权声明
-Copyright (c) 2025 Jiangxi Star Hotel. 保留所有权利.
-
-### 软件使用条款
-本软件及其相关文档受国际版权法和条约的保护。用户可以：
-- 在授权范围内使用本软件
-- 根据授权协议进行必要的修改
-- 在遵守协议条款的前提下分发软件
-
-### 授权条款
-本项目采用 Apache License 2.0 授权（具体请参见 LICENSE 文件）：
-- 可以自由使用、修改和分发
-- 必须保留原始版权声明和免责声明
-- 修改后的文件需要显著标记变更信息
-
-### 第三方依赖版权信息
-本项目使用了以下开源项目（完整列表见 package.json）：
-- React - MIT License
-- TypeScript - Apache License 2.0
-- Supabase - MIT License
-- Tailwind CSS - MIT License
-- Lucide React - MIT License
-- Recharts - MIT License
-- QRCode React - MIT License
-
-所有第三方库的版权和许可条款均保持不变。
-
----
-
-本项目为酒店餐饮管理系统，版权归属江西云厨所有。系统包含多语言支持（中文/英文/菲律宾语）、离线优先架构、双因素认证、IP白名单等企业级安全功能。未经许可，不得用于商业用途。
+支付回调处理伪代码：
+```typescript
+serve(async (req) => {
+  const { order_id, status } = await req.json();
+  const { data, error } = await supabase
+    .from('orders')
+    .update({ status: 'preparing' })
+    .eq('id', order_id);
+  return new Response(JSON.stringify({ success: true }));
+});
+```

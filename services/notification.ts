@@ -1,6 +1,4 @@
-/* Copyright (c) 2025 Jiangxi Star Hotel. 保留所有权利. */
 
-import { supabase, isDemoMode } from './supabaseClient';
 import { Order } from '../types';
 
 export type NotificationType = 'NEW_ORDER' | 'ORDER_UPDATE' | 'SYSTEM_ALERT';
@@ -22,10 +20,41 @@ export const notificationService = {
     return await Notification.requestPermission();
   },
 
-  // 核心：Webhook 推送逻辑
+  /**
+   * 使用浏览器原生 Web Speech API 进行播报
+   * 无需 AI，低延迟，支持多语言。
+   */
+  broadcastOrderVoice: (order: Order, lang: 'zh' | 'en', volume: number = 1.0) => {
+    if (!('speechSynthesis' in window)) {
+      console.warn("Speech Synthesis not supported in this browser.");
+      return;
+    }
+
+    const text = lang === 'zh' 
+      ? `您有一条来自 ${order.roomId} 房间的新订单，请及时处理。`
+      : `New order received from Room ${order.roomId}. Please check.`;
+
+    // 停止当前正在进行的播报，防止重叠
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = lang === 'zh' ? 'zh-CN' : 'en-US';
+    utterance.volume = volume;
+    utterance.rate = 1.0;
+    utterance.pitch = 1.1; // 稍微调高音调，增加识别度
+
+    // 针对 Chrome 偶尔无法自动找到嗓音的修复
+    const voices = window.speechSynthesis.getVoices();
+    if (voices.length > 0) {
+      const preferredVoice = voices.find(v => v.lang.includes(lang === 'zh' ? 'zh' : 'en'));
+      if (preferredVoice) utterance.voice = preferredVoice;
+    }
+
+    window.speechSynthesis.speak(utterance);
+  },
+
   triggerWebhook: async (order: Order, webhookUrl?: string) => {
     if (!webhookUrl) return;
-
     const payload = {
       event: 'order.created',
       timestamp: new Date().toISOString(),
@@ -33,25 +62,17 @@ export const notificationService = {
       data: {
         orderId: order.id,
         room: order.roomId,
-        amount: order.totalAmount,
-        payment: order.paymentMethod,
-        items: order.items.map(i => `${i.name} x${i.quantity}`).join(', ')
+        amount: order.totalAmount
       }
     };
-
     try {
-      // 使用 fetch 发送 POST 请求到第三方网关
-      // 注意：在浏览器端可能会受 CORS 限制，生产环境建议通过后端中继
       await fetch(webhookUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-        mode: 'no-cors' // 演示环境通常使用 no-cors
+        mode: 'no-cors'
       });
-      console.log('Webhook dispatched successfully.');
-    } catch (error) {
-      console.warn('Webhook dispatch failed:', error);
-    }
+    } catch (error) {}
   },
 
   send: (
@@ -69,13 +90,7 @@ export const notificationService = {
 
   triggerLocal: (title: string, body: string, type: NotificationType) => {
     if (Notification.permission === 'granted') {
-      new Notification(title, {
-        body,
-        icon: 'https://cdn-icons-png.flaticon.com/512/3119/3119338.png',
-        tag: type,
-        silent: false
-      });
-
+      new Notification(title, { body, tag: type });
       try {
         const soundUrl = type === 'NEW_ORDER' 
           ? 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'
@@ -92,8 +107,6 @@ export const notificationService = {
     listeners.push(callback);
     return () => {
       channel.removeEventListener('message', handler);
-      const index = listeners.indexOf(callback);
-      if (index !== -1) listeners.splice(index, 1);
     };
   }
 };

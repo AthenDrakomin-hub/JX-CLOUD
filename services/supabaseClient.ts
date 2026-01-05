@@ -1,6 +1,5 @@
-/* Copyright (c) 2025 Jiangxi Star Hotel. 保留所有权利. */
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 /**
  * 江西云厨 - 云端集成引擎 (Vercel & Edge Optimized)
@@ -19,7 +18,7 @@ const supabaseAnonKey = getEnv('SUPABASE_ANON_KEY') || 'eyJhbGciOiJIUzI1NiIsInR5
 export const isDemoMode = !supabaseUrl || !supabaseAnonKey;
 
 // 初始化客户端，针对 Vercel Serverless 环境优化 fetch 行为
-export const supabase = isDemoMode 
+export const supabase: SupabaseClient = isDemoMode 
   ? null as any 
   : createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
@@ -28,25 +27,7 @@ export const supabase = isDemoMode
         detectSessionInUrl: true
       },
       global: {
-        headers: { 
-          'x-application-name': 'jx-cloud-v3',
-          // 添加请求拦截器来处理会话问题
-          ...(() => {
-            const token = localStorage.getItem('supabase.auth.token');
-            if (token) {
-              try {
-                const tokenObj = JSON.parse(token);
-                const accessToken = tokenObj?.currentSession?.access_token;
-                if (accessToken) {
-                  return { 'Authorization': `Bearer ${accessToken}` };
-                }
-              } catch (e) {
-                console.warn('Failed to parse stored token:', e);
-              }
-            }
-            return {};
-          })()
-        }
+        headers: { 'x-application-name': 'jx-cloud-v3' }
       },
       realtime: {
         params: {
@@ -58,31 +39,3 @@ export const supabase = isDemoMode
 if (!isDemoMode) {
   console.log('🔗 JX-CLOUD: 已挂载生产级云端路由: zlbemopcgjohrnyyiwvs');
 }
-
-// 会话管理辅助函数
-export const getStoredSession = () => {
-  try {
-    const sessionData = localStorage.getItem('supabase.auth.token');
-    if (sessionData) {
-      const sessionObj = JSON.parse(sessionData);
-      return sessionObj?.currentSession || null;
-    }
-  } catch (e) {
-    console.warn('Failed to get stored session:', e);
-  }
-  return null;
-};
-
-// 检查会话是否有效
-export const isValidSession = (session: any) => {
-  if (!session || !session.access_token) return false;
-  
-  try {
-    const payload = JSON.parse(atob(session.access_token.split('.')[1]));
-    const now = Date.now() / 1000;
-    return payload.exp > now;
-  } catch (e) {
-    console.warn('Failed to validate session:', e);
-    return false;
-  }
-};
