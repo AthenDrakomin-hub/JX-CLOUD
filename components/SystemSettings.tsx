@@ -132,6 +132,96 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, onChangeLang, onU
                     className="w-full h-3 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-blue-600"
                   />
                 </div>
+                
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] ml-2">主题选择</label>
+                  <div className="grid grid-cols-3 gap-4">
+                    <button 
+                      onClick={() => setConfig({...config, theme: 'light'})} 
+                      className={`py-4 rounded-2xl border-2 font-bold text-xs transition-all flex flex-col items-center ${config.theme === 'light' ? 'bg-blue-600 border-blue-600 text-white shadow-lg' : 'bg-slate-50 border-slate-100 text-slate-500 hover:border-slate-300'}`}
+                    >
+                      <Sun className="mb-2" size={16} />
+                      <span>明亮</span>
+                    </button>
+                    <button 
+                      onClick={() => setConfig({...config, theme: 'dark'})} 
+                      className={`py-4 rounded-2xl border-2 font-bold text-xs transition-all flex flex-col items-center ${config.theme === 'dark' ? 'bg-blue-600 border-blue-600 text-white shadow-lg' : 'bg-slate-50 border-slate-100 text-slate-500 hover:border-slate-300'}`}
+                    >
+                      <Moon className="mb-2" size={16} />
+                      <span>暗黑</span>
+                    </button>
+                    <button 
+                      onClick={() => setConfig({...config, theme: 'custom'})} 
+                      className={`py-4 rounded-2xl border-2 font-bold text-xs transition-all flex flex-col items-center ${config.theme === 'custom' ? 'bg-blue-600 border-blue-600 text-white shadow-lg' : 'bg-slate-50 border-slate-100 text-slate-500 hover:border-slate-300'}`}
+                    >
+                      <Palette className="mb-2" size={16} />
+                      <span>自定义</span>
+                    </button>
+                  </div>
+                </div>
+                
+                {config.theme === 'custom' && (
+                  <div className="space-y-6 p-6 bg-slate-50 rounded-3xl border border-slate-200">
+                    <div className="space-y-4">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] ml-2">主文字颜色</label>
+                      <div className="flex items-center gap-4">
+                        <input 
+                          type="color" 
+                          value={config.textColorMain} 
+                          onChange={(e) => setConfig({...config, textColorMain: e.target.value})}
+                          className="w-12 h-12 border border-slate-300 rounded-lg cursor-pointer"
+                        />
+                        <div className="flex-1">
+                          <input 
+                            type="text" 
+                            value={config.textColorMain} 
+                            onChange={(e) => setConfig({...config, textColorMain: e.target.value})}
+                            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl font-mono text-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] ml-2">主背景颜色</label>
+                      <div className="flex items-center gap-4">
+                        <input 
+                          type="color" 
+                          value={config.bgColorMain} 
+                          onChange={(e) => setConfig({...config, bgColorMain: e.target.value})}
+                          className="w-12 h-12 border border-slate-300 rounded-lg cursor-pointer"
+                        />
+                        <div className="flex-1">
+                          <input 
+                            type="text" 
+                            value={config.bgColorMain} 
+                            onChange={(e) => setConfig({...config, bgColorMain: e.target.value})}
+                            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl font-mono text-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] ml-2">服务费率</label>
+                  <div className="space-y-3">
+                    <div className="flex justify-between px-2">
+                      <span className="text-sm font-black text-blue-600">{(config.serviceChargeRate * 100).toFixed(1)}%</span>
+                    </div>
+                    <input 
+                      type="range" min="0" max="0.2" step="0.01" 
+                      value={config.serviceChargeRate} 
+                      onChange={(e) => setConfig({...config, serviceChargeRate: parseFloat(e.target.value)})}
+                      className="w-full h-3 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                    />
+                    <div className="flex justify-between text-xs text-slate-500 px-2">
+                      <span>0%</span>
+                      <span>20%</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </section>
           </div>
@@ -180,6 +270,30 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, onChangeLang, onU
                   <input value={config.printerPort} onChange={e => setConfig({...config, printerPort: e.target.value})} className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-mono text-slate-900 font-bold focus:border-blue-600 outline-none transition-all" placeholder="9100" />
                 </div>
               </div>
+              
+              <div className="pt-4 space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-bold text-slate-900">自动打印订单</h4>
+                    <p className="text-xs text-slate-500">新订单自动发送到打印机</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" checked={config.autoPrintOrder} onChange={(e) => setConfig({...config, autoPrintOrder: e.target.checked})} className="sr-only peer" />
+                    <div className="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                  </label>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-bold text-slate-900">自动打印收据</h4>
+                    <p className="text-xs text-slate-500">订单完成后自动打印收据</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" checked={config.autoPrintReceipt} onChange={(e) => setConfig({...config, autoPrintReceipt: e.target.checked})} className="sr-only peer" />
+                    <div className="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                  </label>
+                </div>
+              </div>
             </div>
           </section>
 
@@ -189,11 +303,35 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, onChangeLang, onU
                 <h3 className="text-xl font-black uppercase tracking-widest">安全架构</h3>
              </div>
              <div className="space-y-8">
-                <div className="space-y-4 pt-4">
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] ml-2">酒店名称</label>
+                  <input 
+                    value={config.hotelName} 
+                    onChange={e => setConfig({...config, hotelName: e.target.value})} 
+                    className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 focus:border-blue-600 outline-none transition-all" 
+                    placeholder="酒店名称" 
+                  />
+                </div>
+                
+                <div className="space-y-4">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] ml-2">系统主语言</label>
                   <div className="flex gap-4">
                     <button onClick={() => onChangeLang('zh')} className={`flex-1 py-5 rounded-2xl border-2 font-black text-[10px] uppercase transition-all ${lang === 'zh' ? 'bg-slate-950 border-slate-950 text-white shadow-lg' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>简体中文</button>
                     <button onClick={() => onChangeLang('en')} className={`flex-1 py-5 rounded-2xl border-2 font-black text-[10px] uppercase transition-all ${lang === 'en' ? 'bg-slate-950 border-slate-950 text-white shadow-lg' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>English</button>
+                  </div>
+                </div>
+                
+                <div className="space-y-4 pt-4">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] ml-2">系统信息</label>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center py-3 px-4 bg-slate-50 rounded-xl border border-slate-100">
+                      <span className="text-sm text-slate-600">版本号</span>
+                      <span className="font-bold text-slate-900">{config.version}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-3 px-4 bg-slate-50 rounded-xl border border-slate-100">
+                      <span className="text-sm text-slate-600">系统状态</span>
+                      <span className="font-bold text-emerald-600">运行正常</span>
+                    </div>
                   </div>
                 </div>
              </div>

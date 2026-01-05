@@ -61,23 +61,42 @@ const App: React.FC = () => {
   const fetchData = useCallback(async (quiet = false) => {
     if (!quiet) setIsLoading(true);
     try {
-      const [r, o, e, d, u, m, p, config] = await Promise.all([
-        api.rooms.getAll(), api.orders.getAll(), api.expenses.getAll(),
-        api.dishes.getAll(), api.users.getAll(), api.materials.getAll(),
-        api.partners.getAll(), api.config.get()
+      // 使用并行请求获取所有数据
+      const results = await Promise.allSettled([
+        api.rooms.getAll(), 
+        api.orders.getAll(), 
+        api.expenses.getAll(),
+        api.dishes.getAll(), 
+        api.users.getAll(), 
+        api.materials.getAll(),
+        api.partners.getAll(), 
+        api.config.get()
       ]);
       
-      if (config.voiceBroadcastEnabled) {
-        o.forEach(order => {
-          if (order.status === OrderStatus.PENDING && !announcedOrdersRef.current.has(order.id)) {
-            notificationService.broadcastOrderVoice(order, lang, config.voiceVolume);
-            announcedOrdersRef.current.add(order.id);
-          }
-        });
+      // 处理结果，即使部分请求失败也不影响其他数据的更新
+      const [roomsResult, ordersResult, expensesResult, dishesResult, usersResult, materialsResult, partnersResult, configResult] = results;
+      
+      if (roomsResult.status === 'fulfilled') setRooms(roomsResult.value);
+      if (ordersResult.status === 'fulfilled') {
+        const orders = ordersResult.value;
+        setOrders(orders);
+        
+        // 只有在配置可用时才执行语音广播
+        if (configResult.status === 'fulfilled' && configResult.value.voiceBroadcastEnabled) {
+          orders.forEach(order => {
+            if (order.status === OrderStatus.PENDING && !announcedOrdersRef.current.has(order.id)) {
+              notificationService.broadcastOrderVoice(order, lang, configResult.value.voiceVolume);
+              announcedOrdersRef.current.add(order.id);
+            }
+          });
+        }
       }
-
-      setRooms(r); setOrders(o); setExpenses(e); setDishes(d); setUsers(u); setMaterials(m); setPartners(p);
-      setSysConfig(config);
+      if (expensesResult.status === 'fulfilled') setExpenses(expensesResult.value);
+      if (dishesResult.status === 'fulfilled') setDishes(dishesResult.value);
+      if (usersResult.status === 'fulfilled') setUsers(usersResult.value);
+      if (materialsResult.status === 'fulfilled') setMaterials(materialsResult.value);
+      if (partnersResult.status === 'fulfilled') setPartners(partnersResult.value);
+      if (configResult.status === 'fulfilled') setSysConfig(configResult.value);
     } catch (error) {
        if (!quiet) showToast(t('syncError'), "error");
     } finally { if (!quiet) setIsLoading(false); }
@@ -86,19 +105,48 @@ const App: React.FC = () => {
   useEffect(() => {
     if (currentUser) {
       fetchData();
-      const syncInterval = window.setInterval(() => fetchData(true), 30000);
+      // 使用更高效的同步机制
+      const syncInterval = window.setInterval(async () => {
+        try {
+          // 只获取需要频繁更新的数据
+          const orders = await api.orders.getAll();
+          setOrders(orders);
+          
+          // 检查是否需要播放语音通知
+          if (sysConfig?.voiceBroadcastEnabled) {
+            orders.forEach(order => {
+              if (order.status === OrderStatus.PENDING && !announcedOrdersRef.current.has(order.id)) {
+                notificationService.broadcastOrderVoice(order, lang, sysConfig.voiceVolume);
+                announcedOrdersRef.current.add(order.id);
+              }
+            });
+          }
+        } catch (error) {
+          console.error('Sync error:', error);
+        }
+      }, 30000);
+      
       return () => clearInterval(syncInterval);
     }
-  }, [currentUser, fetchData]);
+  }, [currentUser, sysConfig, lang]);
 
   useEffect(() => {
     if (sysConfig) {
       const root = document.documentElement;
-      root.style.setProperty('--font-family-main', sysConfig.fontFamily || "'Plus Jakarta Sans', sans-serif");
-      root.style.setProperty('--font-size-base', `${sysConfig.fontSizeBase || 16}px`);
-      root.style.setProperty('--font-weight-base', `${sysConfig.fontWeightBase || 500}`);
-      root.style.setProperty('--line-height-base', `${sysConfig.lineHeightBase || 1.5}`);
-      root.style.setProperty('--letter-spacing-base', `${sysConfig.letterSpacing || 0}px`);
+      // 批量更新CSS变量以减少重排
+      const styleUpdates = {
+        '--font-family-main': sysConfig.fontFamily || "'Plus Jakarta Sans', sans-serif",
+        '--font-size-base': `${sysConfig.fontSizeBase || 16}px`,
+        '--font-weight-base': `${sysConfig.fontWeightBase || 500}`,
+        '--line-height-base': `${sysConfig.lineHeightBase || 1.5}`,
+        '--letter-spacing-base': `${sysConfig.letterSpacing || 0}px`,
+      };
+      
+      // 批量设置样式
+      Object.entries(styleUpdates).forEach(([prop, value]) => {
+        root.style.setProperty(prop, value);
+      });
+      
       if (sysConfig.theme === 'custom') {
         root.style.setProperty('--text-main', sysConfig.textColorMain);
         root.style.setProperty('--app-bg', sysConfig.bgColorMain);
@@ -173,14 +221,38 @@ const App: React.FC = () => {
     setIsSyncing(true);
     try {
       await fn();
-      await fetchData(true);
+      // 优化：只刷新必要的数据，而不是全部
+      const results = await Promise.allSettled([
+        api.rooms.getAll(), 
+        api.orders.getAll(), 
+        api.dishes.getAll()
+      ]);
+      
+      const [roomsResult, ordersResult, dishesResult] = results;
+      if (roomsResult.status === 'fulfilled') setRooms(roomsResult.value);
+      if (ordersResult.status === 'fulfilled') {
+        const orders = ordersResult.value;
+        setOrders(orders);
+        
+        // 检查是否需要播放语音通知
+        if (sysConfig?.voiceBroadcastEnabled) {
+          orders.forEach(order => {
+            if (order.status === OrderStatus.PENDING && !announcedOrdersRef.current.has(order.id)) {
+              notificationService.broadcastOrderVoice(order, lang, sysConfig.voiceVolume);
+              announcedOrdersRef.current.add(order.id);
+            }
+          });
+        }
+      }
+      if (dishesResult.status === 'fulfilled') setDishes(dishesResult.value);
+      
       if (successMsg) showToast(successMsg, "success");
     } catch (err) {
       showToast(t('syncError'), "error");
     } finally {
       setIsSyncing(false);
     }
-  }, [fetchData, showToast, t]);
+  }, [showToast, t, sysConfig, lang]);
 
   const guestRoomId = new URLSearchParams(window.location.search).get('room');
   if (guestRoomId) {
@@ -190,7 +262,13 @@ const App: React.FC = () => {
         dishes={dishes} 
         onSubmitOrder={async (o) => { 
           await api.orders.create(o as Order); 
-          fetchData(true); 
+          // 只刷新订单数据，而不是所有数据
+          try {
+            const newOrders = await api.orders.getAll();
+            setOrders(newOrders);
+          } catch (error) {
+            console.error('Failed to refresh orders:', error);
+          }
           showToast(lang === 'zh' ? '点餐已确认' : 'Order confirmed', "success"); 
         }} 
         lang={lang} 

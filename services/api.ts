@@ -1,5 +1,6 @@
 
 import { Partner, Order, Dish, HotelRoom, Expense, User, OrderStatus, MaterialImage, PaymentMethodConfig, SystemConfig, Ingredient, RoomStatus, PaymentMethod, UserRole, Category } from '../types';
+import { apiCache } from './apiCache';
 import { INITIAL_DISHES, ROOM_NUMBERS, INITIAL_USERS, CATEGORIES as DEFAULT_CATEGORIES } from '../constants';
 import { supabase, isDemoMode } from './supabaseClient';
 
@@ -168,11 +169,19 @@ export const api = {
 
   rooms: {
     getAll: async (): Promise<HotelRoom[]> => {
+      const cacheKey = 'rooms-all';
+      const cached = apiCache.get(cacheKey);
+      if (cached) return cached;
+
       if (!isDemoMode) {
         const { data } = await supabase.from('rooms').select('*').order('id');
-        if (data && data.length > 0) return data;
+        if (data && data.length > 0) {
+          apiCache.set(cacheKey, data, 10000); // 10秒缓存（房间状态可能频繁变化）
+          return data;
+        }
       }
-      return VirtualDB.get<HotelRoom[]>(STORAGE_KEYS.ROOMS, ROOM_NUMBERS.map(id=>({id, status: RoomStatus.READY})));
+      const result = VirtualDB.get<HotelRoom[]>(STORAGE_KEYS.ROOMS, ROOM_NUMBERS.map(id=>({id, status: RoomStatus.READY})));
+      return result;
     },
     update: async (room: HotelRoom) => {
       if (!isDemoMode) {
@@ -261,14 +270,22 @@ export const api = {
 
   orders: {
     getAll: async (): Promise<Order[]> => {
+      const cacheKey = 'orders-all';
+      const cached = apiCache.get(cacheKey);
+      if (cached) return cached;
+
       if (!isDemoMode) {
         const { data } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
-        if (data) return data.map(o => ({
-          id: o.id, roomId: o.room_id, items: o.items,
-          totalAmount: Number(o.total_amount), taxAmount: Number(o.tax_amount),
-          status: o.status as OrderStatus, paymentMethod: o.payment_method as PaymentMethod,
-          createdAt: o.created_at, updatedAt: o.updated_at
-        }));
+        if (data) {
+          const result = data.map(o => ({
+            id: o.id, roomId: o.room_id, items: o.items,
+            totalAmount: Number(o.total_amount), taxAmount: Number(o.tax_amount),
+            status: o.status as OrderStatus, paymentMethod: o.payment_method as PaymentMethod,
+            createdAt: o.created_at, updatedAt: o.updated_at
+          }));
+          apiCache.set(cacheKey, result, 15000); // 15秒缓存
+          return result;
+        }
       }
       return [];
     },
@@ -290,14 +307,22 @@ export const api = {
 
   dishes: {
     getAll: async (): Promise<Dish[]> => {
+      const cacheKey = 'dishes-all';
+      const cached = apiCache.get(cacheKey);
+      if (cached) return cached;
+
       if (!isDemoMode) {
         const { data } = await supabase.from('dishes').select('*').order('name');
-        if (data) return data.map(d => ({
-          id: d.id, name: d.name, nameEn: d.name_en,
-          price: Number(d.price), category: d.category,
-          stock: d.stock, imageUrl: d.image_url, isAvailable: d.is_available,
-          partnerId: d.partner_id
-        }));
+        if (data) {
+          const result = data.map(d => ({
+            id: d.id, name: d.name, nameEn: d.name_en,
+            price: Number(d.price), category: d.category,
+            stock: d.stock, imageUrl: d.image_url, isAvailable: d.is_available,
+            partnerId: d.partner_id
+          }));
+          apiCache.set(cacheKey, result, 30000); // 30秒缓存
+          return result;
+        }
       }
       return INITIAL_DISHES;
     },
@@ -438,39 +463,85 @@ export const api = {
 
   config: {
     get: async (): Promise<SystemConfig> => {
+      const cacheKey = 'config-global';
+      const cached = apiCache.get(cacheKey);
+      if (cached) return cached;
+
       if (!isDemoMode) {
         const { data } = await supabase.from('config').select('*').eq('id', 'global').single();
-        if (data) return {
-          hotelName: data.hotel_name,
-          version: data.version,
-          theme: data.theme as any,
-          fontFamily: 'Plus Jakarta Sans',
-          fontSizeBase: 16,
-          fontWeightBase: 500,
-          lineHeightBase: 1.5,
-          letterSpacing: 0,
-          contrastStrict: true,
-          textColorMain: '#0f172a',
-          bgColorMain: '#f8fafc',
-          printerIp: data.printer_ip || '192.168.1.100',
-          printerPort: data.printer_port || '9100',
-          autoPrintOrder: true,
-          autoPrintReceipt: true,
-          voiceBroadcastEnabled: true,
-          voiceVolume: 0.8,
-          serviceChargeRate: Number(data.service_charge_rate || 5)
-        };
+        if (data) {
+          const result = {
+            hotelName: data.hotel_name,
+            version: data.version,
+            theme: data.theme as any,
+            fontFamily: data.font_family || 'Plus Jakarta Sans',
+            fontSizeBase: data.font_size_base || 16,
+            fontWeightBase: data.font_weight_base || 500,
+            lineHeightBase: data.line_height_base || 1.5,
+            letterSpacing: data.letter_spacing || 0,
+            contrastStrict: data.contrast_strict !== undefined ? data.contrast_strict : true,
+            textColorMain: data.text_color_main || '#0f172a',
+            bgColorMain: data.bg_color_main || '#f8fafc',
+            printerIp: data.printer_ip || '192.168.1.100',
+            printerPort: data.printer_port || '9100',
+            autoPrintOrder: data.auto_print_order !== undefined ? data.auto_print_order : true,
+            autoPrintReceipt: data.auto_print_receipt !== undefined ? data.auto_print_receipt : true,
+            voiceBroadcastEnabled: data.voice_broadcast_enabled !== undefined ? data.voice_broadcast_enabled : true,
+            voiceVolume: data.voice_volume || 0.8,
+            serviceChargeRate: Number(data.service_charge_rate || 0.05)
+          };
+          apiCache.set(cacheKey, result, 60000); // 60秒缓存
+          return result;
+        }
       }
-      return { hotelName: '江西云厨', version: '5.2.0', theme: 'light' } as any;
+      const defaultConfig = { 
+        hotelName: '江西云厨', 
+        version: '5.2.0', 
+        theme: 'light',
+        fontFamily: 'Plus Jakarta Sans',
+        fontSizeBase: 16,
+        fontWeightBase: 500,
+        lineHeightBase: 1.5,
+        letterSpacing: 0,
+        contrastStrict: true,
+        textColorMain: '#0f172a',
+        bgColorMain: '#f8fafc',
+        printerIp: '192.168.1.100',
+        printerPort: '9100',
+        autoPrintOrder: true,
+        autoPrintReceipt: true,
+        voiceBroadcastEnabled: true,
+        voiceVolume: 0.8,
+        serviceChargeRate: 0.05
+      };
+      return defaultConfig;
     },
     update: async (c: SystemConfig) => {
       if (!isDemoMode) {
         await supabase.from('config').update({
-          hotel_name: c.hotelName, version: c.version, theme: c.theme,
-          printer_ip: c.printerIp, printer_port: c.printerPort,
-          service_charge_rate: c.serviceChargeRate, updated_at: new Date().toISOString()
+          hotel_name: c.hotelName, 
+          version: c.version, 
+          theme: c.theme,
+          font_family: c.fontFamily,
+          font_size_base: c.fontSizeBase,
+          font_weight_base: c.fontWeightBase,
+          line_height_base: c.lineHeightBase,
+          letter_spacing: c.letterSpacing,
+          contrast_strict: c.contrastStrict,
+          text_color_main: c.textColorMain,
+          bg_color_main: c.bgColorMain,
+          printer_ip: c.printerIp, 
+          printer_port: c.printerPort,
+          auto_print_order: c.autoPrintOrder,
+          auto_print_receipt: c.autoPrintReceipt,
+          voice_broadcast_enabled: c.voiceBroadcastEnabled,
+          voice_volume: c.voiceVolume,
+          service_charge_rate: c.serviceChargeRate, 
+          updated_at: new Date().toISOString()
         }).eq('id', 'global');
       }
+      // 更新配置后清除相关缓存
+      apiCache.clear('config-global');
     }
   }
 };

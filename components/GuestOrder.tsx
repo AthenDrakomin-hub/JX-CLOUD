@@ -51,18 +51,25 @@ const GuestOrder: React.FC<GuestOrderProps> = ({ roomId, dishes, onSubmitOrder, 
   };
 
   const filteredDishes = useMemo(() => {
+    const lowerSearchTerm = searchTerm.toLowerCase();
     return dishes.filter(d => {
-      const matchSearch = d.name.toLowerCase().includes(searchTerm.toLowerCase()) || (d.nameEn || '').toLowerCase().includes(searchTerm.toLowerCase());
+      const matchSearch = d.name.toLowerCase().includes(lowerSearchTerm) || (d.nameEn || '').toLowerCase().includes(lowerSearchTerm);
       const matchCategory = activeCategory === 'All' || d.category === activeCategory;
       return matchSearch && matchCategory && d.isAvailable !== false;
     });
   }, [dishes, searchTerm, activeCategory]);
 
   const cartItems = useMemo(() => {
-    return Object.entries(cart).filter(([_, qty]) => (qty as number) > 0).map(([id, qty]) => {
-      const dish = dishes.find(d => d.id === id);
-      return { dish, quantity: qty as number };
-    }).filter(item => item.dish !== undefined);
+    const result = [];
+    for (const [id, qty] of Object.entries(cart)) {
+      if (qty > 0) {
+        const dish = dishes.find(d => d.id === id);
+        if (dish) {
+          result.push({ dish, quantity: qty });
+        }
+      }
+    }
+    return result;
   }, [cart, dishes]);
 
   const subtotal = useMemo(() => cartItems.reduce((sum, item) => sum + (item.dish!.price * item.quantity), 0), [cartItems]);
@@ -121,40 +128,40 @@ const GuestOrder: React.FC<GuestOrderProps> = ({ roomId, dishes, onSubmitOrder, 
               {filteredDishes.length === 0 ? (
                 <div className="py-20 flex flex-col items-center justify-center text-slate-300"><Filter size={48} className="opacity-20 mb-4" /><p className="text-xs font-black uppercase tracking-widest">No Matches / 暂无结果</p></div>
               ) : (
-                filteredDishes.map((dish) => (
-                  <div key={dish.id} className="group animate-in fade-in slide-in-from-bottom-4">
-                    <div className="relative aspect-[4/3] rounded-[3rem] overflow-hidden shadow-premium mb-6 bg-slate-200 border-2 border-white">
-                        <img src={dish.imageUrl} className="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-110" alt={dish.name} />
-                        {dish.isRecommended && <div className="absolute top-6 left-6 bg-blue-600 text-white text-[9px] font-black uppercase px-4 py-2 rounded-full shadow-2xl flex items-center border border-blue-500"><Flame size={12} className="mr-1" /> Chef's Pick</div>}
-                        {dish.stock <= 0 && <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center text-white font-black text-sm uppercase tracking-[0.3em]">Sold Out / 售罄</div>}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {filteredDishes.map((dish) => (
+                    <div key={dish.id} className="group animate-in fade-in slide-in-from-bottom-4">
+                      <div className="relative aspect-[4/3] rounded-[3rem] overflow-hidden shadow-premium mb-6 bg-slate-200 border-2 border-white">
+                          <img src={dish.imageUrl} className="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-110" alt={dish.name} />
+                          {dish.isRecommended && <div className="absolute top-6 left-6 bg-blue-600 text-white text-[9px] font-black uppercase px-4 py-2 rounded-full shadow-2xl flex items-center border border-blue-500"><Flame size={12} className="mr-1" /> Chef's Pick</div>}
+                          {dish.stock <= 0 && <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center text-white font-black text-sm uppercase tracking-[0.3em]">Sold Out / 售罄</div>}
+                      </div>
+                      <div className="flex items-start justify-between px-2">
+                          <div className="space-y-1 flex-1 min-w-0">
+                            {/* 双语名称并排显示 */}
+                            <h3 className="text-xl font-bold text-slate-950 tracking-tight leading-tight truncate">{dish.name}</h3>
+                            <p className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-3 mt-1 truncate">
+                              {dish.nameEn || dish.name}
+                            </p>
+                            <p className="text-2xl font-serif italic text-blue-700">{C}{Math.round(dish.price)}</p>
+                          </div>
+                          <div className="shrink-0 flex items-center gap-4 ml-2">
+                             {dish.stock > 0 && (
+                               cart[dish.id] ? (
+                                 <div className="flex items-center bg-slate-100 rounded-full border p-1">
+                                   <button onClick={() => setCart(p => ({...p, [dish.id]: Math.max(0, p[dish.id]-1)}))} className="w-8 h-8 flex items-center justify-center text-slate-500 rounded-l-full"><Minus size={16} /></button>
+                                   <span className="w-6 text-center font-black text-sm">{cart[dish.id]}</span>
+                                   <button onClick={() => setCart(p => ({...p, [dish.id]: Math.min(dish.stock, p[dish.id]+1)}))} className="w-8 h-8 bg-slate-950 text-white rounded-r-full flex items-center justify-center"><Plus size={16} /></button>
+                                 </div>
+                               ) : (
+                                 <button onClick={() => setCart(p => ({...p, [dish.id]: 1}))} className="px-4 py-2 bg-slate-950 text-white rounded-full font-black text-[9px] uppercase tracking-widest shadow-xl">点餐</button>
+                               )
+                             )}
+                          </div>
+                      </div>
                     </div>
-                    <div className="flex items-start justify-between px-2">
-                        <div className="space-y-1 flex-1">
-                          {/* 双语名称并排显示 */}
-                          <h3 className="text-xl font-bold text-slate-950 tracking-tight leading-tight">
-                            {dish.name}
-                          </h3>
-                          <p className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-3 mt-1">
-                            {dish.nameEn || dish.name}
-                          </p>
-                          <p className="text-2xl font-serif italic text-blue-700">{C}{Math.round(dish.price)}</p>
-                        </div>
-                        <div className="shrink-0 flex items-center gap-4">
-                           {dish.stock > 0 && (
-                             cart[dish.id] ? (
-                               <div className="flex items-center bg-slate-100 rounded-full border p-1">
-                                 <button onClick={() => setCart(p => ({...p, [dish.id]: Math.max(0, p[dish.id]-1)}))} className="w-10 h-10 flex items-center justify-center text-slate-500"><Minus size={18} /></button>
-                                 <span className="w-8 text-center font-black">{cart[dish.id]}</span>
-                                 <button onClick={() => setCart(p => ({...p, [dish.id]: Math.min(dish.stock, p[dish.id]+1)}))} className="w-10 h-10 bg-slate-950 text-white rounded-full flex items-center justify-center"><Plus size={18} /></button>
-                               </div>
-                             ) : (
-                               <button onClick={() => setCart(p => ({...p, [dish.id]: 1}))} className="px-8 py-3 bg-slate-950 text-white rounded-full font-black text-[10px] uppercase tracking-widest shadow-xl">点餐 / ADD</button>
-                             )
-                           )}
-                        </div>
-                    </div>
-                  </div>
-                ))
+                  ))}
+                </div>
               )}
            </div>
            

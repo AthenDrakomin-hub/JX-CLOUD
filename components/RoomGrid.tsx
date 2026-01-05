@@ -40,7 +40,12 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
   }, [viewMode]);
 
   const floors = useMemo(() => {
-    return Array.from(new Set((rooms || []).map(r => (r.id || '').substring(0, 2)))).sort();
+    const uniqueFloors = new Set<string>();
+    (rooms || []).forEach(r => {
+      const floor = (r.id || '').substring(0, 2);
+      if (floor) uniqueFloors.add(floor);
+    });
+    return Array.from(uniqueFloors).sort();
   }, [rooms]);
 
   const filteredDishes = useMemo(() => {
@@ -210,6 +215,17 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
                       >
                         {copiedId === room.id ? <Check size={12} /> : <Copy size={12} />}
                       </button>
+                      <button 
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          setActiveRoom(room); 
+                          setViewMode('qr'); 
+                        }} 
+                        className="w-7 h-7 rounded-lg flex items-center justify-center shadow-md transition-all border bg-white border-slate-300 text-slate-500 hover:text-blue-600"
+                        title="Show QR Code"
+                      >
+                        <QrCode size={12} />
+                      </button>
                     </div>
 
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 transition-transform duration-500 group-hover:scale-110 border ${room.status === 'ordering' ? 'bg-amber-200 border-amber-300 text-amber-700' : 'bg-slate-100 border-slate-200 text-slate-500 group-hover:bg-blue-600 group-hover:border-blue-700 group-hover:text-white'}`}>
@@ -217,7 +233,7 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
                     </div>
                     
                     <div className="text-center">
-                      <span className="text-lg font-black tracking-tighter text-slate-950 leading-none">{room.id}</span>
+                      <span className="text-lg font-black tracking-tighter text-slate-950 leading-none truncate max-w-full" title={room.id}>{room.id}</span>
                       <p className={`text-[8px] uppercase font-black mt-1 tracking-widest ${room.status === 'ordering' ? 'text-amber-700' : 'text-slate-400'}`}>
                         {room.status === 'ordering' ? 'Active' : 'Ready'}
                       </p>

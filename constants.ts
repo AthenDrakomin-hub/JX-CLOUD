@@ -34,33 +34,99 @@ export const INITIAL_DISHES: Dish[] = [
   { id: 'dr-1', name: '冰镇酸梅汤', nameEn: 'Chilled Plum Juice', price: 90, category: 'Soft Drinks', stock: 300, imageUrl: 'https://images.unsplash.com/photo-1544145945-f904253db0ad?auto=format&fit=crop&q=80&w=600', description: 'Best for spicy food relief.' },
 ];
 
-// 注意：生产环境中不应包含默认用户凭据
+// 注意：仅在演示/开发环境中包含默认用户凭据
 // 在生产环境中，用户应通过Supabase认证系统创建
+const DEMO_FULL_CRUD: CRUDPermissions = { enabled: true, c: true, r: true, u: true, d: true };
+const DEMO_READ_ONLY: CRUDPermissions = { enabled: true, c: false, r: true, u: false, d: false };
+const DEMO_LIMITED_CRUD: CRUDPermissions = { enabled: true, c: true, r: true, u: true, d: false }; // 无删除权限
+
+// 系统管理员权限 - 拥有所有模块的完全权限
+const ADMIN_PERMISSIONS: Record<AppModule, CRUDPermissions> = {
+  dashboard: DEMO_FULL_CRUD,
+  rooms: DEMO_FULL_CRUD,
+  orders: DEMO_FULL_CRUD,
+  menu: DEMO_FULL_CRUD,
+  finance: DEMO_FULL_CRUD,
+  partners: DEMO_FULL_CRUD,
+  users: DEMO_FULL_CRUD,
+  settings: DEMO_FULL_CRUD,
+  database: DEMO_FULL_CRUD,
+  images: DEMO_FULL_CRUD,
+  inventory: DEMO_FULL_CRUD,
+  payments: DEMO_FULL_CRUD,
+  supply_chain: DEMO_FULL_CRUD
+};
+
+// 员工权限 - 只有基本操作权限，不能管理用户和系统设置
+const STAFF_PERMISSIONS: Record<AppModule, CRUDPermissions> = {
+  dashboard: DEMO_READ_ONLY,
+  rooms: DEMO_LIMITED_CRUD,
+  orders: DEMO_FULL_CRUD, // 员工需要处理订单
+  menu: DEMO_READ_ONLY,
+  finance: DEMO_READ_ONLY,
+  partners: DEMO_READ_ONLY,
+  users: DEMO_READ_ONLY, // 员工只能查看用户
+  settings: DEMO_READ_ONLY, // 员工不能修改设置
+  database: DEMO_READ_ONLY, // 员工不能访问数据库
+  images: DEMO_LIMITED_CRUD,
+  inventory: DEMO_READ_ONLY,
+  payments: DEMO_READ_ONLY,
+  supply_chain: DEMO_LIMITED_CRUD
+};
+
+// 开发者/维护员权限 - 拥有大部分权限，但财务模块限制
+const MAINTAINER_PERMISSIONS: Record<AppModule, CRUDPermissions> = {
+  dashboard: DEMO_FULL_CRUD,
+  rooms: DEMO_FULL_CRUD,
+  orders: DEMO_FULL_CRUD,
+  menu: DEMO_FULL_CRUD,
+  finance: DEMO_READ_ONLY, // 维护员可以查看财务但不能修改
+  partners: DEMO_FULL_CRUD,
+  users: DEMO_FULL_CRUD,
+  settings: DEMO_FULL_CRUD,
+  database: DEMO_FULL_CRUD,
+  images: DEMO_FULL_CRUD,
+  inventory: DEMO_FULL_CRUD,
+  payments: DEMO_FULL_CRUD,
+  supply_chain: DEMO_FULL_CRUD
+};
+
 export const INITIAL_USERS: User[] = [
-  // 仅在演示模式下使用默认用户，生产环境应从Supabase数据库获取用户
-  // {
-  //   id: 'u-admin-root',
-  //   username: 'admin',
-  //   password: 'admin',
-  //   role: UserRole.ADMIN,
-  //   name: '系统管理员',
-  //   modulePermissions: ALL_MODULE_PERMS,
-  //   isOnline: false,
-  //   // Fix: Removed non-existent property 'twoFactorEnabled'
-  // },
-  // {
-  //   id: 'u-maintainer-dev',
-  //   username: 'maintainer',
-  //   password: 'dev123',
-  //   role: UserRole.MAINTAINER,
-  //   name: '技术维护员',
-  //   modulePermissions: {
-  //     ...ALL_MODULE_PERMS,
-  //     finance: { enabled: true, c: false, r: true, u: false, d: false }
-  //   },
-  //   isOnline: false,
-  //   // Fix: Removed non-existent property 'twoFactorEnabled'
-  // }
+  // 系统管理员账户 - 演示用途
+  {
+    id: 'usr-admin-system',
+    email: 'admin@jx-cloud.com',
+    username: 'system_admin',
+    password: 'AdminPass123!', // 仅演示用途 - 生产环境需通过安全方式设置
+    role: UserRole.ADMIN,
+    name: '系统管理员',
+    modulePermissions: ADMIN_PERMISSIONS,
+    isOnline: false
+  },
+  
+  // 员工账户 - 演示用途
+  {
+    id: 'usr-staff-employee',
+    email: 'employee@jx-cloud.com',
+    username: 'staff_member',
+    password: 'StaffPass123!', // 仅演示用途 - 生产环境需通过安全方式设置
+    role: UserRole.STAFF,
+    name: '普通员工',
+    modulePermissions: STAFF_PERMISSIONS,
+    isOnline: false
+  },
+  
+  // 开发者/维护员账户 - 演示用途
+  {
+    id: 'usr-dev-maintainer',
+    email: 'developer@jx-cloud.com',
+    username: 'system_dev',
+    password: 'DevPass123!', // 仅演示用途 - 生产环境需通过安全方式设置
+    role: UserRole.MAINTAINER,
+    name: '系统开发者',
+    modulePermissions: MAINTAINER_PERMISSIONS,
+    isOnline: false
+  }
 ];
 
 export const CATEGORIES = ['Heritage Soup', 'Land & Sea', 'Street Classics', 'Soft Drinks'];
