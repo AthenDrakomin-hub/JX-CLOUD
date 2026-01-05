@@ -204,7 +204,6 @@ When deploying the application, ensure proper CORS configuration in Supabase:
 ## Styling and UI
 
 - **Tailwind CSS**: Loaded via CDN in index.html for utility-first CSS framework
-- **CSS Loading**: Custom CSS imported in App.tsx for module-based approach
 - **Custom Styles**: Defined in src/input.css with CSS variables for consistent theming
 - **Font Loading**: Google Fonts (Plus Jakarta Sans and Playfair Display) with preconnect for performance
 - **CSS Variables**: Custom properties for gold (#d4af37), obsidian (#020617), and app background (#f8fafc)
@@ -461,6 +460,6 @@ The system uses a dual API architecture pattern:
 - Used for proxy operations and business logic that requires Vercel environment
 - Includes: `create-order.ts`, `update-order.ts`, `proxy.ts`
 
-**Note**: This is a Vite + React application, NOT a Next.js application. The `api/` directory contains Supabase Edge Functions, while `pages/api/` contains Vercel Serverless Functions. This is different from Next.js API routes. The warning about Next.js API routes does not apply to this project architecture.
+**Note**: This is a Vite + React application, NOT a Next.js application. The `api/` directory contains Supabase Edge Functions, while `pages/api/` contains Vercel Serverless Functions. This is completely different from Next.js API routes. The warning about Next.js API routes is irrelevant and does not apply to this project architecture. This is standard practice for Vite/React applications that use Vercel for deployment.
 
 This separation ensures proper security boundaries and deployment optimization.
