@@ -34,7 +34,7 @@ export const s3Service = {
 
       if (error) throw error;
 
-      return (data || []).map((item) => ({
+      return (data || []).map((item: any) => ({
         key: item.name,
         // 获取公共 URL - 确保实时更新
         url: supabase.storage.from(BUCKET_NAME).getPublicUrl(item.name).data.publicUrl,

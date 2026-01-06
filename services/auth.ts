@@ -68,7 +68,7 @@ export const totp = {
 
     const cryptoKey = await crypto.subtle.importKey(
       'raw',
-      keyData,
+      keyData.buffer as ArrayBuffer,
       { name: 'HMAC', hash: 'SHA-1' },
       false,
       ['sign']

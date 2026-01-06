@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
@@ -45,35 +44,23 @@ const App: React.FC = () => {
 
   const t = useCallback((key: string): string => getTranslation(lang, key), [lang]);
 
-  // 检测是否为宾客点餐模式
   const guestRoomId = useMemo(() => new URLSearchParams(window.location.search).get('room'), []);
 
-  // 全局应用系统配置的副作用
   useEffect(() => {
     if (!sysConfig) return;
-
     const html = document.documentElement;
-    // 1. 应用主题
     html.setAttribute('data-theme', sysConfig.theme);
-    
-    // 2. 应用字体缩放
     const sizeMap: Record<number, string> = { 14: 'standard', 16: 'medium', 18: 'large', 20: 'large', 22: 'large' };
     html.setAttribute('data-font-size', sizeMap[sysConfig.fontSizeBase] || 'medium');
-    
-    // 3. 应用动态内联样式 (字体家族与精确字号)
     html.style.setProperty('--font-family-main', sysConfig.fontFamily);
     html.style.fontSize = `${sysConfig.fontSizeBase}px`;
-
-    // 4. 应用高对比度辅助功能
     if (sysConfig.contrastStrict) {
       html.classList.add('contrast-strict');
     } else {
       html.classList.remove('contrast-strict');
     }
-
   }, [sysConfig]);
 
-  // 监听配置更新事件 (跨组件同步)
   useEffect(() => {
     const handleUpdate = (e: any) => {
       if (e.detail) setSysConfig(e.detail);
@@ -82,7 +69,6 @@ const App: React.FC = () => {
     return () => window.removeEventListener('jx_config_updated', handleUpdate);
   }, []);
 
-  // 初始化并监听 Supabase 认证状态
   useEffect(() => {
     const initAuth = async () => {
       if (isDemoMode) {
@@ -91,15 +77,13 @@ const App: React.FC = () => {
         setIsAuthChecking(false);
         return;
       }
-
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         const profile = await api.users.getProfile(session.user.id);
         setCurrentUser(profile);
       }
       setIsAuthChecking(false);
-
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: string, session: any) => {
         if (event === 'SIGNED_IN' && session?.user) {
           const profile = await api.users.getProfile(session.user.id);
           setCurrentUser(profile);
@@ -107,10 +91,8 @@ const App: React.FC = () => {
           setCurrentUser(null);
         }
       });
-
       return () => subscription.unsubscribe();
     };
-
     initAuth();
   }, []);
 
@@ -156,7 +138,6 @@ const App: React.FC = () => {
     const fd = new FormData(e.currentTarget as HTMLFormElement);
     const email = fd.get('email') as string;
     const password = fd.get('password') as string;
-    
     try {
       if (isDemoMode) {
         await new Promise(r => setTimeout(r, 800));
@@ -206,7 +187,6 @@ const App: React.FC = () => {
     if (!currentUser) return false;
     if (currentUser.role === UserRole.ADMIN) return true;
     if (currentTab === 'dashboard') return true;
-    
     const perms = currentUser.modulePermissions || {};
     if (currentTab === 'financial_hub') {
       return perms['finance']?.enabled || perms['partners']?.enabled || perms['payments']?.enabled || perms['financial_hub']?.enabled;
@@ -214,7 +194,6 @@ const App: React.FC = () => {
     if (currentTab === 'supply_chain') {
       return perms['menu']?.enabled || perms['inventory']?.enabled || perms['supply_chain']?.enabled;
     }
-    
     return perms[currentTab as AppModule]?.enabled === true;
   }, [currentUser, currentTab]);
 
@@ -234,7 +213,7 @@ const App: React.FC = () => {
       <GuestOrder 
         roomId={guestRoomId} 
         dishes={dishes} 
-        onSubmitOrder={async (o) => { 
+        onSubmitOrder={async (o: Partial<Order>) => { 
           await api.orders.create(o as Order); 
           fetchData(true); 
         }} 
@@ -330,14 +309,14 @@ const App: React.FC = () => {
             ) : (
               <div className="animate-fade-up">
                 {currentTab === 'dashboard' && <Dashboard orders={orders} rooms={rooms} expenses={expenses} dishes={dishes} lang={lang} />}
-                {currentTab === 'rooms' && <RoomGrid rooms={rooms} dishes={dishes} onUpdateRoom={(r) => wrapAsync(() => api.rooms.update(r), t('stationManagement') + '更新成功')} onRefresh={() => fetchData(true)} lang={lang} />}
-                {currentTab === 'orders' && <OrderManagement orders={orders} onUpdateStatus={(id, s) => wrapAsync(() => api.orders.updateStatus(id, s), t('orders') + '同步成功')} lang={lang} />}
-                {currentTab === 'supply_chain' && <SupplyChainManager dishes={dishes} currentUser={currentUser} onAddDish={(d) => wrapAsync(() => api.dishes.create(d), '商品档案已录入')} onUpdateDish={(d) => wrapAsync(() => api.dishes.update(d), '档案修改已保存')} onDeleteDish={(id) => wrapAsync(() => api.dishes.delete(id), '商品已下架')} lang={lang} />}
-                {currentTab === 'financial_hub' && <FinancialCenter orders={orders} expenses={expenses} partners={partners} onAddExpense={(e) => wrapAsync(() => api.expenses.create(e), '财务记录已录入')} onDeleteExpense={(id) => wrapAsync(() => api.expenses.delete(id), '记录已撤销')} onAddPartner={(p) => wrapAsync(() => api.partners.create(p), '合伙人入驻成功')} onUpdatePartner={(p) => wrapAsync(() => api.partners.update(p), '合伙人档案已更新')} onDeletePartner={(id) => wrapAsync(() => api.partners.delete(id), '合伙人关系已解除')} lang={lang} />}
+                {currentTab === 'rooms' && <RoomGrid rooms={rooms} dishes={dishes} onUpdateRoom={(r: HotelRoom) => wrapAsync(() => api.rooms.update(r), t('stationManagement') + '更新成功')} onRefresh={() => fetchData(true)} lang={lang} />}
+                {currentTab === 'orders' && <OrderManagement orders={orders} onUpdateStatus={(id: string, s: OrderStatus) => wrapAsync(() => api.orders.updateStatus(id, s), t('orders') + '同步成功')} lang={lang} />}
+                {currentTab === 'supply_chain' && <SupplyChainManager dishes={dishes} currentUser={currentUser} onAddDish={(d: Dish) => wrapAsync(() => api.dishes.create(d), '商品档案已录入')} onUpdateDish={(d: Dish) => wrapAsync(() => api.dishes.update(d), '档案修改已保存')} onDeleteDish={(id: string) => wrapAsync(() => api.dishes.delete(id), '商品已下架')} lang={lang} />}
+                {currentTab === 'financial_hub' && <FinancialCenter orders={orders} expenses={expenses} partners={partners} onAddExpense={(e: Expense) => wrapAsync(() => api.expenses.create(e), '财务记录已录入')} onDeleteExpense={(id: string) => wrapAsync(() => api.expenses.delete(id), '记录已撤销')} onAddPartner={(p: Partner) => wrapAsync(() => api.partners.create(p), '合伙人入驻成功')} onUpdatePartner={(p: Partner) => wrapAsync(() => api.partners.update(p), '合伙人档案已更新')} onDeletePartner={(id: string) => wrapAsync(() => api.partners.delete(id), '合伙人关系已解除')} lang={lang} />}
                 {currentTab === 'database' && <DatabaseManagement lang={lang} />}
                 {currentTab === 'images' && <ImageManagement lang={lang} />}
-                {currentTab === 'users' && <StaffManagement users={users} onRefresh={() => fetchData(true)} onAddUser={(u) => wrapAsync(() => api.users.create(u), '新员工授权已签发')} onUpdateUser={(u) => wrapAsync(() => api.users.update(u), '授权档案已更新')} onDeleteUser={(id) => wrapAsync(() => api.users.delete(id), '账号已注销')} lang={lang} />}
-                {currentTab === 'settings' && <SystemSettings lang={lang} onChangeLang={(l) => { setLang(l); localStorage.setItem('jx_lang', l); }} onUpdateConfig={(c) => wrapAsync(() => api.config.update(c), '系统配置已存档')} />}
+                {currentTab === 'users' && <StaffManagement users={users} onRefresh={() => fetchData(true)} onAddUser={(u: User) => wrapAsync(() => api.users.create(u), '新员工授权已签发')} onUpdateUser={(u: User) => wrapAsync(() => api.users.update(u), '授权档案已更新')} onDeleteUser={(id: string) => wrapAsync(() => api.users.delete(id), '账号已注销')} lang={lang} />}
+                {currentTab === 'settings' && <SystemSettings lang={lang} onChangeLang={(l: Language) => { setLang(l); localStorage.setItem('jx_lang', l); }} onUpdateConfig={(c: SystemConfig) => wrapAsync(() => api.config.update(c), '系统配置已存档')} />}
               </div>
             )}
           </div>

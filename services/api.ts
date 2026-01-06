@@ -33,7 +33,7 @@ export const api = {
       if (isDemoMode) return INITIAL_DISHES;
       const { data } = await supabase.from('menu_dishes').select(`*, menu_categories ( name )`).order('name_zh');
       if (!data || data.length === 0) return INITIAL_DISHES;
-      return data.map(d => ({
+      return data.map((d: any) => ({
         id: d.id,
         name: d.name_zh,
         nameEn: d.name_en,
@@ -92,10 +92,10 @@ export const api = {
   // Fix: Added missing rooms service
   rooms: {
     getAll: async (): Promise<HotelRoom[]> => {
-      if (isDemoMode) return ROOM_NUMBERS.map(id => ({ id, status: RoomStatus.READY }));
+      if (isDemoMode) return ROOM_NUMBERS.map((id: string) => ({ id, status: RoomStatus.READY }));
       const { data } = await supabase.from('rooms').select('*');
-      if (!data || data.length === 0) return ROOM_NUMBERS.map(id => ({ id, status: RoomStatus.READY }));
-      return data.map(r => ({
+      if (!data || data.length === 0) return ROOM_NUMBERS.map((id: string) => ({ id, status: RoomStatus.READY }));
+      return data.map((r: any) => ({
         id: r.id,
         status: r.status as RoomStatus
       }));
@@ -116,7 +116,7 @@ export const api = {
       if (isDemoMode) return [];
       const { data } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
       if (!data) return [];
-      return data.map(o => ({
+      return data.map((o: any) => ({
         id: o.id,
         roomId: o.room_id,
         items: o.items,
@@ -156,7 +156,7 @@ export const api = {
       if (isDemoMode) return DEFAULT_CATEGORIES;
       const { data } = await supabase.from('menu_categories').select('name').order('display_order');
       if (!data || data.length === 0) return DEFAULT_CATEGORIES;
-      return data.map(c => c.name);
+      return data.map((c: any) => c.name);
     },
     saveAll: async (categories: string[]) => {
       if (isDemoMode) return;
@@ -175,7 +175,7 @@ export const api = {
       if (isDemoMode) return INITIAL_USERS;
       const { data } = await supabase.from('users').select('*');
       if (!data) return INITIAL_USERS;
-      return data.map(d => ({
+      return data.map((d: any) => ({
         id: d.id,
         username: d.username,
         email: d.email,
@@ -240,7 +240,7 @@ export const api = {
       if (isDemoMode) return [];
       const { data } = await supabase.from('partners').select('*');
       if (!data) return [];
-      return data.map(p => ({
+      return data.map((p: any) => ({
         id: p.id,
         name: p.name,
         ownerName: p.owner_name,
@@ -297,7 +297,7 @@ export const api = {
       if (isDemoMode) return [];
       const { data } = await supabase.from('expenses').select('*');
       if (!data) return [];
-      return data.map(e => ({
+      return data.map((e: any) => ({
         id: e.id,
         amount: Number(e.amount),
         category: e.category,
@@ -323,7 +323,7 @@ export const api = {
       if (isDemoMode) return [];
       const { data } = await supabase.from('ingredients').select('*');
       if (!data) return [];
-      return data.map(i => ({
+      return data.map((i: any) => ({
         id: i.id,
         name: i.name,
         unit: i.unit,
@@ -371,11 +371,12 @@ export const api = {
       if (isDemoMode) return [];
       const { data } = await supabase.from('payments').select('*');
       if (!data) return [];
-      return data.map(p => ({
+      return data.map((p: any) => ({
         id: p.id,
         name: p.name,
         type: p.type as PaymentMethod,
         isActive: p.is_active,
+        // Fix: Changed 'icon_type' to 'iconType' to match PaymentMethodConfig interface
         iconType: p.icon_type,
         instructions: p.instructions
       }));
@@ -387,6 +388,7 @@ export const api = {
         name: p.name,
         type: p.type,
         is_active: p.isActive,
+        // Fix: Changed 'p.icon_type' to 'p.iconType' as defined in interface
         icon_type: p.iconType,
         instructions: p.instructions
       });
@@ -398,6 +400,7 @@ export const api = {
         name: p.name,
         type: p.type,
         is_active: p.isActive,
+        // Fix: Changed 'p.icon_type' to 'p.iconType' as defined in interface
         icon_type: p.iconType,
         instructions: p.instructions
       }).eq('id', p.id);
@@ -429,7 +432,7 @@ export const api = {
         fontFamily: data.font_family,
         fontSizeBase: data.font_size_base,
         printerIp: data.printer_ip,
-        printerPort: data.printer_port,
+        printer_port: data.printer_port,
         autoPrintOrder: data.auto_print_order,
         autoPrintReceipt: data.auto_print_receipt,
         serviceChargeRate: Number(data.service_charge_rate),
