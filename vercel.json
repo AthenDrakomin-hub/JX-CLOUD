@@ -1,0 +1,19 @@
+{
+  "rewrites": [
+    // 拦截 /index.css 请求，返回 200 空响应，避免 404 报错
+    {
+      "source": "/index.css",
+      "destination": "/empty.css"
+    }
+  ],
+  "headers": [
+    // 为空响应添加正确的 Content-Type，避免浏览器报错
+    {
+      "source": "/empty.css",
+      "headers": [
+        { "key": "Content-Type", "value": "text/css" },
+        { "key": "Content-Length", "value": "0" }
+      ]
+    }
+  ]
+}
