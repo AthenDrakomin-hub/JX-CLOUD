@@ -285,23 +285,7 @@ export const api = {
     }
   },
 
-  rooms: {
-    getAll: async (): Promise<HotelRoom[]> => {
-      const cacheKey = 'rooms-all';
-      const cached = apiCache.get(cacheKey);
-      if (cached) return cached;
 
-      const { data } = await supabase.from('rooms').select('*').order('id');
-      if (data && data.length > 0) {
-        apiCache.set(cacheKey, data, 10000); // 10秒缓存（房间状态可能频繁变化）
-        return data;
-      }
-      return [];
-    },
-    update: async (room: HotelRoom) => {
-      await supabase.from('rooms').upsert({ id: room.id, status: room.status, updated_at: new Date().toISOString() });
-    }
-  },
 
   partners: {
     getAll: async (): Promise<Partner[]> => {
