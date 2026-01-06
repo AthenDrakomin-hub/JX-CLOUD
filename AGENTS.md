@@ -33,6 +33,7 @@ This is a Jiangxi Cloud Enterprise Hospitality Suite - a full-stack restaurant t
 - `npm run dev` - Start development server on port 3000
 - `npm run build` - Build production bundle
 - `npm run preview` - Preview production build locally
+- `npx tsc --noEmit` - Run TypeScript type checking without emitting files
 
 ## Build and Optimization
 
@@ -55,16 +56,19 @@ This is a Jiangxi Cloud Enterprise Hospitality Suite - a full-stack restaurant t
 
 ## Key Files
 
-- `App.tsx` - Main application component with routing and state management
+- `App.tsx` - Main application component with routing and state management, implements 30-second sync mechanism for orders and real-time voice broadcast
 - `contexts/AuthContext.tsx` - Global authentication context with session management, login, logout, and token refresh
 - `services/api.ts` - API abstraction layer with direct Supabase integration
 - `services/supabaseClient.ts` - Supabase client initialization
 - `services/apiCache.ts` - Caching layer for API responses to improve performance
 - `services/createUserService.ts` - Service for integrating with Supabase Edge Function to create users via API
+- `services/notification.ts` - Notification service with voice broadcast functionality for order status updates
 - `types.ts` - Type definitions for all entities including User, UserCreatePayload, UserUpdatePayload, and PaginatedResponse
 - `constants.ts` - Initial data and configuration constants
 - `components/` - React UI components for each module
 - `components/SignUpLogin.tsx` - Enhanced authentication component supporting both login and registration with demo mode compatibility
+- `components/Sidebar.tsx` - Navigation sidebar component
+- `components/Dashboard.tsx` - Main dashboard with order, room, expense, and dish overview
 - `vite.config.ts` - Vite build configuration with code splitting
 - `database/` - Database schema, policies, and functions definitions
 
@@ -81,6 +85,7 @@ This is a Jiangxi Cloud Enterprise Hospitality Suite - a full-stack restaurant t
 - Selective sync: Only refreshes necessary data after operations instead of full refresh
 - Caching strategy: API responses cached in memory with automatic cleanup of expired entries
 - Data synchronization: 30-second interval sync for frequently changing data (orders)
+- Real-time updates: Automatic voice broadcast notifications for new orders when enabled in system config
 
 ## Security Considerations
 
@@ -107,6 +112,8 @@ This is a Jiangxi Cloud Enterprise Hospitality Suite - a full-stack restaurant t
 - Supports Vercel environment variable naming convention (NEXT_PUBLIC_ prefix)
 - Cross-platform environment variable detection (VITE_ for Vite, NEXT_PUBLIC_ for Vercel)
 - Default fallback Supabase URL provided for development
+- Required environment variables: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
+- Development dependencies include TypeScript, Vite, and React development tools
 
 ## Key Features
 
@@ -122,6 +129,10 @@ This is a Jiangxi Cloud Enterprise Hospitality Suite - a full-stack restaurant t
 - Supabase Edge Function integration for secure user creation
 - Automatic audit logging for critical operations
 - Hierarchical category management
+- Database management interface for admin users
+- Material/image library management
+- Financial center with expense tracking
+- Supply chain management for dishes and ingredients
 
 ## Authentication System
 
@@ -145,6 +156,7 @@ This is a Jiangxi Cloud Enterprise Hospitality Suite - a full-stack restaurant t
 - No linting configuration files found (no ESLint, Prettier, or similar tools configured)
 - Manual testing recommended for all changes
 - TypeScript compiler provides type checking during development
+- To run type checking: `npx tsc --noEmit` (uses tsconfig.json configuration)
 
 ## Development Best Practices
 
