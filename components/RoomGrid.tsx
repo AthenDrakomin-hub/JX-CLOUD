@@ -31,7 +31,7 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
   const [dynamicCategories, setDynamicCategories] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const t = (key: keyof typeof translations.zh) => (translations[lang] as any)[key] || (translations.zh as any)[key] || key;
+  const t = (key: string) => (translations[lang] as any)[key] || (translations.zh as any)[key] || key;
   
   useEffect(() => {
     if (viewMode === 'manualOrder') {
@@ -40,12 +40,7 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
   }, [viewMode]);
 
   const floors = useMemo(() => {
-    const uniqueFloors = new Set<string>();
-    (rooms || []).forEach(r => {
-      const floor = (r.id || '').substring(0, 2);
-      if (floor) uniqueFloors.add(floor);
-    });
-    return Array.from(uniqueFloors).sort();
+    return Array.from(new Set((rooms || []).map(r => (r.id || '').substring(0, 2)))).sort();
   }, [rooms]);
 
   const filteredDishes = useMemo(() => {
@@ -111,13 +106,12 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
         updatedAt: new Date().toISOString(),
         taxAmount: Math.round(subtotal * 0.12)
       };
-      // 核心修正：确保先成功创建订单，再更新房间状态，最后刷新顶层数据
       await api.orders.create(order);
       const updatedRoom = { ...activeRoom, status: RoomStatus.ORDERING };
       await onUpdateRoom(updatedRoom);
       
       closeModal();
-      onRefresh(); // 触发全站数据拉取，确保调度中心同步
+      onRefresh();
     } catch (error) {
       console.error('Manual order failed:', error);
       alert('下单失败，请重试');
@@ -160,7 +154,7 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
         </div>
       )}
 
-      {/* 增强型头部 */}
+      {/* 头部控制栏 */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-3xl border border-slate-300 shadow-premium no-print">
         <div className="flex items-center space-x-4">
            <div className="w-10 h-10 bg-blue-100 text-blue-700 rounded-xl flex items-center justify-center shadow-inner border border-blue-200">
@@ -184,7 +178,7 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
         </div>
       </div>
 
-      {/* 楼层/区域网格 */}
+      {/* 桌位网格 */}
       <div className="no-print space-y-8">
         {floors.map((floor, floorIdx) => (
           <div key={floor} className="space-y-3 animate-fade-up" style={{ animationDelay: `${floorIdx * 50}ms` }}>
@@ -215,17 +209,6 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
                       >
                         {copiedId === room.id ? <Check size={12} /> : <Copy size={12} />}
                       </button>
-                      <button 
-                        onClick={(e) => { 
-                          e.stopPropagation(); 
-                          setActiveRoom(room); 
-                          setViewMode('qr'); 
-                        }} 
-                        className="w-7 h-7 rounded-lg flex items-center justify-center shadow-md transition-all border bg-white border-slate-300 text-slate-500 hover:text-blue-600"
-                        title="Show QR Code"
-                      >
-                        <QrCode size={12} />
-                      </button>
                     </div>
 
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 transition-transform duration-500 group-hover:scale-110 border ${room.status === 'ordering' ? 'bg-amber-200 border-amber-300 text-amber-700' : 'bg-slate-100 border-slate-200 text-slate-500 group-hover:bg-blue-600 group-hover:border-blue-700 group-hover:text-white'}`}>
@@ -233,7 +216,7 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
                     </div>
                     
                     <div className="text-center">
-                      <span className="text-lg font-black tracking-tighter text-slate-950 leading-none truncate max-w-full" title={room.id}>{room.id}</span>
+                      <span className="text-lg font-black tracking-tighter text-slate-950 leading-none">{room.id}</span>
                       <p className={`text-[8px] uppercase font-black mt-1 tracking-widest ${room.status === 'ordering' ? 'text-amber-700' : 'text-slate-400'}`}>
                         {room.status === 'ordering' ? 'Active' : 'Ready'}
                       </p>
@@ -246,13 +229,13 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
         ))}
       </div>
 
-      {/* Manual Order Modal (POS Interface) - 经过重构以优化购物车显示 */}
+      {/* POS 手动录单 Modal */}
       {activeRoom && viewMode === 'manualOrder' && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-0 no-print">
           <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-xl animate-in fade-in" onClick={closeModal} />
           <div className="relative w-full h-full lg:h-[95vh] lg:max-w-[95vw] bg-white lg:rounded-[3rem] shadow-2xl flex flex-col overflow-hidden border-2 border-slate-300 animate-in slide-in-from-bottom-10">
              
-             {/* POS Header */}
+             {/* POS 头部 */}
              <div className="px-8 py-6 border-b-2 border-slate-200 flex items-center justify-between bg-white sticky top-0 z-30">
                 <div className="flex items-center space-x-6">
                    <div className="w-16 h-16 bg-slate-950 text-[#d4af37] rounded-2xl flex items-center justify-center text-2xl font-black shadow-xl border-2 border-white">
@@ -272,7 +255,7 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
              </div>
              
              <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-                {/* 左侧：菜单选择区 */}
+                {/* 左侧：菜品选择区 */}
                 <div className="flex-1 flex flex-col bg-slate-50/50 overflow-hidden min-w-0 border-r border-slate-200">
                    <div className="p-6 space-y-4 bg-white border-b border-slate-100">
                       <div className="relative group">
@@ -300,7 +283,7 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
                                className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shrink-0 border
                                   ${activeCategory === cat ? 'bg-blue-600 border-blue-600 text-white shadow-md' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-400'}`}
                             >
-                               {cat}
+                               {t(`cat_${cat}` as any)}
                             </button>
                          ))}
                       </div>
@@ -310,6 +293,9 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
                       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
                          {filteredDishes.map((dish) => {
                             const inCart = cart[dish.id] || 0;
+                            const displayName = lang === 'en' && dish.nameEn ? dish.nameEn : dish.name;
+                            const subName = lang === 'zh' ? (dish.nameEn || '') : dish.name;
+
                             return (
                                <div 
                                   key={dish.id} 
@@ -323,10 +309,11 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
                                     </div>
                                   )}
                                   <div className="aspect-square rounded-2xl overflow-hidden mb-3 bg-slate-50 border border-slate-50">
-                                     <img src={dish.imageUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={dish.name} />
+                                     <img src={dish.imageUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={displayName} />
                                   </div>
                                   <div className="space-y-1 flex-1">
-                                     <h4 className="font-bold text-slate-900 text-sm tracking-tight truncate leading-tight">{dish.name}</h4>
+                                     <h4 className="font-bold text-slate-900 text-sm tracking-tight truncate leading-tight">{displayName}</h4>
+                                     {subName && <p className="text-[8px] text-slate-400 uppercase tracking-tighter truncate">{subName}</p>}
                                      <p className="text-[10px] font-bold text-blue-600">₱{dish.price}</p>
                                   </div>
                                </div>
@@ -336,36 +323,39 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
                    </div>
                 </div>
 
-                {/* 右侧：购物车明细区 - 优化宽度和布局 */}
+                {/* 右侧：购物车明细区 */}
                 <div className="w-full lg:w-[450px] bg-white flex flex-col shadow-[-10px_0_30px_rgba(0,0,0,0.02)] z-10">
                    <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                          <ShoppingCart size={18} className="text-blue-600" />
                          <span className="font-black text-[11px] uppercase tracking-[0.2em] text-slate-900">{t('orderSummary')}</span>
                       </div>
-                      <button onClick={() => setCart({})} className="text-[9px] font-black text-red-500 uppercase tracking-widest hover:bg-red-50 px-3 py-1.5 rounded-lg transition-all">清空重选</button>
+                      <button onClick={() => setCart({})} className="text-[9px] font-black text-red-500 uppercase tracking-widest hover:bg-red-50 px-3 py-1.5 rounded-lg transition-all">{t('clearCart')}</button>
                    </div>
 
                    <div className="flex-1 overflow-y-auto no-scrollbar p-6 space-y-4">
                       {cartItems.length === 0 ? (
                          <div className="h-full flex flex-col items-center justify-center text-slate-300 opacity-60">
                             <ShoppingCart size={48} className="mb-4 opacity-10" />
-                            <p className="text-[10px] font-black uppercase tracking-widest">请从左侧选择菜品</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest">{t('emptyCart')}</p>
                          </div>
                       ) : (
-                         cartItems.map((item, i) => (
-                            <div key={i} className="flex items-center justify-between bg-slate-50 p-4 rounded-2xl border border-slate-100 animate-in slide-in-from-right-4 transition-all">
-                               <div className="flex-1 min-w-0 pr-4">
-                                  <p className="text-sm font-bold text-slate-900 truncate leading-tight">{item.dish?.name}</p>
-                                  <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mt-1">₱{item.dish?.price}</p>
+                         cartItems.map((item, i) => {
+                            const itemName = lang === 'en' && item.dish?.nameEn ? item.dish.nameEn : item.dish?.name;
+                            return (
+                               <div key={i} className="flex items-center justify-between bg-slate-50 p-4 rounded-2xl border border-slate-100 animate-in slide-in-from-right-4 transition-all">
+                                  <div className="flex-1 min-w-0 pr-4">
+                                     <p className="text-sm font-bold text-slate-900 truncate leading-tight">{itemName}</p>
+                                     <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mt-1">₱{item.dish?.price}</p>
+                                  </div>
+                                  <div className="flex items-center space-x-3 bg-white p-1 rounded-xl border border-slate-200">
+                                     <button onClick={(e) => { e.stopPropagation(); setCart(p => ({...p, [item.dish!.id]: Math.max(0, p[item.dish!.id] - 1)})); }} className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-500 transition-all"><Minus size={14} /></button>
+                                     <span className="text-xs font-black w-6 text-center text-slate-900">{item.quantity}</span>
+                                     <button onClick={(e) => { e.stopPropagation(); setCart(p => ({...p, [item.dish!.id]: p[item.dish!.id] + 1})); }} className="w-8 h-8 flex items-center justify-center bg-slate-900 text-white rounded-lg shadow-md transition-all"><Plus size={14} /></button>
+                                  </div>
                                </div>
-                               <div className="flex items-center space-x-3 bg-white p-1 rounded-xl border border-slate-200">
-                                  <button onClick={(e) => { e.stopPropagation(); setCart(p => ({...p, [item.dish!.id]: Math.max(0, p[item.dish!.id] - 1)})); }} className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-500 transition-all"><Minus size={14} /></button>
-                                  <span className="text-xs font-black w-6 text-center text-slate-900">{item.quantity}</span>
-                                  <button onClick={(e) => { e.stopPropagation(); setCart(p => ({...p, [item.dish!.id]: p[item.dish!.id] + 1})); }} className="w-8 h-8 flex items-center justify-center bg-slate-900 text-white rounded-lg shadow-md transition-all"><Plus size={14} /></button>
-                               </div>
-                            </div>
-                         ))
+                            );
+                         })
                       )}
                    </div>
 
@@ -373,11 +363,11 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
                    <div className="p-8 bg-slate-950 text-white space-y-6">
                       <div className="space-y-2">
                          <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-500">
-                            <span>小计 / Subtotal</span>
+                            <span>{t('subtotal')}</span>
                             <span>₱{Math.round(subtotal)}</span>
                          </div>
                          <div className="flex justify-between items-center text-[11px] font-black uppercase tracking-[0.3em]">
-                            <span className="text-slate-400">应付总额 / Total</span>
+                            <span className="text-slate-400">{t('totalBill')}</span>
                             <span className="text-3xl font-serif italic text-[#d4af37]">₱{Math.round(totalAmount)}</span>
                          </div>
                       </div>
@@ -392,7 +382,7 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
                          ) : (
                            <>
                              <Sparkles size={18} />
-                             <span>确认下单推送</span>
+                             <span>{t('placeOrder')}</span>
                            </>
                          )}
                       </button>
@@ -403,11 +393,11 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
         </div>
       )}
 
-      {/* Room Options Modal */}
+      {/* 桌位选项 Modal */}
       {activeRoom && viewMode === 'options' && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 no-print">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={closeModal} />
-          <div className="relative w-full max-w-sm bg-white rounded-[3rem] shadow-2xl overflow-hidden border border-slate-300 animate-in zoom-in-95">
+          <div className="relative w-full max-sm bg-white rounded-[3rem] shadow-2xl overflow-hidden border border-slate-300 animate-in zoom-in-95">
              <div className="p-8 border-b border-slate-200 flex items-center justify-between">
                 <div>
                   <h3 className="text-2xl font-black text-slate-900">{t('station')} {activeRoom.id}</h3>
@@ -435,7 +425,7 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
         </div>
       )}
 
-      {/* QR View Modal */}
+      {/* 二维码展示 Modal */}
       {activeRoom && viewMode === 'qr' && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 no-print">
           <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-2xl animate-in fade-in" onClick={closeModal} />

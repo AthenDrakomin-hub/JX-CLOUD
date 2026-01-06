@@ -36,7 +36,7 @@ export const s3Service = {
 
       return (data || []).map((item) => ({
         key: item.name,
-        // 获取公共 URL
+        // 获取公共 URL - 确保实时更新
         url: supabase.storage.from(BUCKET_NAME).getPublicUrl(item.name).data.publicUrl,
         size: item.metadata?.size || 0,
         lastModified: new Date(item.updated_at || item.created_at),

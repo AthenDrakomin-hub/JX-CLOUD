@@ -1,38 +1,115 @@
 
+// @google/genai: Completed component to fix import error.
 import React, { useState, useEffect } from 'react';
-import { Database, Table, Search, RefreshCcw, Trash2, Edit3, X, Save, Plus, Loader2, Info, Copy, Check, Shield, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { Database, Table, Search, RefreshCcw, Trash2, Edit3, X, Save, Plus, Loader2, Info, Copy, Check, Shield, ShieldAlert, ShieldCheck, Zap, ZapOff, AlertCircle, Terminal, Code, ExternalLink } from 'lucide-react';
 import { api } from '../services/api';
+import { isDemoMode, supabaseUrl } from '../services/supabaseClient';
 
 const DatabaseManagement: React.FC<{ lang: string }> = ({ lang }) => {
   const [tables] = useState([
-    'orders', 'dishes', 'rooms', 'users', 'ingredients', 
-    'partners', 'expenses', 'payments', 'config', 'security_logs',
-    'material_images', 'translations', 'commission_records',
-    'dish_ingredients', 'payment_methods', 'user_payments', 'todos'
+    'orders', 'menu_dishes', 'menu_categories', 'rooms', 'users', 'ingredients', 
+    'partners', 'expenses', 'payments', 'system_config', 'audit_logs',
+    'material_images'
   ]);
   const [selected, setSelected] = useState('orders');
   const [data, setData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [errorInfo, setErrorInfo] = useState<string | null>(null);
   const [editing, setEditing] = useState<any | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const fieldTrans: Record<string, string> = {
-    id: '唯一标识 (UUID)', name: '全称/名称', price: '单价', category: '所属分类', stock: '当前库存',
-    room_id: '关联桌号', total_amount: '应付总额', status: '业务状态', items: '订单明细 JSON', 
-    username: '登录工号', role: '权限角色', created_at: '物理创建时间', updated_at: '最后同步时间',
-    image_url: '云端图片外链', unit: '单位', min_stock: '警戒水位', owner_name: '负责人',
-    commission_rate: '抽佣比例', balance: '账户余额', total_sales: '累计销售', 
-    full_name: '真实姓名', metadata: '元数据 (JSON)', authorized_categories: '授权品类'
+    // 通用
+    id: '唯一标识',
+    created_at: '创建时间',
+    updated_at: '更新时间',
+    status: '业务状态',
+    name: '名称',
+    
+    // 系统配置
+    hotel_name: '酒店名称',
+    version: '版本',
+    theme: '主题风格',
+    font_family: '全局字体',
+    font_size_base: '基础字号',
+    printer_ip: '打印机IP',
+    printer_port: '打印机端口',
+    voice_broadcast_enabled: '语音播报',
+    voice_volume: '播报音量',
+    service_charge_rate: '服务费率',
+    
+    // 菜品 & 品类
+    name_zh: '中文名称',
+    name_en: '英文名称',
+    price_cents: '单价(分)',
+    category_id: '品类索引',
+    stock: '当前库存',
+    image_url: '素材路径',
+    is_available: '是否上架',
+    partner_id: '关联商户ID',
+    is_recommended: '主厨推荐',
+    display_order: '显示排序',
+    is_active: '是否启用',
+    
+    // 订单
+    room_id: '关联桌号',
+    items: '订单项JSON',
+    total_amount: '结算总额',
+    tax_amount: '税金',
+    payment_method: '支付通道',
+    
+    // 合伙人
+    owner_name: '负责人姓名',
+    commission_rate: '抽佣比例',
+    balance: '待结余额',
+    total_sales: '累计销售额',
+    authorized_categories: '授权品类',
+    contact: '联系电话',
+    email: '企业邮箱',
+    joined_at: '入驻时间',
+    
+    // 物料
+    unit: '计量单位',
+    min_stock: '警戒水位',
+    category: '物料分类',
+    last_restocked: '最后入库时间',
+    
+    // 用户与安全
+    username: '登录工号',
+    role: '权限角色',
+    full_name: '真实姓名',
+    module_permissions: '模块权限位',
+    ip_whitelist: 'IP白名单',
+    password_hash: '密码摘要'
   };
 
   const fetchTable = async (tableName: string) => {
     setIsLoading(true);
+    setErrorInfo(null);
     try {
+      if (isDemoMode) {
+        // 环境未就绪提示
+        setData([{ 
+          id: 'ENV_DIAGNOSTICS',
+          connection_status: 'DEMO_MODE', 
+          diagnostic_msg: '系统未探测到生效的环境变量 (No Keys Found)',
+          resolution: '请确保根目录 .env 文件配置正确且变量名以 VITE_ 开头',
+          hint: '修改 .env 后必须手动重启开发服务器 (npm run dev)'
+        }]);
+        setSelected(tableName);
+        return;
+      }
       const rows = await api.db.getRows(tableName);
       setData(rows || []);
       setSelected(tableName);
-    } catch (e) {
-      alert('数据库连接受限：请确保 Supabase RLS 策略已正确配置。');
+    } catch (e: any) {
+      console.error(e);
+      if (e.message?.includes('does not exist')) {
+        setErrorInfo(`物理表 [${tableName}] 尚未创建。请在 Supabase SQL Editor 中运行 README.md 里的脚本。`);
+      } else {
+        setErrorInfo(e.message || 'Database link disrupted');
+      }
+      setData([]);
     } finally { setIsLoading(false); }
   };
 
@@ -46,6 +123,10 @@ const DatabaseManagement: React.FC<{ lang: string }> = ({ lang }) => {
 
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (isDemoMode) {
+      alert('演示环境：无法执行物理写操作。请先完成数据库连接。');
+      return;
+    }
     const fd = new FormData(e.currentTarget);
     const row: any = {};
     fd.forEach((v, k) => { 
@@ -62,144 +143,113 @@ const DatabaseManagement: React.FC<{ lang: string }> = ({ lang }) => {
     });
     
     try {
-      // 这里的逻辑需要区分是插入还是更新
-      // 为了实验室的简单，我们使用 row 中的核心 ID 字段作为 eq
       const idVal = editing.id || editing.email || editing.key;
-      if (editing && idVal) {
+      if (editing && Object.keys(editing).length > 0) {
         await api.db.updateRow(selected, idVal, row);
       } else {
         await api.db.insertRow(selected, row);
       }
       setEditing(null);
       fetchTable(selected);
-    } catch (e) {
-      alert('写入操作被拒绝：可能触发了 Supabase 行级安全 RLS 策略，或者主键冲突。');
+    } catch (e: any) {
+      alert(`COMMIT FAILED: ${e.message}`);
     }
   };
 
   return (
     <div className="space-y-8 pb-24">
+      {/* 增强型 Bento 状态头部 */}
       <div className="bg-slate-950 p-12 rounded-[4rem] text-white flex flex-col xl:flex-row justify-between items-center gap-10 shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-blue-600/10 blur-[120px] rounded-full" />
         <div className="relative z-10">
-          <div className="flex items-center space-x-3 text-blue-500 mb-3">
-            <Database size={24} />
-            <span className="text-[10px] font-black uppercase tracking-[0.6em]">Full Schema Manipulation Terminal</span>
+          <div className="flex items-center space-x-4 mb-4">
+             {isDemoMode ? (
+               <div className="flex items-center space-x-3 px-5 py-2 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-full animate-pulse">
+                 <ZapOff size={14} />
+                 <span className="text-[10px] font-black uppercase tracking-[0.2em]">演示环境 (等待 .env 生效)</span>
+               </div>
+             ) : (
+               <div className="flex items-center space-x-3 px-5 py-2 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-full">
+                 <Zap size={14} />
+                 <span className="text-[10px] font-black uppercase tracking-[0.2em]">生产接入: {supabaseUrl ? new URL(supabaseUrl).hostname : 'unknown'}</span>
+               </div>
+             )}
           </div>
-          <h2 className="text-5xl font-serif italic tracking-tighter">数据库实验室</h2>
-          <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-2">江西云厨 · 实时数据实体编辑器 (CRUD Ready)</p>
+          <div className="flex items-center space-x-3 text-blue-500 mb-3"><Database size={24} /><span className="text-[10px] font-black uppercase tracking-[0.6em]">Core Database Laboratory</span></div>
+          <h2 className="text-4xl font-black tracking-tighter uppercase">物理层数据实验室</h2>
         </div>
-        <div className="flex flex-wrap justify-center gap-2 relative z-10 max-w-2xl">
+      </div>
+
+      <div className="flex flex-col lg:flex-row gap-8">
+        <aside className="w-full lg:w-64 space-y-2">
           {tables.map(t => (
-            <button key={t} onClick={() => fetchTable(t)} className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${selected === t ? 'bg-blue-600 text-white shadow-xl shadow-blue-500/20' : 'bg-white/10 text-slate-400 hover:bg-white/20 border border-white/10'}`}>{t}</button>
+            <button
+              key={t}
+              onClick={() => fetchTable(t)}
+              className={`w-full text-left px-6 py-4 rounded-2xl font-bold text-sm transition-all flex items-center justify-between ${selected === t ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-500 hover:bg-slate-50'}`}
+            >
+              <span>{t}</span>
+              <Table size={14} />
+            </button>
           ))}
-        </div>
-      </div>
+        </aside>
 
-      <div className="bg-white rounded-[4rem] border border-slate-200 overflow-hidden shadow-premium flex flex-col min-h-[700px]">
-        <div className="p-10 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-          <div className="flex items-center space-x-5">
-             <div className="w-14 h-14 bg-slate-900 text-white rounded-2xl flex items-center justify-center shadow-2xl"><Table size={24} /></div>
-             <div>
-                <h3 className="font-black text-slate-950 uppercase tracking-tight text-xl">物理表: {selected}</h3>
-                <div className="flex items-center space-x-2 text-emerald-600 mt-1">
-                   <ShieldCheck size={12} />
-                   <span className="text-[9px] font-black uppercase tracking-widest">RLS (Row Level Security) Enabled</span>
-                </div>
-             </div>
-          </div>
-          <div className="flex gap-4">
-             <button onClick={() => fetchTable(selected)} className="w-14 h-14 bg-white border border-slate-200 text-slate-400 rounded-2xl hover:text-blue-600 hover:border-blue-600 transition-all active-scale"><RefreshCcw size={24} className={isLoading ? 'animate-spin' : ''} /></button>
-             <button onClick={() => setEditing({})} className="px-10 py-4 bg-slate-950 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 hover:bg-blue-600 shadow-xl transition-all active-scale"><Plus size={20} /> 插入记录</button>
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-x-auto">
-          {isLoading ? (
-            <div className="h-96 flex flex-col items-center justify-center space-y-6">
-              <div className="w-20 h-20 border-4 border-slate-100 border-t-blue-600 rounded-full animate-spin" />
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.5em]">正在同步 Supabase 生产快照...</p>
-            </div>
-          ) : data.length === 0 ? (
-            <div className="h-96 flex flex-col items-center justify-center text-slate-200 space-y-4">
-               <ShieldAlert size={64} className="opacity-10" />
-               <p className="text-xs font-black uppercase tracking-widest text-slate-400">当前表为空，或 RLS 限制了您的 SELECT 权限</p>
-            </div>
-          ) : (
-            <table className="w-full text-left">
-              <thead className="bg-slate-900 text-white uppercase tracking-widest sticky top-0 z-10">
-                <tr>
-                  {Object.keys(data[0]).map(k => (
-                    <th key={k} className="px-10 py-8 border-r border-white/5 min-w-[200px]">
-                      <div className="flex flex-col">
-                        <span className="text-[11px] font-black">{k}</span>
-                        <span className="text-[8px] text-blue-400 font-black mt-1.5 opacity-80">{fieldTrans[k.toLowerCase()] || 'Infrastructure Key'}</span>
-                      </div>
-                    </th>
-                  ))}
-                  <th className="px-10 py-8 text-right bg-slate-950 w-48 font-black text-[11px]">操作</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {data.map((row, i) => (
-                  <tr key={i} className="hover:bg-blue-50/40 transition-all group">
-                    {Object.values(row).map((v: any, j) => (
-                      <td key={j} className="px-10 py-7 truncate max-w-[300px] font-mono text-[10px] text-slate-600 relative">
-                        {typeof v === 'object' ? <span className="text-blue-500 font-black border border-blue-200 px-2 py-0.5 rounded-md bg-blue-50">JSON OBJECT</span> : String(v)}
-                        <button onClick={() => handleCopy(String(v), i*100+j)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 text-slate-300 hover:text-blue-600 bg-white shadow-xl p-2 rounded-lg transition-all active-scale">
-                          {copiedKey === `${i*100+j}` ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
-                        </button>
-                      </td>
-                    ))}
-                    <td className="px-10 py-7 text-right">
-                      <div className="flex justify-end gap-3">
-                        <button onClick={() => setEditing(row)} className="p-3 bg-slate-50 text-slate-400 hover:text-blue-600 hover:bg-white hover:shadow-2xl rounded-xl transition-all"><Edit3 size={16} /></button>
-                        <button onClick={async () => { if(confirm('彻底抹除此物理行？操作不可逆。')) { await api.db.deleteRow(selected, row.id || row.email || row.key); fetchTable(selected); }}} className="p-3 bg-slate-50 text-slate-400 hover:text-red-600 hover:bg-white hover:shadow-2xl rounded-xl transition-all"><Trash2 size={16} /></button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </div>
-
-      {editing && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-950/95 backdrop-blur-3xl">
-          <div className="absolute inset-0" onClick={() => setEditing(null)} />
-          <form onSubmit={handleSave} className="relative w-full max-w-2xl bg-white rounded-[4rem] shadow-2xl overflow-hidden animate-in zoom-in-95 flex flex-col max-h-[90vh]">
-            <div className="p-12 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+        <div className="flex-1 bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col">
+          <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <div className="flex items-center space-x-4">
+              <div className="w-10 h-10 bg-slate-900 text-blue-500 rounded-xl flex items-center justify-center"><Terminal size={18} /></div>
               <div>
-                <h3 className="text-2xl font-black uppercase tracking-tight text-slate-900">实体编辑器: {selected}</h3>
-                <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mt-1">Direct Manipulation Protocol V5.2</p>
+                <h3 className="font-black uppercase tracking-tight text-slate-900">{selected}</h3>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Physical Table Explorer</p>
               </div>
-              <button type="button" onClick={() => setEditing(null)} className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white border border-slate-200 text-slate-400 hover:text-slate-950 transition-colors"><X size={28} /></button>
             </div>
-            <div className="p-12 space-y-8 overflow-y-auto no-scrollbar flex-1 bg-white">
-              {(data.length > 0 ? Object.keys(data[0]) : Object.keys(editing)).map(key => (
-                <div key={key} className="space-y-3">
-                  <div className="flex justify-between px-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{key}</label>
-                    <span className="text-[9px] font-bold text-blue-500 italic">{fieldTrans[key.toLowerCase()] || 'System Node'}</span>
-                  </div>
-                  <textarea 
-                    name={key} 
-                    defaultValue={editing ? (typeof editing[key] === 'object' ? JSON.stringify(editing[key], null, 2) : editing[key]) : ''} 
-                    className="w-full px-8 py-5 bg-slate-50 border-2 border-slate-100 rounded-3xl outline-none font-mono text-xs focus:bg-white focus:border-blue-500 transition-all resize-none no-scrollbar shadow-inner"
-                    rows={editing && typeof editing[key] === 'object' ? 8 : 1}
-                  />
-                </div>
-              ))}
-            </div>
-            <div className="p-12 bg-slate-50 border-t border-slate-100">
-              <button type="submit" className="w-full py-6 bg-slate-950 text-white rounded-[2.5rem] font-black text-xs uppercase tracking-[0.4em] hover:bg-blue-600 transition-all shadow-xl active-scale flex items-center justify-center gap-4">
-                <Save size={20} /> 确认并原子化提交 (COMMIT)
-              </button>
-            </div>
-          </form>
+            <button 
+              onClick={() => fetchTable(selected)} 
+              disabled={isLoading}
+              className="p-3 text-slate-400 hover:text-blue-600 transition-colors"
+            >
+              <RefreshCcw size={18} className={isLoading ? 'animate-spin' : ''} />
+            </button>
+          </div>
+
+          <div className="overflow-x-auto flex-1">
+            {errorInfo ? (
+              <div className="p-20 text-center space-y-4">
+                <ShieldAlert className="mx-auto text-red-500" size={48} />
+                <p className="text-red-500 font-bold">{errorInfo}</p>
+              </div>
+            ) : (
+              <table className="w-full text-left text-xs border-collapse">
+                <thead className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest sticky top-0">
+                  <tr>
+                    {data.length > 0 && Object.keys(data[0]).map(k => (
+                      <th key={k} className="px-6 py-4 border-b border-slate-100">{fieldTrans[k] || k}</th>
+                    ))}
+                    <th className="px-6 py-4 border-b border-slate-100 text-right">操作</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {data.map((row, idx) => (
+                    <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                      {Object.entries(row).map(([k, v]: [string, any], i) => (
+                        <td key={i} className="px-6 py-4 font-medium text-slate-600 max-w-[200px] truncate">
+                          {typeof v === 'object' ? JSON.stringify(v) : String(v)}
+                        </td>
+                      ))}
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex justify-end gap-2">
+                           <button onClick={() => setEditing(row)} className="p-2 text-slate-300 hover:text-blue-600"><Edit3 size={14} /></button>
+                           <button className="p-2 text-slate-300 hover:text-red-500"><Trash2 size={14} /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };

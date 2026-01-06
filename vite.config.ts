@@ -8,40 +8,33 @@ export default defineConfig({
     outDir: 'dist',
     chunkSizeWarningLimit: 1500,
     cssCodeSplit: true,
-    sourcemap: false, // 生产环境不生成源码映射以减小包大小
     rollupOptions: {
+      input: {
+        main: './index.html',
+      },
       output: {
-        manualChunks: {
-          'vendor-react': ['react', 'react-dom'],
-          'vendor-charts': ['recharts'],
-          'vendor-icons': ['lucide-react'],
-          'vendor-utils': ['@supabase/supabase-js', 'qrcode.react']
+        manualChunks(id) {
+          if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
+            return 'vendor-react-core';
+          }
+          if (id.includes('recharts') || id.includes('d3')) {
+            return 'vendor-charts-engine';
+          }
+          if (id.includes('lucide-react')) {
+            return 'vendor-ui-icons';
+          }
+          if (id.includes('node_modules')) {
+            return 'vendor-utils';
+          }
         },
         entryFileNames: `assets/[name]-[hash].js`,
         chunkFileNames: `assets/[name]-[hash].js`,
-        assetFileNames: `assets/[name]-[hash].[ext]`,
-        // 优化代码分割
-        format: 'es'
+        assetFileNames: `assets/[name]-[hash].[ext]`
       }
     },
   },
   server: {
     port: 3000,
-    open: true,
-    // 优化开发服务器性能
-    warmup: {
-      clientFiles: ['./index.html', './src/**']
-    }
-  },
-  // 添加构建优化
-  esbuild: {
-    // 压缩代码
-    minifyIdentifiers: true,
-    minifySyntax: true,
-    minifyWhitespace: true,
-  },
-  optimizeDeps: {
-    // 预构建依赖以提高开发服务器启动速度
-    include: ['react', 'react-dom', 'lucide-react', '@supabase/supabase-js', 'qrcode.react']
+    open: true
   }
 });

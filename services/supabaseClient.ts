@@ -1,108 +1,42 @@
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 
-// Singleton pattern for Supabase client
-let supabaseInstance: SupabaseClient | null = null;
+/**
+ * 江西云厨 - 云端集成引擎 (Vercel & Vite Production Optimized)
+ * V5.6 - 增强型环境变量探测
+ */
 
-export const initializeSupabase = (): SupabaseClient => {
-  // Validate environment variables exist
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// 尝试从不同的全局作用域获取环境变量
+const getEnv = (key: string): string => {
+  const metaEnv = (import.meta as any).env || {};
+  const procEnv = (typeof process !== 'undefined' ? process.env : {}) || {};
+  // 按照优先级探测变量名
+  return metaEnv[key] || metaEnv[`VITE_${key}`] || procEnv[key] || procEnv[`VITE_${key}`] || '';
+};
 
-  if (!supabaseUrl) {
-    throw new Error('VITE_SUPABASE_URL is not defined in environment variables');
-  }
+const SUPABASE_URL = getEnv('PROJECT_URL') || getEnv('SUPABASE_URL');
+const SUPABASE_KEY = getEnv('SERVICE_ROLE_KEY') || getEnv('SUPABASE_ANON_KEY');
 
-  if (!supabaseAnonKey) {
-    throw new Error('VITE_SUPABASE_ANON_KEY is not defined in environment variables');
-  }
+export const supabaseUrl = SUPABASE_URL;
+export const isDemoMode = !SUPABASE_URL || !SUPABASE_KEY;
 
-  // Create and return the Supabase client instance
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-    },
-    global: {
-      headers: {
-        'X-Client': 'react-app'
+// 初始化客户端
+export const supabase = isDemoMode 
+  ? null as any 
+  : createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      },
+      global: {
+        headers: { 'x-application-name': 'jx-cloud-v5-enterprise' }
       }
-    }
-  });
-};
+    });
 
-// Get or create the singleton Supabase client instance
-export const getSupabaseClient = (): SupabaseClient => {
-  if (!supabaseInstance) {
-    supabaseInstance = initializeSupabase();
-    
-    // Perform a basic health check to verify the connection
-    // We'll skip the users table check since it requires authentication
-    // Instead, we'll just log that initialization is complete
-    console.log('Supabase client initialized and connection verified');
-  }
-  
-  return supabaseInstance;
-};
-
-// Export the default client instance
-export const supabase = getSupabaseClient();
-
-// Check if user has admin role
-export const isAdmin = async (): Promise<boolean> => {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) return false;
-  
-  const userRole = session.user?.user_metadata?.role;
-  return userRole === 'admin';
-};
-
-// Check if user has developer role
-export const isDeveloper = async (): Promise<boolean> => {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) return false;
-  
-  const userRole = session.user?.user_metadata?.role;
-  return userRole === 'developer';
-};
-
-// Check if user has staff role
-export const isStaff = async (): Promise<boolean> => {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) return false;
-  
-  const userRole = session.user?.user_metadata?.role;
-  return userRole === 'staff';
-};
-
-// Check if user has elevated permissions (admin or developer)
-export const hasElevatedPermissions = async (): Promise<boolean> => {
-  const admin = await isAdmin();
-  const developer = await isDeveloper();
-  return admin || developer;
-};
-
-// Get current user role
-export const getUserRole = async (): Promise<string | null> => {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) return null;
-  
-  return session.user?.user_metadata?.role || null;
-};
-
-// Check if JWT token is valid
-export const isValidSession = async (): Promise<boolean> => {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) {
-    return false;
-  }
-  
-  // Check if token is expired
-  const isExpired = session.expires_at && session.expires_at < Math.floor(Date.now() / 1000);
-  return !isExpired;
-};
-
-// In production mode only
-const isDemoMode = false;
-export { isDemoMode };
+if (isDemoMode) {
+  console.warn('⚠️ JX-CLOUD: 未检测到有效的 Supabase 配置，系统运行在演示模式。');
+  console.info('提示：请检查 .env 文件中的变量名是否为 VITE_PROJECT_URL 和 VITE_SERVICE_ROLE_KEY');
+} else {
+  console.log('✅ JX-CLOUD: 已成功识别环境配置 - ' + (SUPABASE_URL ? new URL(SUPABASE_URL).hostname : 'unknown'));
+}

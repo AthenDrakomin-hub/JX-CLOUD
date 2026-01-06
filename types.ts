@@ -8,60 +8,28 @@ export enum UserRole {
 export type AppModule = 
   | 'dashboard' | 'rooms' | 'orders' | 'menu' | 'finance' 
   | 'partners' | 'users' | 'settings' | 'database' 
-  | 'images' | 'inventory' | 'payments' | 'supply_chain';
+  | 'images' | 'inventory' | 'payments' | 'supply_chain' | 'financial_hub';
 
 export interface CRUDPermissions {
   enabled: boolean; 
   c: boolean; r: boolean; u: boolean; d: boolean; 
 }
 
-export interface AppUser {
-  id: string; // uuid，由数据库生成
-  email: string;
-  full_name?: string | null; // 映射 DB full_name
-  avatar_url?: string | null; // 映射 DB avatar_url
-  metadata?: Record<string, unknown> | null; // 映射 DB metadata
-  created_at: string; // ISO 日期时间，映射 DB created_at
-  updated_at: string; // ISO 日期时间，映射 DB updated_at
-  auth_id?: string | null; // 映射 DB auth_id，关联的 auth.user id（如果使用）
-  role?: UserRole | string | null; // 映射 DB role，默认为 'viewer'
-  username: string; // 用于登录，可能与email相同
+export interface User {
+  id: string;
+  email: string; // 生产环境必须字段，对齐 Supabase Auth
+  username: string;
   password?: string; 
+  role: UserRole;
+  name: string; 
   lastLogin?: string;
   modulePermissions?: Partial<Record<AppModule, CRUDPermissions>>;
   ipWhitelist?: string[]; 
   isOnline?: boolean;         
 }
 
-// Keep the original User interface for backward compatibility
-export interface User extends AppUser {}
-
-// 用于从前端创建用户的有效负载（注意：建议使用 Supabase Auth 进行注册）
-export interface UserCreatePayload {
-  email: string;
-  full_name?: string;
-  avatar_url?: string;
-  metadata?: Record<string, unknown>;
-  auth_id?: string; // 可选的指向 auth.users 的链接
-  role?: UserRole | string;
-  username: string;
-}
-
-// 部分更新有效负载 (PATCH)
-export type UserUpdatePayload = Partial<
-  Pick<User, 'full_name' | 'avatar_url' | 'metadata' | 'role' | 'auth_id' | 'username'>
->;
-
-// 分页响应包装器
-export interface PaginatedResponse<T> {
-  data: T[];
-  total?: number;
-  page?: number;
-  per_page?: number;
-}
-
 export interface SystemConfig {
-  hotelName: string; // DB hotel_name
+  hotelName: string;
   version: string;
   theme: 'light' | 'dark' | 'custom';
   fontFamily: string;
@@ -78,7 +46,7 @@ export interface SystemConfig {
   autoPrintReceipt: boolean;
   voiceBroadcastEnabled: boolean;
   voiceVolume: number;
-  serviceChargeRate: number; // 对齐 DB
+  serviceChargeRate: number;
 }
 
 export interface OrderItem {
@@ -110,39 +78,28 @@ export enum RoomStatus {
 
 export interface Order {
   id: string;
-  roomId: string; // DB room_id
+  roomId: string;
   items: OrderItem[];
-  totalAmount: number; // DB total_amount
+  totalAmount: number;
   status: OrderStatus;
-  paymentMethod: PaymentMethod; // DB payment_method
+  paymentMethod: PaymentMethod;
   createdAt: string;
   updatedAt: string;
-  taxAmount: number; // DB tax_amount
-}
-
-export interface Category {
-  id: number;
-  name: string;
-  parent_id: number | null;
-  level: number;
-  display_order: number;
-  created_at: string;
-  updated_at: string;
+  taxAmount: number;
 }
 
 export interface Dish {
   id: string;
   name: string;
-  nameEn?: string; // DB name_en
+  nameEn?: string;
   price: number;
-  category: string; // 保留原有字段
-  category_id?: number; // 新增层级分类ID
+  category: string;
   stock: number;
-  imageUrl: string; // DB image_url
-  isAvailable?: boolean; // DB is_available
+  imageUrl: string;
+  isAvailable?: boolean;
   description?: string;
   isRecommended?: boolean;
-  partnerId?: string; // DB partner_id
+  partnerId?: string;
 }
 
 export interface HotelRoom {
@@ -155,8 +112,8 @@ export interface MaterialImage {
   url: string;
   name: string;
   category: string;
-  fileSize?: string; // 对齐 DB
-  dimensions?: string; // 对齐 DB
+  fileSize?: string;
+  dimensions?: string;
 }
 
 export interface Partner {
@@ -187,16 +144,16 @@ export interface Ingredient {
   name: string;
   unit: string;
   stock: number;
-  minStock: number; // DB min_stock
+  minStock: number;
   category: string;
-  lastRestocked: string; // DB last_restocked
+  lastRestocked: string;
 }
 
 export interface PaymentMethodConfig {
   id: string;
   name: string;
   type: PaymentMethod;
-  isActive: boolean; // DB is_active
-  iconType: string; // DB icon_type
+  isActive: boolean;
+  iconType: string;
   instructions?: string;
 }
