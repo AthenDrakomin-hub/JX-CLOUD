@@ -15,27 +15,25 @@ const getEnv = (key: string) => {
 export const supabaseUrl = getEnv('SUPABASE_URL') || 'https://zlbemopcgjohrnyyiwvs.supabase.co';
 const supabaseAnonKey = getEnv('SUPABASE_ANON_KEY') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpsYmVtb3BjZ2pvaHJueXlpd3ZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU4Njg5MzksImV4cCI6MjA4MTQ0NDkzOX0.vsV-Tkt09tlMN5EmYdRm_x_YI6oNL4otkVwEjqtji6g';
 
-export const isDemoMode = !supabaseUrl || !supabaseAnonKey;
+// In production mode only
+const isDemoMode = false;
+export { isDemoMode };
 
 // 初始化客户端，针对 Vercel Serverless 环境优化 fetch 行为
-export const supabase: SupabaseClient = isDemoMode 
-  ? null as any 
-  : createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true
-      },
-      global: {
-        headers: { 'x-application-name': 'jx-cloud-v3' }
-      },
-      realtime: {
-        params: {
-          eventsPerSecond: 10
-        }
+export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true
+    },
+    global: {
+      headers: { 'x-application-name': 'jx-cloud-v3' }
+    },
+    realtime: {
+      params: {
+        eventsPerSecond: 10
       }
-    });
+    }
+  });
 
-if (!isDemoMode) {
-  console.log('🔗 JX-CLOUD: 已挂载生产级云端路由: zlbemopcgjohrnyyiwvs');
-}
+console.log('🔗 JX-CLOUD: 已挂载生产级云端路由: zlbemopcgjohrnyyiwvs');

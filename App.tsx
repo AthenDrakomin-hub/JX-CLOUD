@@ -19,18 +19,15 @@ import { User, Order, HotelRoom, Expense, Dish, MaterialImage, UserRole, Partner
 import { translations as localTranslations, Language, getTranslation } from './translations';
 import { ShieldCheck, Monitor, Lock, User as UserIcon, Sparkles, Globe, ChevronRight, Loader2 } from 'lucide-react';
 import { INITIAL_USERS } from './constants';
+import { useAuth } from './contexts/AuthContext';
 
 const App: React.FC = () => {
-  const [currentUser, setCurrentUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem('jx_user');
-    try { return saved ? JSON.parse(saved) : null; } catch { return null; }
-  });
+  const { user: currentUser, loading: isLoggingIn, error, login, logout } = useAuth();
 
   const [currentTab, setCurrentTab] = useState('dashboard');
   const [lang, setLang] = useState<Language>(() => (localStorage.getItem('jx_lang') as Language) || 'zh');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [sysConfig, setSysConfig] = useState<SystemConfig | null>(null);
   
@@ -157,63 +154,16 @@ const App: React.FC = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoggingIn(true);
     const fd = new FormData(e.currentTarget as HTMLFormElement);
     const uname = fd.get('username') as string;
     const pwd = fd.get('password') as string;
     
-    try {
-      // 在生产环境中使用Supabase Auth进行认证
-      if (!isDemoMode && supabase) {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: uname,
-          password: pwd,
-        });
-        
-        if (error) {
-          throw error;
-        }
-        
-        // 获取用户信息
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('*')
-          .eq('email', data.user.email)
-          .single();
-          
-        if (userError || !userData) {
-          throw new Error('User data not found');
-        }
-        
-        // 设置当前用户
-        const user: User = {
-          id: userData.id,
-          username: userData.email,
-          name: userData.full_name,
-          role: userData.role as UserRole,
-          modulePermissions: userData.metadata?.permissions || {}
-        };
-        
-        setCurrentUser(user);
-        localStorage.setItem('jx_user', JSON.stringify(user));
-        showToast(`${t('welcomeBack')}, ${user.name}`, "success");
-      } else {
-        // 演示模式：使用本地验证
-        const user = [...INITIAL_USERS, ...users].find(u => u.username === uname && u.password === pwd);
-        
-        if (user) {
-          setCurrentUser(user);
-          localStorage.setItem('jx_user', JSON.stringify(user));
-          showToast(`${t('welcomeBack')}, ${user.name}`, "success");
-        } else {
-          showToast(t('loginFailed'), "error");
-        }
-      }
-    } catch (error: any) {
-      console.error('Login error:', error);
+    await login(uname, pwd);
+    
+    if (!error) {
+      showToast(`${t('welcomeBack')}, ${currentUser?.full_name || currentUser?.name}`, "success");
+    } else {
       showToast(t('loginFailed'), "error");
-    } finally {
-      setIsLoggingIn(false);
     }
   };
 
@@ -328,6 +278,8 @@ const App: React.FC = () => {
                 </div>
               </div>
 
+              {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+
               <button 
                 type="submit" 
                 disabled={isLoggingIn}
@@ -359,11 +311,7 @@ const App: React.FC = () => {
         setCurrentTab={setCurrentTab} 
         currentUser={currentUser} 
         onLogout={async () => { 
-          if (!isDemoMode && supabase) {
-            await supabase.auth.signOut();
-          }
-          setCurrentUser(null); 
-          localStorage.removeItem('jx_user'); 
+          await logout();
           showToast(lang === 'zh' ? '安全退出成功' : 'Logged out safely', "info"); 
         }} 
         lang={lang} 
@@ -387,10 +335,10 @@ const App: React.FC = () => {
           </div>
           <div className="flex items-center space-x-6">
              <div className="text-right hidden sm:block">
-                <p className="text-sm font-black text-slate-950">{currentUser.name}</p>
+                <p className="text-sm font-black text-slate-950">{currentUser.full_name || currentUser.name}</p>
                 <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">ID: {currentUser.username}</p>
              </div>
-             <div className="w-14 h-14 bg-slate-950 text-white rounded-[1.75rem] flex items-center justify-center font-black text-xl shadow-xl border-4 border-white">{currentUser.name[0]}</div>
+             <div className="w-14 h-14 bg-slate-950 text-white rounded-[1.75rem] flex items-center justify-center font-black text-xl shadow-xl border-4 border-white">{(currentUser.full_name || currentUser.name)?.[0]}</div>
           </div>
         </header>
 

@@ -16,16 +16,45 @@ export interface CRUDPermissions {
 }
 
 export interface User {
-  id: string;
-  email?: string; // 对齐 DB
-  username: string;
+  id: string; // uuid，由数据库生成
+  email: string;
+  full_name?: string | null; // 映射 DB full_name
+  avatar_url?: string | null; // 映射 DB avatar_url
+  metadata?: Record<string, unknown> | null; // 映射 DB metadata
+  created_at: string; // ISO 日期时间，映射 DB created_at
+  updated_at: string; // ISO 日期时间，映射 DB updated_at
+  auth_id?: string | null; // 映射 DB auth_id，关联的 auth.user id（如果使用）
+  role?: UserRole | string | null; // 映射 DB role，默认为 'viewer'
+  username: string; // 用于登录，可能与email相同
   password?: string; 
-  role: UserRole;
-  name: string; // 映射 DB full_name
   lastLogin?: string;
   modulePermissions?: Partial<Record<AppModule, CRUDPermissions>>;
   ipWhitelist?: string[]; 
   isOnline?: boolean;         
+}
+
+// 用于从前端创建用户的有效负载（注意：建议使用 Supabase Auth 进行注册）
+export interface UserCreatePayload {
+  email: string;
+  full_name?: string;
+  avatar_url?: string;
+  metadata?: Record<string, unknown>;
+  auth_id?: string; // 可选的指向 auth.users 的链接
+  role?: UserRole | string;
+  username: string;
+}
+
+// 部分更新有效负载 (PATCH)
+export type UserUpdatePayload = Partial<
+  Pick<User, 'full_name' | 'avatar_url' | 'metadata' | 'role' | 'auth_id' | 'username'>
+>;
+
+// 分页响应包装器
+export interface PaginatedResponse<T> {
+  data: T[];
+  total?: number;
+  page?: number;
+  per_page?: number;
 }
 
 export interface SystemConfig {

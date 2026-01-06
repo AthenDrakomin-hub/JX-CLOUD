@@ -47,6 +47,21 @@ CREATE TABLE system_config (
   printer_port TEXT,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- 5. 用户表
+CREATE TABLE users (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  email TEXT NOT NULL,
+  full_name TEXT NULL,
+  avatar_url TEXT NULL,
+  metadata JSONB NULL DEFAULT '{}'::JSONB,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  auth_id UUID NULL,
+  role TEXT NULL DEFAULT 'viewer'::TEXT,
+  CONSTRAINT users_pkey PRIMARY KEY (id),
+  CONSTRAINT users_email_key UNIQUE (email)
+);
 ```
 
 ## 2. 行级安全 (RLS) 策略

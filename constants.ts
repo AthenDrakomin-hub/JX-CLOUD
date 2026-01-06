@@ -1,5 +1,5 @@
 
-import { RoomStatus, Dish, User, UserRole, CRUDPermissions, AppModule } from './types';
+import { RoomStatus, Dish, UserRole, CRUDPermissions, AppModule } from './types';
 
 export const ROOM_NUMBERS = [
   ...Array.from({ length: 32 }, (_, i) => (8201 + i).toString()),
@@ -91,43 +91,9 @@ const MAINTAINER_PERMISSIONS: Record<AppModule, CRUDPermissions> = {
   supply_chain: DEMO_FULL_CRUD
 };
 
-export const INITIAL_USERS: User[] = [
-  // 系统管理员账户 - 演示用途
-  {
-    id: 'usr-admin-system',
-    email: 'admin@jx-cloud.com',
-    username: 'system_admin',
-    password: 'AdminPass123!', // 仅演示用途 - 生产环境需通过安全方式设置
-    role: UserRole.ADMIN,
-    name: '系统管理员',
-    modulePermissions: ADMIN_PERMISSIONS,
-    isOnline: false
-  },
-  
-  // 员工账户 - 演示用途
-  {
-    id: 'usr-staff-employee',
-    email: 'employee@jx-cloud.com',
-    username: 'staff_member',
-    password: 'StaffPass123!', // 仅演示用途 - 生产环境需通过安全方式设置
-    role: UserRole.STAFF,
-    name: '普通员工',
-    modulePermissions: STAFF_PERMISSIONS,
-    isOnline: false
-  },
-  
-  // 开发者/维护员账户 - 演示用途
-  {
-    id: 'usr-dev-maintainer',
-    email: 'developer@jx-cloud.com',
-    username: 'system_dev',
-    password: 'DevPass123!', // 仅演示用途 - 生产环境需通过安全方式设置
-    role: UserRole.MAINTAINER,
-    name: '系统开发者',
-    modulePermissions: MAINTAINER_PERMISSIONS,
-    isOnline: false
-  }
-];
+// 注意：在纯生产模式下，用户应通过 Supabase 认证系统创建
+// 此处保留空数组以避免破坏现有接口
+export const INITIAL_USERS: User[] = [];
 
 export const CATEGORIES = ['Heritage Soup', 'Land & Sea', 'Street Classics', 'Soft Drinks'];
 export const COLORS = { primary: '#2563eb', success: '#22c55e', danger: '#ef4444', warning: '#f59e0b' };

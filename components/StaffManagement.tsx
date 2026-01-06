@@ -1,8 +1,10 @@
 
 import React, { useState } from 'react';
-import { User, UserRole, AppModule, CRUDPermissions } from '../types';
+import { User, UserRole, AppModule, CRUDPermissions, UserCreatePayload } from '../types';
 import { translations, Language } from '../translations';
-import { UserPlus, X, Save, Trash2, Shield, Lock, Eye, EyeOff, CheckSquare, Square, Globe } from 'lucide-react';
+import { UserPlus, X, Save, Trash2, Shield, Lock, Eye, EyeOff, CheckSquare, Square, Globe, Loader2 } from 'lucide-react';
+import { createUserService } from '../services/createUserService';
+import { useAuth } from '../contexts/AuthContext';
 
 interface StaffManagementProps {
   users: User[];
@@ -18,6 +20,9 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ users, onAddUser, onU
   const [editing, setEditing] = useState<User | null>(null);
   const [perms, setPerms] = useState<Partial<Record<AppModule, CRUDPermissions>>>({});
   const [showPassword, setShowPassword] = useState(false);
+  const [apiLoading, setApiLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const { user: currentUser } = useAuth();
 
   const t = (key: keyof typeof translations.zh) => (translations[lang] as any)[key] || (translations.zh as any)[key] || key;
 
@@ -92,9 +97,74 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ users, onAddUser, onU
 
       {isOpen && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-2xl overflow-y-auto">
-          <form onSubmit={async (e) => { e.preventDefault(); const fd = new FormData(e.currentTarget as HTMLFormElement); const data: User = { ...editing, id: editing?.id || `u-${Date.now()}`, name: fd.get('name') as string, username: fd.get('username') as string, password: (fd.get('password') as string) || '123456', role: fd.get('role') as UserRole, modulePermissions: perms, ipWhitelist: (fd.get('ipWhitelist') as string).split(',').map(i => i.trim()).filter(i => !!i) }; editing ? await onUpdateUser(data) : await onAddUser(data); setIsOpen(false); }} className="w-full max-w-2xl bg-white rounded-[4rem] shadow-2xl overflow-hidden my-auto animate-in zoom-in-95 flex flex-col max-h-[90vh]">
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            // Use the API service to create/update a user
+            setApiLoading(true);
+            setApiError(null);
+            
+            try {
+              const fd = new FormData(e.currentTarget as HTMLFormElement);
+              
+              if (!editing) {
+                // Create new user via Edge Function
+                const userData: UserCreatePayload = {
+                  email: fd.get('username') as string, // Use username field as email
+                  full_name: fd.get('name') as string,
+                  username: fd.get('username') as string,
+                  role: fd.get('role') as UserRole,
+                };
+                
+                // Call the Edge Function to create the user
+                const result = await createUserService(userData);
+                
+                // Call the onAddUser callback to update the UI
+                if (onAddUser) {
+                  // Create a compatible user object for the local state
+                  const newUser: User = {
+                    id: result.id,
+                    email: result.email,
+                    full_name: result.full_name,
+                    avatar_url: result.avatar_url,
+                    metadata: result.metadata,
+                    created_at: result.created_at,
+                    updated_at: result.updated_at,
+                    auth_id: result.auth_id,
+                    role: result.role as UserRole,
+                    username: result.username,
+                    modulePermissions: perms,
+                    name: result.full_name || fd.get('name') as string
+                  };
+                  await onAddUser(newUser);
+                }
+              } else {
+                // Update existing user via API
+                const data: User = {
+                  ...editing,
+                  name: fd.get('name') as string,
+                  username: fd.get('username') as string,
+                  password: (fd.get('password') as string) || '123456',
+                  role: fd.get('role') as UserRole,
+                  modulePermissions: perms,
+                  ipWhitelist: (fd.get('ipWhitelist') as string).split(',').map(i => i.trim()).filter(i => !!i)
+                };
+                await onUpdateUser(data);
+              }
+              
+              setIsOpen(false);
+            } catch (err: any) {
+              setApiError(err.message || '操作失败');
+            } finally {
+              setApiLoading(false);
+            }
+          }} className="w-full max-w-2xl bg-white rounded-[4rem] shadow-2xl overflow-hidden my-auto animate-in zoom-in-95 flex flex-col max-h-[90vh]">
             <div className="p-10 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <h3 className="font-black text-slate-900 uppercase tracking-widest text-sm">员工授权协议 / AUTH PROTOCOL</h3>
+              <div className="flex flex-col">
+                <h3 className="font-black text-slate-900 uppercase tracking-widest text-sm">员工授权协议 / AUTH PROTOCOL</h3>
+                {apiError && (
+                  <div className="mt-2 text-xs text-red-600">{apiError}</div>
+                )}
+              </div>
               <button type="button" onClick={() => setIsOpen(false)} className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white border border-slate-200 text-slate-400 hover:text-slate-950 transition-colors"><X size={24} /></button>
             </div>
             
@@ -158,7 +228,23 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ users, onAddUser, onU
             </div>
 
             <div className="p-10 bg-slate-50 border-t border-slate-100 flex gap-4 sticky bottom-0 z-10">
-              <button type="submit" className="flex-1 py-6 bg-slate-950 text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.4em] flex items-center justify-center gap-3 hover:bg-blue-600 transition-all shadow-xl active:scale-95"><Save size={20} /><span>确认签发授权</span></button>
+              <button 
+                type="submit" 
+                disabled={useApi && apiLoading}
+                className="flex-1 py-6 bg-slate-950 text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.4em] flex items-center justify-center gap-3 hover:bg-blue-600 transition-all shadow-xl active:scale-95 disabled:opacity-70"
+              >
+                {useApi && apiLoading ? (
+                  <>
+                    <Loader2 className="animate-spin" size={20} />
+                    <span>创建中...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save size={20} />
+                    <span>确认签发授权</span>
+                  </>
+                )}
+              </button>
               {editing && editing.username !== 'admin' && <button type="button" onClick={() => { if(confirm('彻底注销此员工账号？')) { onDeleteUser(editing.id); setIsOpen(false); }}} className="px-8 text-red-500 hover:bg-red-50 rounded-3xl transition-all"><Trash2 size={24} /></button>}
             </div>
           </form>
