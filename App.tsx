@@ -15,7 +15,7 @@ import Toast, { ToastType } from './components/Toast';
 import { api } from './services/api';
 import { notificationService } from './services/notification';
 import { supabase, isDemoMode } from './services/supabaseClient';
-import { User, Order, HotelRoom, Expense, Dish, MaterialImage, UserRole, Partner, SystemConfig, OrderStatus } from './types';
+import { AppUser as User, Order, HotelRoom, Expense, Dish, MaterialImage, UserRole, Partner, SystemConfig, OrderStatus } from './types';
 import { translations as localTranslations, Language, getTranslation } from './translations';
 import { ShieldCheck, Monitor, Lock, User as UserIcon, Sparkles, Globe, ChevronRight, Loader2 } from 'lucide-react';
 import { INITIAL_USERS } from './constants';
@@ -47,6 +47,19 @@ const App: React.FC = () => {
   }, []);
 
   const t = useCallback((key: string): string => getTranslation(lang, key), [lang]);
+
+  // Initialize system users if needed
+  useEffect(() => {
+    const initializeSystemUsers = async () => {
+      try {
+        await api.initSystemUsers();
+      } catch (err) {
+        console.error('Error initializing system users:', err);
+      }
+    };
+
+    initializeSystemUsers();
+  }, []);
 
   const toggleLanguage = useCallback(() => {
     const nextLang = lang === 'zh' ? 'en' : 'zh';

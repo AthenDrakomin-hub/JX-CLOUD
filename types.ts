@@ -15,7 +15,7 @@ export interface CRUDPermissions {
   c: boolean; r: boolean; u: boolean; d: boolean; 
 }
 
-export interface User {
+export interface AppUser {
   id: string; // uuid，由数据库生成
   email: string;
   full_name?: string | null; // 映射 DB full_name
@@ -32,6 +32,9 @@ export interface User {
   ipWhitelist?: string[]; 
   isOnline?: boolean;         
 }
+
+// Keep the original User interface for backward compatibility
+export interface User extends AppUser {}
 
 // 用于从前端创建用户的有效负载（注意：建议使用 Supabase Auth 进行注册）
 export interface UserCreatePayload {

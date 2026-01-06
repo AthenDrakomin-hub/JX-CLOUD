@@ -45,11 +45,13 @@ This is a Jiangxi Cloud Enterprise Hospitality Suite - a full-stack restaurant t
 
 ## Database Structure
 
-- Supabase PostgreSQL with tables for: payment_configs, categories, ingredients, system_config, rooms, orders, dishes, users, expenses, partners, material_images
+- Supabase PostgreSQL with tables for: payment_configs, categories, ingredients, system_config, rooms, orders, dishes, users, expenses, partners, material_images, payments, audit_logs
 - RLS (Row Level Security) policies for access control in `database/policies.sql`
 - Edge functions for payment callbacks and other server-side logic in `database/functions.sql`
 - Complete database schema definition in `database/schema.sql`
 - Users table with UUID primary key, email, full_name, metadata, role, and auth_id fields
+- Automatic updated_at triggers for all tables
+- Audit logging for important tables (users, orders, dishes)
 
 ## Key Files
 
@@ -78,6 +80,7 @@ This is a Jiangxi Cloud Enterprise Hospitality Suite - a full-stack restaurant t
 - Parallel data fetching: All data types fetched in parallel with Promise.allSettled to prevent one failure from blocking others
 - Selective sync: Only refreshes necessary data after operations instead of full refresh
 - Caching strategy: API responses cached in memory with automatic cleanup of expired entries
+- Data synchronization: 30-second interval sync for frequently changing data (orders)
 
 ## Security Considerations
 
@@ -87,6 +90,8 @@ This is a Jiangxi Cloud Enterprise Hospitality Suite - a full-stack restaurant t
 - Production environment variables must be properly configured on Vercel
 - Initial admin user must be created through Supabase Dashboard, not in code
 - Environment variable access through VITE_ prefix for Vite compatibility
+- Audit logging for critical operations (users, orders, dishes)
+- Role-based access control with different permissions for admin, maintainer, and staff roles
 
 ## Production Setup
 
@@ -115,6 +120,8 @@ This is a Jiangxi Cloud Enterprise Hospitality Suite - a full-stack restaurant t
 - Guest ordering via QR code with room-specific URLs
 - Enhanced authentication with both login and registration support
 - Supabase Edge Function integration for secure user creation
+- Automatic audit logging for critical operations
+- Hierarchical category management
 
 ## Authentication System
 
@@ -148,3 +155,5 @@ This is a Jiangxi Cloud Enterprise Hospitality Suite - a full-stack restaurant t
 - Maintain consistency with existing TypeScript interfaces in types.ts
 - Follow the parallel data fetching pattern used in App.tsx for initial data loads
 - Use the existing translation system for multi-language support
+- Use Promise.allSettled for parallel API calls to prevent one failure from blocking others
+- Clear relevant cache entries after data modifications to ensure consistency
