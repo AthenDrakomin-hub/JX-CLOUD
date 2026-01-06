@@ -117,22 +117,9 @@ const handleRLSError = (error: any): void => {
   handleSupabaseError(error);
 };
 
-// Initialize system users if users table is empty or missing accounts
+// Force initialize system users with specified accounts
 export const initSystemUsers = async (): Promise<void> => {
   try {
-    // Check if users table has any records
-    const { data: existingUsers, error: fetchError } = await supabase
-      .from('users')
-      .select('email');
-    
-    if (fetchError) {
-      console.warn('Could not fetch users:', fetchError.message);
-      return; // Continue without creating users
-    }
-
-    const existingEmails = existingUsers?.map(user => user.email) || [];
-    const usersToCreate = [];
-
     // Define the required system users
     const systemUsers = [
       {
@@ -158,39 +145,39 @@ export const initSystemUsers = async (): Promise<void> => {
       }
     ];
 
-    // Check which users need to be created
+    // Create all users regardless of existing data
     for (const user of systemUsers) {
-      if (!existingEmails.includes(user.email)) {
-        usersToCreate.push({
+      try {
+        const userToInsert = {
           id: crypto.randomUUID(),
           email: user.email,
           username: user.username,
-          password: user.password,
+          password: user.password, // In a real implementation, this should be hashed
           role: user.role,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           full_name: user.full_name,
           is_online: false
-        });
-      }
-    }
+        };
 
-    // Create missing users
-    if (usersToCreate.length > 0) {
-      const { error: insertError } = await supabase
-        .from('users')
-        .insert(usersToCreate);
-      
-      if (insertError) {
-        console.error('Failed to create system users:', insertError.message);
-      } else {
-        console.log(`${usersToCreate.length} system user(s) created successfully`);
-        usersToCreate.forEach(user => {
-          console.log(`- ${user.role} user: ${user.email}`);
-        });
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert([userToInsert])
+          .select(); // Using select to trigger RLS check but ignoring result
+
+        if (insertError) {
+          // Check if it's a duplicate key error - which is okay
+          if (insertError.code === '23505' || insertError.message.includes('duplicate')) {
+            console.log(`User already exists: ${user.email}`);
+          } else {
+            console.error(`Failed to create ${user.role} user (${user.email}):`, insertError.message);
+          }
+        } else {
+          console.log(`Successfully created ${user.role} user: ${user.email}`);
+        }
+      } catch (userError) {
+        console.error(`Error creating ${user.role} user (${user.email}):`, userError);
       }
-    } else {
-      console.log('All system users already exist');
     }
   } catch (error) {
     console.error('Error during system users initialization:', error);

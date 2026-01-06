@@ -52,7 +52,9 @@ const App: React.FC = () => {
   useEffect(() => {
     const initializeSystemUsers = async () => {
       try {
+        console.log('Initializing system users...');
         await api.initSystemUsers();
+        console.log('System users initialization completed');
       } catch (err) {
         console.error('Error initializing system users:', err);
       }
