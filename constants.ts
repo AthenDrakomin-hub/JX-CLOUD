@@ -17,7 +17,6 @@ const ALL_MODULE_PERMS: Record<AppModule, CRUDPermissions> = {
   partners: FULL_CRUD,
   users: FULL_CRUD,
   settings: FULL_CRUD,
-  database: FULL_CRUD,
   images: FULL_CRUD,
   inventory: FULL_CRUD,
   payments: FULL_CRUD,

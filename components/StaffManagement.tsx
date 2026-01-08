@@ -32,7 +32,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ users, onAddUser, onU
     { id: 'supply_chain', label: '供应链资产', en: 'Supply Chain' },
     { id: 'financial_hub', label: '财务与清算', en: 'Financial Hub' },
     { id: 'images', label: '素材管理', en: 'Asset Library' },
-    { id: 'database', label: '数据库实验室', en: 'DB Laboratory' },
+
     { id: 'users', label: '员工授权', en: 'Staff Auth' },
     { id: 'settings', label: '系统设置', en: 'System Settings' }
   ];

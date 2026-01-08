@@ -15,7 +15,7 @@ export const translations = {
     users: '员工授权',
     settings: '系统设置',
     images: '图片管理',
-    database: '数据库实验室',
+
     payments: '支付配置',
     partners: '联营合伙',
     category_mgr: '分类管理',
@@ -201,7 +201,7 @@ export const translations = {
     users: 'Staff Auth',
     settings: 'System Settings',
     images: 'Media Management',
-    database: 'DB Laboratory',
+
     payments: 'Payments Config',
     partners: 'Partners Management',
     category_mgr: 'Categories',

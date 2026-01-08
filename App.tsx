@@ -9,21 +9,34 @@ import ImageManagement from './components/ImageManagement';
 import SupplyChainManager from './components/SupplyChainManager';
 import FinancialCenter from './components/FinancialCenter';
 import GuestOrder from './components/GuestOrder';
-import DatabaseManagement from './components/DatabaseManagement';
+
 import Toast, { ToastType } from './components/Toast';
 import ErrorBoundary from './components/ErrorBoundary';
 import { api } from './services/api';
 import { supabase, isDemoMode } from './services/supabaseClient';
 import { User, Order, HotelRoom, Expense, Dish, MaterialImage, Partner, SystemConfig, OrderStatus, UserRole, AppModule } from './types';
 import { Language, getTranslation } from './translations';
-import { Monitor, ChevronRight, Loader2, ShieldCheck, Lock, ShieldAlert } from 'lucide-react';
+import { Monitor, ChevronRight, Loader2, ShieldCheck, Lock, ShieldAlert, Menu } from 'lucide-react';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [currentTab, setCurrentTab] = useState('dashboard');
   const [lang, setLang] = useState<Language>(() => (localStorage.getItem('jx_lang') as Language) || 'zh');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
+    // Check if user preference is stored in localStorage
+    const storedPreference = localStorage.getItem('sidebarOpen');
+    if (storedPreference !== null) {
+      return JSON.parse(storedPreference);
+    }
+    // On mobile devices, default to closed; on desktop, default to open
+    return window.innerWidth >= 1024; // Default to open on desktop
+  });
+
+  // Save sidebar state to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('sidebarOpen', JSON.stringify(isSidebarOpen));
+  }, [isSidebarOpen]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -229,7 +242,7 @@ const App: React.FC = () => {
       <div className="min-h-screen relative flex items-center justify-center p-6 bg-slate-950 overflow-hidden">
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
         <div className="absolute inset-0 z-0">
-          <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&q=80&w=2000" className="w-full h-full object-cover opacity-40 grayscale" alt="Hospitality" />
+          <img src="https://zlbemopcgjohrnyyiwvs.supabase.co/storage/v1/object/public/jiangxiyunchu/system/jiangxijiudian.png" className="w-full h-full object-cover opacity-40 grayscale" alt="Hospitality" />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent" />
         </div>
         <div className="w-full max-w-md relative z-10 animate-fade-up">
@@ -248,11 +261,11 @@ const App: React.FC = () => {
               <div className="space-y-5">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-4">邮箱 / Email</label>
-                  <input name="email" type="email" placeholder="admin@jxcloud.com" disabled={isLoggingIn} required className="w-full px-8 py-5 bg-white/5 border border-white/10 rounded-[2rem] font-bold text-white focus:border-blue-500 focus:ring-8 focus:ring-blue-500/10 outline-none transition-all shadow-sm" />
+                  <input name="email" type="email" disabled={isLoggingIn} required className="w-full px-8 py-5 bg-white/5 border border-white/10 rounded-[2rem] font-bold text-white focus:border-blue-500 focus:ring-8 focus:ring-blue-500/10 outline-none transition-all shadow-sm" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-4">密钥 / Access Key</label>
-                  <input name="password" type="password" placeholder="••••••••" disabled={isLoggingIn} required className="w-full px-8 py-5 bg-white/5 border border-white/10 rounded-[2rem] font-bold text-white focus:border-blue-500 focus:ring-8 focus:ring-blue-500/10 outline-none transition-all shadow-sm" />
+                  <input name="password" type="password" disabled={isLoggingIn} required className="w-full px-8 py-5 bg-white/5 border border-white/10 rounded-[2rem] font-bold text-white focus:border-blue-500 focus:ring-8 focus:ring-blue-500/10 outline-none transition-all shadow-sm" />
                 </div>
               </div>
               <button type="submit" disabled={isLoggingIn} className="group w-full py-6 bg-white text-slate-950 rounded-[2rem] font-black text-xs uppercase tracking-[0.4em] hover:bg-blue-600 hover:text-white transition-all shadow-xl flex items-center justify-center space-x-3 active:scale-95 disabled:opacity-70">
@@ -269,11 +282,11 @@ const App: React.FC = () => {
     <ErrorBoundary lang={lang}>
       <div className="min-h-screen flex bg-[#f8fafc]">
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-        <Sidebar currentTab={currentTab} setCurrentTab={setCurrentTab} currentUser={currentUser} onLogout={handleLogout} lang={lang} onToggleLang={() => setLang(lang === 'zh' ? 'en' : 'zh')} isOpen={isSidebarOpen} />
+        <Sidebar currentTab={currentTab} setCurrentTab={setCurrentTab} currentUser={currentUser} onLogout={handleLogout} lang={lang} onToggleLang={() => setLang(lang === 'zh' ? 'en' : 'zh')} isOpen={isSidebarOpen} toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
         <main className="flex-1 lg:pl-72 flex flex-col min-h-screen">
           <header className="h-24 bg-white/80 backdrop-blur-xl border-b border-slate-200 px-10 flex items-center justify-between sticky top-0 z-40">
             <div className="flex items-center space-x-6">
-              <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-3 bg-slate-50 rounded-2xl text-slate-400"><Monitor size={24} /></button>
+              <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-3 bg-slate-50 rounded-2xl text-slate-400"><Menu size={24} /></button>
               <div>
                 <div className="flex items-center gap-3">
                   <h2 className="text-2xl font-black uppercase tracking-tighter text-slate-950 leading-none">{t(currentTab as any)}</h2>
@@ -313,7 +326,7 @@ const App: React.FC = () => {
                 {currentTab === 'orders' && <OrderManagement orders={orders} onUpdateStatus={(id: string, s: OrderStatus) => wrapAsync(() => api.orders.updateStatus(id, s), t('orders') + '同步成功')} lang={lang} />}
                 {currentTab === 'supply_chain' && <SupplyChainManager dishes={dishes} currentUser={currentUser} onAddDish={(d: Dish) => wrapAsync(() => api.dishes.create(d), '商品档案已录入')} onUpdateDish={(d: Dish) => wrapAsync(() => api.dishes.update(d), '档案修改已保存')} onDeleteDish={(id: string) => wrapAsync(() => api.dishes.delete(id), '商品已下架')} lang={lang} />}
                 {currentTab === 'financial_hub' && <FinancialCenter orders={orders} expenses={expenses} partners={partners} onAddExpense={(e: Expense) => wrapAsync(() => api.expenses.create(e), '财务记录已录入')} onDeleteExpense={(id: string) => wrapAsync(() => api.expenses.delete(id), '记录已撤销')} onAddPartner={(p: Partner) => wrapAsync(() => api.partners.create(p), '合伙人入驻成功')} onUpdatePartner={(p: Partner) => wrapAsync(() => api.partners.update(p), '合伙人档案已更新')} onDeletePartner={(id: string) => wrapAsync(() => api.partners.delete(id), '合伙人关系已解除')} lang={lang} />}
-                {currentTab === 'database' && <DatabaseManagement lang={lang} />}
+
                 {currentTab === 'images' && <ImageManagement lang={lang} />}
                 {currentTab === 'users' && <StaffManagement users={users} onRefresh={() => fetchData(true)} onAddUser={(u: User) => wrapAsync(() => api.users.create(u), '新员工授权已签发')} onUpdateUser={(u: User) => wrapAsync(() => api.users.update(u), '授权档案已更新')} onDeleteUser={(id: string) => wrapAsync(() => api.users.delete(id), '账号已注销')} lang={lang} />}
                 {currentTab === 'settings' && <SystemSettings lang={lang} onChangeLang={(l: Language) => { setLang(l); localStorage.setItem('jx_lang', l); }} onUpdateConfig={(c: SystemConfig) => wrapAsync(() => api.config.update(c), '系统配置已存档')} />}

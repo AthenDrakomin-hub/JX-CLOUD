@@ -31,6 +31,9 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
   const [customCategories, setCustomCategories] = useState<string[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDish, setEditingDish] = useState<Dish | null>(null);
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(12); // Default to 12 items per page
   
   // Storage Integration State
   const [isUploading, setIsUploading] = useState(false);
@@ -63,6 +66,21 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
       return matchSearch && matchCategory;
     });
   }, [dishes, searchTerm, activeCategory]);
+
+  // Calculate paginated dishes
+  const paginatedDishes = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredDishes.slice(startIndex, endIndex);
+  }, [filteredDishes, currentPage, itemsPerPage]);
+
+  // Calculate pagination info
+  const totalPages = Math.ceil(filteredDishes.length / itemsPerPage);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, activeCategory]);
 
   const handleOpenModal = (dish: Dish | null) => {
     setEditingDish(dish);
@@ -150,7 +168,7 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-8">
-           {filteredDishes.map((dish, idx) => (
+           {paginatedDishes.map((dish, idx) => (
              <div key={dish.id} className="group bg-white rounded-[3.5rem] border-2 border-slate-100 shadow-sm hover:border-blue-500 hover:shadow-2xl transition-all duration-700 cursor-pointer overflow-hidden flex flex-col h-full animate-fade-up" style={{ animationDelay: `${idx * 50}ms` }} onClick={() => handleOpenModal(dish)}>
                 <div className="relative aspect-square overflow-hidden bg-slate-100 p-2">
                    <OptimizedImage src={dish.imageUrl} alt={dish.name} className="w-full h-full object-cover rounded-[3rem] transition-transform duration-[3s] group-hover:scale-110" />
@@ -175,6 +193,112 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
              </div>
            ))}
         </div>
+
+        {/* Pagination Controls */}
+        {filteredDishes.length > itemsPerPage && (
+          <div className="flex flex-col items-center space-y-6 pt-8 pb-12">
+            <div className="flex items-center space-x-4">
+              <button 
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className={`px-4 py-2 rounded-xl font-bold ${
+                  currentPage === 1 
+                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
+                    : 'bg-slate-950 text-white hover:bg-blue-600'
+                }`}
+              >
+                ← 上一页
+              </button>
+              
+              {/* Page numbers */}
+              <div className="flex items-center space-x-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+                  <button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`w-10 h-10 rounded-xl font-black text-sm flex items-center justify-center ${
+                      currentPage === pageNum
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                ))}
+              </div>
+              
+              <button 
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className={`px-4 py-2 rounded-xl font-bold ${
+                  currentPage === totalPages 
+                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
+                    : 'bg-slate-950 text-white hover:bg-blue-600'
+                }`}
+              >
+                下一页 →
+              </button>
+            </div>
+            
+            {/* Page info and controls */}
+            <div className="flex flex-wrap items-center justify-center gap-4 text-sm font-bold text-slate-600">
+              <span>第 {currentPage} 页，共 {totalPages} 页 ({filteredDishes.length} 个菜品)</span>
+              
+              {/* Items per page selector */}
+              <div className="flex items-center space-x-2">
+                <span>每页:</span>
+                <select 
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1); // Reset to first page when changing items per page
+                  }}
+                  className="border border-slate-200 rounded-xl px-3 py-1 text-center font-bold focus:outline-none focus:border-blue-500"
+                >
+                  <option value="8">8</option>
+                  <option value="12">12</option>
+                  <option value="16">16</option>
+                  <option value="20">20</option>
+                  <option value={filteredDishes.length}>全部</option>
+                </select>
+              </div>
+            </div>
+            
+            {/* Jump to page input */}
+            <div className="flex items-center space-x-3">
+              <span className="text-sm font-bold text-slate-600">跳转到:</span>
+              <input
+                type="number"
+                min="1"
+                max={totalPages}
+                defaultValue={currentPage}
+                className="w-16 px-3 py-2 border border-slate-200 rounded-xl text-center font-bold focus:outline-none focus:border-blue-500"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    const targetPage = parseInt((e.target as HTMLInputElement).value);
+                    if (targetPage >= 1 && targetPage <= totalPages) {
+                      setCurrentPage(targetPage);
+                    }
+                  }
+                }}
+              />
+              <button 
+                onClick={() => {
+                  const input = document.querySelector('input[type="number"][className*="w-16"]');
+                  if (input) {
+                    const targetPage = parseInt((input as HTMLInputElement).value);
+                    if (targetPage >= 1 && targetPage <= totalPages) {
+                      setCurrentPage(targetPage);
+                    }
+                  }
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700"
+              >
+                跳转
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Main Edit Modal */}

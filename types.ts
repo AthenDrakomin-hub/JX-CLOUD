@@ -7,7 +7,7 @@ export enum UserRole {
 
 export type AppModule = 
   | 'dashboard' | 'rooms' | 'orders' | 'menu' | 'finance' 
-  | 'partners' | 'users' | 'settings' | 'database' 
+  | 'partners' | 'users' | 'settings' 
   | 'images' | 'inventory' | 'payments' | 'supply_chain' | 'financial_hub';
 
 export interface CRUDPermissions {
