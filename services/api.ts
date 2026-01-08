@@ -8,25 +8,6 @@ import { supabase, isDemoMode } from './supabaseClient';
  */
 
 export const api = {
-  db: {
-    getRows: async (table: string): Promise<any[]> => {
-      if (isDemoMode) return [];
-      const { data, error } = await supabase.from(table).select('*').limit(500);
-      if (error) throw error;
-      return data || [];
-    },
-    insertRow: async (table: string, row: any) => {
-      if (isDemoMode) return;
-      const { error } = await supabase.from(table).insert(row);
-      if (error) throw error;
-    },
-    updateRow: async (table: string, id: any, row: any) => {
-      if (isDemoMode) return;
-      // 动态适配 ID 或 Email
-      const { error } = await supabase.from(table).update(row).or(`id.eq."${id}",email.eq."${id}"`);
-      if (error) throw error;
-    }
-  },
 
   dishes: {
     getAll: async (): Promise<Dish[]> => {

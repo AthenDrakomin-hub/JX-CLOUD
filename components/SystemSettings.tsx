@@ -10,6 +10,7 @@ import {
 import { translations, Language, getTranslation } from '../translations';
 import { api } from '../services/api';
 import { SystemConfig } from '../types';
+import ValidationPanel from './ValidationPanel';
 
 interface SystemSettingsProps {
   lang: Language;
@@ -20,7 +21,7 @@ interface SystemSettingsProps {
 const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, onChangeLang, onUpdateConfig }) => {
   const [config, setConfig] = useState<SystemConfig | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'display' | 'infrastructure'>('display');
+  const [activeTab, setActiveTab] = useState<'display' | 'infrastructure' | 'validation'>('display');
 
   const t = (key: string): string => getTranslation(lang, key);
 
@@ -58,6 +59,9 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, onChangeLang, onU
           </button>
           <button onClick={() => setActiveTab('infrastructure')} className={`px-8 py-3.5 rounded-[1.5rem] font-black text-[11px] uppercase tracking-widest transition-all ${activeTab === 'infrastructure' ? 'bg-white text-slate-950 shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}>
             基础设施
+          </button>
+          <button onClick={() => setActiveTab('validation')} className={`px-8 py-3.5 rounded-[1.5rem] font-black text-[11px] uppercase tracking-widest transition-all ${activeTab === 'validation' ? 'bg-white text-slate-950 shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}>
+            生产验证
           </button>
         </div>
 
@@ -310,6 +314,11 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, onChangeLang, onU
                 </div>
              </div>
           </section>
+        </div>
+      )}
+      {activeTab === 'validation' && (
+        <div className="pb-20">
+          <ValidationPanel lang={lang} />
         </div>
       )}
     </div>
