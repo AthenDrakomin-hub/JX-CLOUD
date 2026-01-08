@@ -15,7 +15,7 @@ const getEnv = (key: string): string => {
 };
 
 const SUPABASE_URL = getEnv('PROJECT_URL') || getEnv('SUPABASE_URL');
-const SUPABASE_KEY = getEnv('SERVICE_ROLE_KEY') || getEnv('SUPABASE_ANON_KEY');
+const SUPABASE_KEY = getEnv('SUPABASE_ANON_KEY'); // 仅使用 anon key，绝不能使用 service_role key
 
 export const supabaseUrl = SUPABASE_URL;
 export const isDemoMode = !SUPABASE_URL || !SUPABASE_KEY;
@@ -36,7 +36,7 @@ export const supabase = isDemoMode
 
 if (isDemoMode) {
   console.warn('⚠️ JX-CLOUD: 未检测到有效的 Supabase 配置，系统运行在演示模式。');
-  console.info('提示：请检查 .env 文件中的变量名是否为 VITE_PROJECT_URL 和 VITE_SERVICE_ROLE_KEY');
+  console.info('提示：请检查 .env 文件中的变量名是否为 VITE_PROJECT_URL 和 VITE_SUPABASE_ANON_KEY');
 } else {
   console.log('✅ JX-CLOUD: 已成功识别环境配置 - ' + (SUPABASE_URL ? new URL(SUPABASE_URL).hostname : 'unknown'));
 }

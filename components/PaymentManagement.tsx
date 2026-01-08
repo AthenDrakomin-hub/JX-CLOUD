@@ -231,7 +231,8 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ lang }) => {
                                  onClick={() => setSelectedIcon(opt.id)}
                                  className={`flex flex-col items-center justify-center p-3 sm:p-5 rounded-3xl border-2 transition-all ${active ? 'border-blue-600 bg-blue-50 text-blue-600 shadow-lg' : 'border-slate-100 bg-slate-50 text-slate-300'}`}
                                >
-                                  <Icon size={20} sm:size={24} />
+                                  <Icon className="sm:hidden" size={20} />
+                                  <Icon className="hidden sm:block" size={24} />
                                   <span className="text-[8px] font-black mt-2 uppercase">{opt.label}</span>
                                </button>
                             );
@@ -269,7 +270,17 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ lang }) => {
                     disabled={isSaving}
                     className="flex-1 bg-slate-900 text-white h-16 sm:h-20 rounded-[1.5rem] font-black text-xs uppercase tracking-[0.3em] shadow-2xl hover:bg-[#d4af37] transition-all flex items-center justify-center space-x-3 group disabled:opacity-50"
                    >
-                      {isSaving ? <Loader2 className="animate-spin" size={20} sm:size={24} /> : <Save size={16} sm:size={18} />}
+                      {isSaving ? (
+                        <>
+                          <Loader2 className="hidden sm:block animate-spin" size={24} />
+                          <Loader2 className="sm:hidden animate-spin" size={20} />
+                        </>
+                      ) : (
+                        <>
+                          <Save className="hidden sm:block" size={18} />
+                          <Save className="sm:hidden" size={16} />
+                        </>
+                      )}
                       <span>{t('save')}</span>
                    </button>
                 </div>
