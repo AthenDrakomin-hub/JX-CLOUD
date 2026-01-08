@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Partner, UserRole } from '../types';
-import { translations, Language } from '../translations';
+import { translations, Language, getTranslation } from '../translations';
 import { 
   Users, Handshake, Percent, Layers, DollarSign, 
   Plus, Search, Edit3, Trash2, ShieldCheck, 
@@ -28,7 +28,7 @@ const PartnerManagement: React.FC<PartnerManagementProps> = ({
   const [selectedCats, setSelectedCats] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const t = (key: keyof typeof translations.zh) => (translations[lang] as any)[key] || (translations.zh as any)[key] || key;
+  const t = (key: string): string => getTranslation(lang, key);
   const C = t('currency');
 
   const filteredPartners = useMemo(() => {
@@ -150,7 +150,7 @@ const PartnerManagement: React.FC<PartnerManagementProps> = ({
 
                 <div className="p-10 border-t border-slate-100 bg-slate-50 flex gap-4 sticky bottom-0 z-10">
                    <button type="submit" disabled={isSubmitting} className="flex-1 py-6 bg-slate-950 text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.3em] hover:bg-blue-600 transition-all shadow-xl active-scale flex items-center justify-center space-x-3">{isSubmitting ? <Loader2 size={24} className="animate-spin" /> : <Save size={24} />}<span>{editingPartner ? '提交更新记录' : '完成合作伙伴注册'}</span></button>
-                   {editingPartner && <button type="button" onClick={() => { if(confirm('确认解除合作伙伴关系？此操作不可恢复。')) { onDeletePartner(editingPartner.id); setIsModalOpen(false); }}} className="px-8 text-red-500 hover:bg-red-50 rounded-2xl transition-all"><Trash2 size={24} /></button>}
+                   {editingPartner && <button type="button" onClick={() => { if(confirm(t('confirmTerminatePartner'))) { onDeletePartner(editingPartner.id); setIsModalOpen(false); }}} className="px-8 text-red-500 hover:bg-red-50 rounded-2xl transition-all"><Trash2 size={24} /></button>}
                 </div>
           </form>
         </div>

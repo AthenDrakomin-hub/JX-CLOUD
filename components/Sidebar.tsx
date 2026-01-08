@@ -17,9 +17,11 @@ interface SidebarProps {
   onToggleLang: () => void;
   isOpen: boolean;
   toggleSidebar: () => void;
+  isCollapsed: boolean;
+  toggleCollapse: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab, currentUser, onLogout, lang, onToggleLang, isOpen, toggleSidebar }) => {
+const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab, currentUser, onLogout, lang, onToggleLang, isOpen, toggleSidebar, isCollapsed, toggleCollapse }) => {
   const t = (key: string) => getTranslation(lang, key);
 
   const menu = [
@@ -44,25 +46,38 @@ const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab, currentUse
         ></div>
       )}
       
-      <aside className={`w-72 bg-white border-r border-slate-200 h-screen fixed left-0 top-0 z-50 flex flex-col transition-all duration-300 ease-in-out ${isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'} lg:translate-x-0 lg:static lg:z-auto lg:h-auto lg:shadow-none`}>
+      <aside className={`${isCollapsed ? 'w-20' : 'w-72'} bg-white border-r border-slate-200 h-screen fixed left-0 top-0 z-50 flex flex-col transition-all duration-300 ease-in-out ${isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'} lg:translate-x-0 lg:static lg:z-auto lg:h-auto lg:shadow-none`}>
         <div className="p-10 pt-12">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-slate-950 text-blue-500 rounded-2xl flex items-center justify-center font-black italic border-b-2 border-blue-600 shadow-xl">JX</div>
-              <div>
-                <h1 className="text-xl font-black text-slate-900 tracking-tighter leading-none">江西云厨</h1>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Terminal Hub</p>
-              </div>
+              {!isCollapsed && (
+                <div>
+                  <h1 className="text-xl font-black text-slate-900 tracking-tighter leading-none">江西云厨</h1>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Terminal Hub</p>
+                </div>
+              )}
             </div>
             
-            {/* Close button for mobile */}
-            <button 
-              className="lg:hidden p-2 text-slate-400 hover:text-slate-900 rounded-lg hover:bg-slate-100"
-              onClick={toggleSidebar}
-              aria-label="Close menu"
-            >
-              <X size={20} />
-            </button>
+            <div className="flex items-center space-x-2">
+              {/* Collapse/Expand button for desktop */}
+              <button
+                className="hidden lg:flex p-2 text-slate-400 hover:text-slate-900 rounded-lg hover:bg-slate-100"
+                onClick={toggleCollapse}
+                aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              >
+                {isCollapsed ? <Menu size={16} /> : <X size={16} />}
+              </button>
+              
+              {/* Close button for mobile */}
+              <button 
+                className="lg:hidden p-2 text-slate-400 hover:text-slate-900 rounded-lg hover:bg-slate-100"
+                onClick={toggleSidebar}
+                aria-label="Close menu"
+              >
+                <X size={20} />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -94,8 +109,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab, currentUse
                     : 'text-slate-400 hover:bg-slate-50 hover:text-blue-600'}`}
               >
                 <Icon size={18} className={isActive ? 'text-blue-500' : 'group-hover:scale-110 transition-transform'} />
-                <span>{t(item.id)}</span>
-                {isActive && <div className="absolute right-4 w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />}
+                {!isCollapsed && <span>{t(item.id)}</span>}
+                {isActive && !isCollapsed && <div className="absolute right-4 w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />}
               </button>
             );
           })}
@@ -108,7 +123,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab, currentUse
             className="w-full flex items-center gap-4 px-6 py-3.5 rounded-[1.25rem] text-blue-600 bg-blue-50 font-black text-[10px] uppercase tracking-widest hover:bg-blue-100 transition-all active:scale-95 group"
           >
             <Globe size={16} className="group-hover:rotate-12 transition-transform" />
-            <span>{lang === 'zh' ? 'Switch to English' : '切换至中文界面'}</span>
+            {!isCollapsed && <span>{lang === 'zh' ? 'Switch to English' : '切换至中文界面'}</span>}
           </button>
 
           <button 
@@ -116,7 +131,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab, currentUse
             className="w-full flex items-center gap-4 px-6 py-3.5 rounded-[1.25rem] text-slate-400 font-black text-[10px] uppercase tracking-widest hover:text-red-500 hover:bg-red-50 transition-all active:scale-95 group"
           >
             <LogOut size={16} className="group-hover:-translate-x-1 transition-transform" />
-            <span>{t('signOut')}</span>
+            {!isCollapsed && <span>{t('signOut')}</span>}
           </button>
         </div>
       </aside>

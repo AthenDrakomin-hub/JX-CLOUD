@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import { MaterialImage, Ingredient } from '../types';
-import { translations, Language } from '../translations';
+import { translations, Language, getTranslation } from '../translations';
 import { 
   Plus, Trash2, Copy, Search, X, 
   Check, UploadCloud, Loader2, Sparkles, FileText, Maximize,
@@ -39,7 +39,7 @@ const ImageLibrary: React.FC<ImageLibraryProps> = ({ lang }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const t = (key: string) => (translations[lang] as any)[key] || key;
+  const t = (key: string): string => getTranslation(lang, key);
 
   const fetchIngredients = useCallback(async () => {
     const data = await api.ingredients.getAll();
@@ -350,7 +350,7 @@ const ImageLibrary: React.FC<ImageLibraryProps> = ({ lang }) => {
 
                 <button type="submit" className="w-full py-6 bg-slate-900 text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.3em] shadow-2xl hover:bg-[#d4af37] transition-all flex items-center justify-center space-x-3 group">
                    <Save size={18} className="group-hover:rotate-12 transition-transform" />
-                   <span>{editingIng ? '保存物料修改' : '确认并录入资产库'}</span>
+                   <span>{editingIng ? t('saveMaterialChanges') : t('confirmAndSaveAsset')}</span>
                 </button>
              </div>
           </form>

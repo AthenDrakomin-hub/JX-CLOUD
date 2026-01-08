@@ -7,7 +7,7 @@ import {
   VolumeX, Sliders, Smartphone, Info, Receipt, 
   Torus, Percent, MousePointer2
 } from 'lucide-react';
-import { translations, Language } from '../translations';
+import { translations, Language, getTranslation } from '../translations';
 import { api } from '../services/api';
 import { SystemConfig } from '../types';
 
@@ -22,7 +22,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, onChangeLang, onU
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'display' | 'infrastructure'>('display');
 
-  const t = (key: keyof typeof translations.zh) => (translations[lang] as any)[key] || (translations.zh as any)[key] || key;
+  const t = (key: string): string => getTranslation(lang, key);
 
   useEffect(() => {
     api.config.get().then(setConfig);
@@ -215,7 +215,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, onChangeLang, onU
                           </div>
                         </div>
                         <div className={`p-6 rounded-2xl border ${config.contrastStrict ? 'border-2' : ''}`} style={{ borderColor: config.contrastStrict ? 'currentColor' : 'rgba(0,0,0,0.05)' }}>
-                          <p className="text-sm font-bold">这是您的排版预览效果。系统已同步您的配置参数。</p>
+                          <p className="text-sm font-bold">{t('configSynced')}</p>
                         </div>
                         <div className="flex gap-2">
                            <div className="px-4 py-2 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase">Sample Action</div>

@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Order, Expense } from '../types';
-import { translations, Language } from '../translations';
+import { translations, Language, getTranslation } from '../translations';
 import { 
   DollarSign, Wallet, Briefcase, Handshake, Activity, 
   History, Clock, CheckCircle2, AlertCircle, RefreshCcw, 
@@ -21,7 +21,7 @@ const FinanceManagement: React.FC<FinanceManagementProps> = ({ orders, expenses,
   const [isEndingShift, setIsEndingShift] = useState(false);
   const [shiftHistory, setShiftHistory] = useState<any[]>([]);
 
-  const t = (key: keyof typeof translations.zh) => (translations[lang] as any)[key] || (translations.zh as any)[key] || key;
+  const t = (key: string): string => getTranslation(lang, key);
   const C = t('currency');
 
   const completedOrders = useMemo(() => (orders || []).filter(o => o.status === 'completed'), [orders]);
@@ -105,7 +105,7 @@ const FinanceManagement: React.FC<FinanceManagementProps> = ({ orders, expenses,
                         <th className="px-10 py-5">成交时间 / TIME</th>
                         <th className="px-10 py-5">单号 / ORDER</th>
                         <th className="px-10 py-5 text-right">结算金额 / AMOUNT</th>
-                        <th className="px-10 py-5 text-center">支付通道 / PAY</th>
+                        <th className="px-10 py-5 text-center">{t('paymentHeader')}</th>
                      </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 font-bold text-slate-700">
@@ -157,7 +157,7 @@ const FinanceManagement: React.FC<FinanceManagementProps> = ({ orders, expenses,
                  <div className="pt-10 border-t border-slate-100 flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                        <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse" />
-                       <span className="text-xs font-black text-slate-600 uppercase tracking-widest">班次状态: 进行中 / ACTIVE</span>
+                       <span className="text-xs font-black text-slate-600 uppercase tracking-widest">{t('shiftStatusActive')}</span>
                     </div>
                     <button 
                       onClick={handleEndShift} 

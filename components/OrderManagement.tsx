@@ -89,7 +89,7 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ orders, onUpdateStatu
                 <span>{new Date(printing.createdAt).toLocaleString()}</span>
               </p>
               <p className="flex justify-between">
-                <span>{lang === 'zh' ? '支付方式:' : 'PAYMENT:'}</span>
+                <span>{t('paymentMethodLabel')}:</span>
                 <span>{printing.paymentMethod}</span>
               </p>
             </div>
@@ -142,7 +142,7 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ orders, onUpdateStatu
                 <button 
                   onClick={() => handlePrint(o)} 
                   className="w-12 h-12 flex items-center justify-center bg-slate-950 text-white rounded-2xl hover:bg-blue-600 transition-all shadow-xl active:scale-95 group/btn"
-                  title={lang === 'zh' ? '打印制作单并同步制作状态' : 'Print & Prep'}
+                  title={t(lang === 'zh' ? 'printTicketAndSync' : 'printAndPrep')}
                 >
                   <Printer size={22} className="group-hover/btn:scale-110 transition-transform" />
                 </button>
@@ -223,7 +223,7 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ orders, onUpdateStatu
                       <p className="text-xs font-black text-slate-900">{t(`status_${viewingOrder.status}` as any)}</p>
                    </div>
                    <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{lang === 'zh' ? '支付方式' : 'PAYMENT'}</p>
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{t('paymentMethodLabel')}</p>
                       <p className="text-xs font-black text-slate-900">{viewingOrder.paymentMethod}</p>
                    </div>
                 </div>

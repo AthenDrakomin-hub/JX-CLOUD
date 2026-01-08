@@ -370,7 +370,46 @@ export const translations = {
     paymentDesc: 'Manage store-wide payment gateways',
     gatewayConfig: 'Gateway Configuration',
     gatewayName: 'Display Name',
-    paymentInstructions: 'Instructions'
+    paymentInstructions: 'Instructions',
+    
+    // Staff Management
+    nodeAuthProtocol: 'Auth Terminal Protocol',
+    authTerminalSub: 'JX-Cloud Security Protocol v5.5',
+    confirmAndIssueAuth: 'Confirm and Issue Digital Authorization',
+    submitAndApplyChanges: 'Submit and Apply Changes',
+    
+    // Login Page
+    confirmTerminalAccess: 'Confirm Terminal Access',
+    
+    // Order Management
+    printTicketAndSync: '打印制作单并同步制作状态',
+    printAndPrep: 'Print & Prep',
+    
+    // Payment Management
+    registerNewGateway: 'Register New Payment Gateway',
+    registerNewPaymentGateway: 'Register New Payment Channel',
+    activeStatus: 'Active Status',
+    
+    // Partner Management
+    confirmTerminatePartner: 'Confirm termination of partnership? This action cannot be undone.',
+    
+    // General Confirmations
+    confirmDeleteGateway: 'Are you sure you want to delete this payment gateway?',
+    confirmDeleteCategory: 'Are you sure you want to delete category "%s"? Associated items will become unclassified.',
+    
+    // System Settings
+    configSynced: 'System has synchronized your configuration parameters.',
+    
+    // Image Library
+    confirmAndSaveAsset: 'Confirm and Save Asset',
+    saveMaterialChanges: 'Save Material Changes',
+    
+    // Guest Order
+    orderConfirmed: 'Room %s order confirmed.',
+    
+    // Finance Management
+    shiftStatusActive: 'Shift Status: Active',
+    paymentHeader: 'Payment Method'
   }
 };
 

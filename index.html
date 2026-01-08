@@ -1,12 +1,12 @@
 
 <!DOCTYPE html>
-<html lang="zh" data-theme="light" data-font-size="medium">
+<html lang="zh" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover">
   <title>江西云厨终端系统 - JX CLOUD Terminal</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
   
   <style>
     :root {
@@ -15,7 +15,7 @@
       --text-main: #0f172a;
       --text-muted: #64748b;
       --border-color: #e2e8f0;
-      --font-family-main: 'Plus Jakarta Sans', sans-serif;
+      --font-family-main: 'Plus Jakarta Sans', 'Noto Sans SC', sans-serif;
     }
 
     html[data-theme='dark'] {
@@ -26,94 +26,58 @@
       --border-color: #1e293b;
     }
 
-    /* 高对比度模式补丁 */
-    html.contrast-strict {
-      --border-color: #000000;
-    }
-    html.contrast-strict[data-theme='dark'] {
-      --border-color: #ffffff;
-    }
-    html.contrast-strict * {
-      border-width: 1.5px !important;
-    }
-
-    html[data-font-size='standard'] { font-size: 14px; }
-    html[data-font-size='medium'] { font-size: 16px; }
-    html[data-font-size='large'] { font-size: 20px; }
-
     body { 
       font-family: var(--font-family-main); 
       background-color: var(--app-bg);
       color: var(--text-main);
-      transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1), color 0.4s ease;
       -webkit-font-smoothing: antialiased;
+      margin: 0;
+      padding: 0;
     }
 
-    /* 骨架屏闪烁动画 */
-    @keyframes shimmer {
-      0% { background-position: -200% 0; }
-      100% { background-position: 200% 0; }
-    }
+    #root { min-height: 100vh; }
 
-    /* 80mm 热敏打印生产级指令 */
-    @media print {
-      @page {
-        size: 80mm auto;
-        margin: 0;
-      }
-      body {
-        margin: 0;
-        padding: 0;
-        background: #fff !important;
-      }
-      body * { visibility: hidden; }
-      .thermal-ticket, .thermal-ticket * { visibility: visible; }
-      .thermal-ticket {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 72mm;
-        margin-left: 4mm;
-        padding: 4mm 0;
-        color: black !important;
-        background: white !important;
-        word-break: break-all;
-      }
-      .no-print { display: none !important; }
-      header, footer, nav { display: none !important; }
+    .active-scale:active {
+      transform: scale(0.96);
+      transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     @keyframes fade-up {
-      from { opacity: 0; transform: translateY(20px); }
+      from { opacity: 0; transform: translateY(12px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    .animate-fade-up { animation: fade-up 0.5s ease-out forwards; }
+    .animate-fade-up { animation: fade-up 0.4s ease-out forwards; }
     
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
+
   <script type="importmap">
 {
   "imports": {
     "react": "https://esm.sh/react@19.0.0",
     "react-dom": "https://esm.sh/react-dom@19.0.0",
     "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
-    "recharts": "https://esm.sh/recharts@2.15.0?deps=react@19.0.0",
+    "recharts": "https://esm.sh/recharts@2.15.0?deps=react@19.0.0,react-dom@19.0.0",
     "lucide-react": "https://esm.sh/lucide-react@0.475.0?deps=react@19.0.0",
     "qrcode.react": "https://esm.sh/qrcode.react@4.0.1?deps=react@19.0.0",
-    "vite": "https://esm.sh/vite@^7.3.0",
-    "react/": "https://esm.sh/react@^19.2.3/",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.39.0",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.89.0"
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "vite": "https://esm.sh/vite@^7.3.1",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
 </head>
 <body>
-  <div id="root"></div>
+  <div id="root">
+    <!-- 初始占位，直到 React 接管 -->
+    <div style="height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #020617; color: #3b82f6; font-family: sans-serif;">
+      <div style="font-weight: 900; letter-spacing: 0.5em; font-size: 14px; margin-bottom: 20px;">JX CLOUD TERMINAL</div>
+      <div style="font-size: 10px; opacity: 0.5; letter-spacing: 0.2em;">BOOTING SECURE SHELL...</div>
+    </div>
+  </div>
   <script type="module" src="index.tsx"></script>
-<script type="module" src="/index.tsx"></script>
 </body>
 </html>

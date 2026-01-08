@@ -1,12 +1,15 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Layers, Plus, Trash2, Save, X, Activity } from 'lucide-react';
 import { api } from '../services/api';
+import { Language, getTranslation } from '../translations';
 
-const CategoryManagement: React.FC<{ lang: string }> = ({ lang }) => {
+const CategoryManagement: React.FC<{ lang: Language }> = ({ lang }) => {
   const [categories, setCategories] = useState<string[]>([]);
   const [newCat, setNewCat] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  
+  const t = useCallback((key: string): string => getTranslation(lang, key), [lang]);
 
   useEffect(() => {
     api.categories.getAll().then(setCategories);
@@ -19,7 +22,7 @@ const CategoryManagement: React.FC<{ lang: string }> = ({ lang }) => {
   };
 
   const handleRemove = (cat: string) => {
-    if (confirm(`确定删除分类 "${cat}" 吗？关联商品将变为未分类状态。`)) {
+    if (confirm(t('confirmDeleteCategory').replace('%s', cat))) {
       setCategories(categories.filter(c => c !== cat));
     }
   };

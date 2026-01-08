@@ -117,7 +117,7 @@ const GuestOrder: React.FC<GuestOrderProps> = ({ roomId, dishes = [], onSubmitOr
         </div>
         <h2 className="text-3xl font-bold text-white mb-2">{t('orderSuccessTitle')}</h2>
         <p className="text-slate-400 mb-12">
-          {lang === 'zh' ? `房间 ${roomId} 订单已确认。` : `Room ${roomId} order confirmed.`}
+          {t('orderConfirmed').replace('%s', roomId)}
         </p>
         <button 
           onClick={() => { setIsSuccess(false); setIsCheckout(false); setCart({}); }} 

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
@@ -9,34 +10,27 @@ import ImageManagement from './components/ImageManagement';
 import SupplyChainManager from './components/SupplyChainManager';
 import FinancialCenter from './components/FinancialCenter';
 import GuestOrder from './components/GuestOrder';
-
 import Toast, { ToastType } from './components/Toast';
 import ErrorBoundary from './components/ErrorBoundary';
 import { api } from './services/api';
 import { supabase, isDemoMode } from './services/supabaseClient';
-import { User, Order, HotelRoom, Expense, Dish, MaterialImage, Partner, SystemConfig, OrderStatus, UserRole, AppModule } from './types';
+import { User, Order, HotelRoom, Expense, Dish, Partner, SystemConfig, OrderStatus, UserRole, AppModule } from './types';
 import { Language, getTranslation } from './translations';
-import { Monitor, ChevronRight, Loader2, ShieldCheck, Lock, ShieldAlert, Menu } from 'lucide-react';
+import { Loader2, Menu, ShieldCheck, Lock, ShieldAlert } from 'lucide-react';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [currentTab, setCurrentTab] = useState('dashboard');
-  const [lang, setLang] = useState<Language>(() => (localStorage.getItem('jx_lang') as Language) || 'zh');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
-    // Check if user preference is stored in localStorage
-    const storedPreference = localStorage.getItem('sidebarOpen');
-    if (storedPreference !== null) {
-      return JSON.parse(storedPreference);
-    }
-    // On mobile devices, default to closed; on desktop, default to open
-    return window.innerWidth >= 1024; // Default to open on desktop
+  const [lang, setLang] = useState<Language>(() => {
+    try { return (localStorage.getItem('jx_lang') as Language) || 'zh'; } catch { return 'zh'; }
+  });
+  
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    try { return localStorage.getItem('sidebarCollapsed') === 'true'; } catch { return false; }
   });
 
-  // Save sidebar state to localStorage when it changes
-  useEffect(() => {
-    localStorage.setItem('sidebarOpen', JSON.stringify(isSidebarOpen));
-  }, [isSidebarOpen]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -48,7 +42,6 @@ const App: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [partners, setPartners] = useState<Partner[]>([]);
   const [sysConfig, setSysConfig] = useState<SystemConfig | null>(null);
-
   const [toast, setToast] = useState<{message: string, type: ToastType} | null>(null);
 
   const showToast = useCallback((message: string, type: ToastType = 'success') => {
@@ -56,92 +49,73 @@ const App: React.FC = () => {
   }, []);
 
   const t = useCallback((key: string): string => getTranslation(lang, key), [lang]);
+  const guestRoomId = useMemo(() => {
+    try { return new URLSearchParams(window.location.search).get('room'); } catch { return null; }
+  }, []);
 
-  const guestRoomId = useMemo(() => new URLSearchParams(window.location.search).get('room'), []);
+  // 响应式监听
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024) setIsSidebarOpen(false);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     if (!sysConfig) return;
-    const html = document.documentElement;
-    html.setAttribute('data-theme', sysConfig.theme);
-    const sizeMap: Record<number, string> = { 14: 'standard', 16: 'medium', 18: 'large', 20: 'large', 22: 'large' };
-    html.setAttribute('data-font-size', sizeMap[sysConfig.fontSizeBase] || 'medium');
-    html.style.setProperty('--font-family-main', sysConfig.fontFamily);
-    html.style.fontSize = `${sysConfig.fontSizeBase}px`;
-    if (sysConfig.contrastStrict) {
-      html.classList.add('contrast-strict');
-    } else {
-      html.classList.remove('contrast-strict');
-    }
+    document.documentElement.setAttribute('data-theme', sysConfig.theme || 'light');
+    document.documentElement.style.setProperty('--font-family-main', sysConfig.fontFamily || 'inherit');
+    document.documentElement.style.fontSize = `${sysConfig.fontSizeBase || 16}px`;
   }, [sysConfig]);
-
-  useEffect(() => {
-    const handleUpdate = (e: any) => {
-      if (e.detail) setSysConfig(e.detail);
-    };
-    window.addEventListener('jx_config_updated', handleUpdate);
-    return () => window.removeEventListener('jx_config_updated', handleUpdate);
-  }, []);
-
-  useEffect(() => {
-    const initAuth = async () => {
-      if (isDemoMode) {
-        const saved = localStorage.getItem('jx_user');
-        if (saved) setCurrentUser(JSON.parse(saved));
-        setIsAuthChecking(false);
-        return;
-      }
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        const profile = await api.users.getProfile(session.user.id);
-        setCurrentUser(profile);
-      }
-      setIsAuthChecking(false);
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: string, session: any) => {
-        if (event === 'SIGNED_IN' && session?.user) {
-          const profile = await api.users.getProfile(session.user.id);
-          setCurrentUser(profile);
-        } else if (event === 'SIGNED_OUT') {
-          setCurrentUser(null);
-        }
-      });
-      return () => subscription.unsubscribe();
-    };
-    initAuth();
-  }, []);
 
   const fetchData = useCallback(async (quiet = false) => {
     if (!quiet) setIsLoading(true);
     try {
       if (currentUser) {
         const [r, o, d, u, p, e, config] = await Promise.all([
-          api.rooms.getAll(), 
-          api.orders.getAll(), 
-          api.dishes.getAll(), 
-          api.users.getAll(), 
-          api.partners.getAll(),
-          api.expenses.getAll(),
-          api.config.get()
+          api.rooms.getAll(), api.orders.getAll(), api.dishes.getAll(), 
+          api.users.getAll(), api.partners.getAll(), api.expenses.getAll(), api.config.get()
         ]);
         setRooms(r); setOrders(o); setDishes(d); setUsers(u); 
         setPartners(p); setExpenses(e); setSysConfig(config);
       } else if (guestRoomId) {
-        const [d, config] = await Promise.all([
-          api.dishes.getAll(),
-          api.config.get()
-        ]);
-        setDishes(d);
-        setSysConfig(config);
+        const [d, config] = await Promise.all([api.dishes.getAll(), api.config.get()]);
+        setDishes(d); setSysConfig(config);
       }
     } catch (error) {
+       console.error("Data Sync Error:", error);
        if (!quiet) showToast(t('syncError'), "error");
     } finally { if (!quiet) setIsLoading(false); }
   }, [currentUser, guestRoomId, t, showToast]);
 
   useEffect(() => {
+    const initAuth = async () => {
+      try {
+        if (isDemoMode) {
+          const saved = localStorage.getItem('jx_user');
+          if (saved) setCurrentUser(JSON.parse(saved));
+          return;
+        }
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          const profile = await api.users.getProfile(session.user.id);
+          setCurrentUser(profile);
+        }
+      } catch (e) {
+        console.error("Auth Init Error:", e);
+      } finally {
+        setIsAuthChecking(false);
+      }
+    };
+    initAuth();
+  }, []);
+
+  useEffect(() => {
     if (currentUser || guestRoomId) {
       fetchData();
-      const syncInterval = window.setInterval(() => fetchData(true), 60000);
-      return () => clearInterval(syncInterval);
+      const interval = setInterval(() => fetchData(true), 30000);
+      return () => clearInterval(interval);
     }
   }, [currentUser, guestRoomId, fetchData]);
 
@@ -149,74 +123,35 @@ const App: React.FC = () => {
     e.preventDefault();
     setIsLoggingIn(true);
     const fd = new FormData(e.currentTarget as HTMLFormElement);
-    const email = fd.get('email') as string;
-    const password = fd.get('password') as string;
     try {
       if (isDemoMode) {
-        await new Promise(r => setTimeout(r, 800));
-        const user: User = { 
-          id: 'u-demo-root', 
-          name: '演示管理员', 
-          email: email, 
-          username: 'demo', 
-          role: UserRole.ADMIN,
-          modulePermissions: {} 
-        };
+        const user: User = { id: 'u-demo', name: '演示管理员', email: fd.get('email') as string, username: 'demo', role: UserRole.ADMIN, modulePermissions: {} };
         setCurrentUser(user);
         localStorage.setItem('jx_user', JSON.stringify(user));
         return;
       }
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await supabase.auth.signInWithPassword({ email: fd.get('email') as string, password: fd.get('password') as string });
       if (error) throw error;
-      showToast(t('welcomeBack'), "success");
     } catch (err: any) {
       showToast(err.message || t('loginFailed'), "error");
-    } finally {
-      setIsLoggingIn(false);
-    }
+    } finally { setIsLoggingIn(false); }
   };
-
-  const handleLogout = async () => {
-    if (!isDemoMode) await supabase.auth.signOut();
-    setCurrentUser(null);
-    localStorage.removeItem('jx_user');
-    showToast(lang === 'zh' ? '安全退出成功' : 'Logged out safely', "info");
-  };
-
-  const wrapAsync = useCallback(async (fn: () => Promise<any>, successMsg?: string) => {
-    setIsSyncing(true);
-    try {
-      await fn();
-      await fetchData(true);
-      if (successMsg) showToast(successMsg, "success");
-    } catch (err) {
-      showToast(t('syncError'), "error");
-    } finally {
-      setIsSyncing(false);
-    }
-  }, [fetchData, showToast, t]);
 
   const hasAccess = useMemo(() => {
     if (!currentUser) return false;
     if (currentUser.role === UserRole.ADMIN) return true;
     if (currentTab === 'dashboard') return true;
     const perms = currentUser.modulePermissions || {};
-    if (currentTab === 'financial_hub') {
-      return perms['finance']?.enabled || perms['partners']?.enabled || perms['payments']?.enabled || perms['financial_hub']?.enabled;
-    }
-    if (currentTab === 'supply_chain') {
-      return perms['menu']?.enabled || perms['inventory']?.enabled || perms['supply_chain']?.enabled;
-    }
-    return perms[currentTab as AppModule]?.enabled === true;
+    // 特殊合并模块权限检查
+    if (currentTab === 'financial_hub') return !!(perms.finance?.enabled || perms.partners?.enabled || perms.payments?.enabled);
+    if (currentTab === 'supply_chain') return !!(perms.menu?.enabled || perms.inventory?.enabled);
+    return !!perms[currentTab as AppModule]?.enabled;
   }, [currentUser, currentTab]);
 
   if (isAuthChecking) {
     return (
       <div className="min-h-screen bg-[#020617] flex items-center justify-center">
-        <div className="text-center space-y-6">
-          <Loader2 className="animate-spin text-blue-500 mx-auto" size={48} />
-          <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.5em]">Verifying Security Gateway...</p>
-        </div>
+        <Loader2 className="animate-spin text-blue-500" size={48} />
       </div>
     );
   }
@@ -224,52 +159,29 @@ const App: React.FC = () => {
   if (guestRoomId) {
     return (
       <GuestOrder 
-        roomId={guestRoomId} 
-        dishes={dishes} 
-        onSubmitOrder={async (o: Partial<Order>) => { 
-          await api.orders.create(o as Order); 
-          fetchData(true); 
-        }} 
-        lang={lang} 
-        onToggleLang={() => setLang(lang === 'zh' ? 'en' : 'zh')}
-        onRescan={() => window.location.href = window.location.origin}
+        roomId={guestRoomId} dishes={dishes} 
+        onSubmitOrder={async (o) => { await api.orders.create(o as Order); fetchData(true); }} 
+        lang={lang} onToggleLang={() => setLang(l => l === 'zh' ? 'en' : 'zh')} onRescan={() => window.location.href = window.location.origin} 
       />
     );
   }
 
   if (!currentUser) {
     return (
-      <div className="min-h-screen relative flex items-center justify-center p-6 bg-slate-950 overflow-hidden">
+      <div className="min-h-screen relative flex items-center justify-center bg-slate-950 p-6 overflow-hidden">
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
         <div className="absolute inset-0 z-0">
-          <img src="https://zlbemopcgjohrnyyiwvs.supabase.co/storage/v1/object/public/jiangxiyunchu/system/jiangxijiudian.png" className="w-full h-full object-cover opacity-40 grayscale" alt="Hospitality" />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent" />
+          <img src="https://zlbemopcgjohrnyyiwvs.supabase.co/storage/v1/object/public/jiangxiyunchu/system/jiangxijiudian.png" className="w-full h-full object-cover opacity-20" alt="" />
         </div>
         <div className="w-full max-w-md relative z-10 animate-fade-up">
-          <div className="bg-white/5 backdrop-blur-3xl rounded-[3rem] shadow-2xl p-10 lg:p-14 space-y-10 border border-white/10">
-            <div className="text-center space-y-4">
-              <div className="flex justify-center items-center">
-                 <div className="w-16 h-16 bg-blue-600 text-white rounded-3xl flex items-center justify-center font-black text-2xl italic shadow-2xl mb-4 border-2 border-white/20">JX</div>
-              </div>
-              <h1 className="text-3xl font-black text-white tracking-tighter uppercase">江西云厨管理系统</h1>
-              <div className="flex items-center justify-center space-x-2 text-slate-500">
-                <ShieldCheck size={14} className="text-emerald-500" />
-                <span className="text-[10px] font-bold uppercase tracking-[0.3em]">Cloud Security Protocols Active</span>
-              </div>
-            </div>
-            <form onSubmit={handleLogin} className="space-y-6">
-              <div className="space-y-5">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-4">邮箱 / Email</label>
-                  <input name="email" type="email" disabled={isLoggingIn} required className="w-full px-8 py-5 bg-white/5 border border-white/10 rounded-[2rem] font-bold text-white focus:border-blue-500 focus:ring-8 focus:ring-blue-500/10 outline-none transition-all shadow-sm" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-4">密钥 / Access Key</label>
-                  <input name="password" type="password" disabled={isLoggingIn} required className="w-full px-8 py-5 bg-white/5 border border-white/10 rounded-[2rem] font-bold text-white focus:border-blue-500 focus:ring-8 focus:ring-blue-500/10 outline-none transition-all shadow-sm" />
-                </div>
-              </div>
-              <button type="submit" disabled={isLoggingIn} className="group w-full py-6 bg-white text-slate-950 rounded-[2rem] font-black text-xs uppercase tracking-[0.4em] hover:bg-blue-600 hover:text-white transition-all shadow-xl flex items-center justify-center space-x-3 active:scale-95 disabled:opacity-70">
-                {isLoggingIn ? <Loader2 className="animate-spin" size={18} /> : <><Lock size={16} /><span>确认接入终端 Sign In</span></>}
+          <div className="bg-white/10 backdrop-blur-3xl rounded-[3rem] p-10 border border-white/20 text-center">
+            <div className="w-16 h-16 bg-blue-600 text-white rounded-2xl flex items-center justify-center font-black italic mx-auto mb-8 shadow-2xl">JX</div>
+            <h1 className="text-2xl font-black text-white uppercase tracking-tighter mb-10">江西云厨管理系统</h1>
+            <form onSubmit={handleLogin} className="space-y-6 text-left">
+              <input name="email" type="email" placeholder="Email" required className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white outline-none focus:border-blue-500 transition-all" />
+              <input name="password" type="password" placeholder="Access Key" required className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white outline-none focus:border-blue-500 transition-all" />
+              <button type="submit" disabled={isLoggingIn} className="w-full py-5 bg-white text-slate-950 rounded-2xl font-black uppercase text-xs tracking-widest flex items-center justify-center gap-3 active:scale-95 transition-all">
+                {isLoggingIn ? <Loader2 className="animate-spin" size={20} /> : <><Lock size={16} />确认接入</>}
               </button>
             </form>
           </div>
@@ -282,54 +194,37 @@ const App: React.FC = () => {
     <ErrorBoundary lang={lang}>
       <div className="min-h-screen flex bg-[#f8fafc]">
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-        <Sidebar currentTab={currentTab} setCurrentTab={setCurrentTab} currentUser={currentUser} onLogout={handleLogout} lang={lang} onToggleLang={() => setLang(lang === 'zh' ? 'en' : 'zh')} isOpen={isSidebarOpen} toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
-        <main className="flex-1 lg:pl-72 flex flex-col min-h-screen">
-          <header className="h-24 bg-white/80 backdrop-blur-xl border-b border-slate-200 px-10 flex items-center justify-between sticky top-0 z-40">
-            <div className="flex items-center space-x-6">
-              <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-3 bg-slate-50 rounded-2xl text-slate-400"><Menu size={24} /></button>
-              <div>
-                <div className="flex items-center gap-3">
-                  <h2 className="text-2xl font-black uppercase tracking-tighter text-slate-950 leading-none">{t(currentTab as any)}</h2>
-                  {isSyncing && <Loader2 className="animate-spin text-blue-600" size={18} />}
-                </div>
-                <div className="flex items-center space-x-2 mt-2">
-                   <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{t(`role_${currentUser.role}` as any)} {t('statusActive')}</p>
-                </div>
-              </div>
+        <Sidebar 
+          currentTab={currentTab} setCurrentTab={setCurrentTab} currentUser={currentUser} 
+          onLogout={() => { supabase.auth.signOut(); setCurrentUser(null); localStorage.removeItem('jx_user'); }} 
+          lang={lang} onToggleLang={() => setLang(l => l === 'zh' ? 'en' : 'zh')} 
+          isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)}
+          isCollapsed={isSidebarCollapsed} onToggleCollapse={() => { setIsSidebarCollapsed(!isSidebarCollapsed); localStorage.setItem('sidebarCollapsed', String(!isSidebarCollapsed)); }}
+        />
+        <main className={`flex-1 transition-all duration-300 ${isSidebarCollapsed ? 'lg:pl-24' : 'lg:pl-72'}`}>
+          <header className="h-20 lg:h-24 bg-white/80 backdrop-blur-xl border-b border-slate-100 px-6 lg:px-10 flex items-center justify-between sticky top-0 z-40">
+            <div className="flex items-center space-x-4">
+              <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-3 bg-slate-50 rounded-xl"><Menu size={20} /></button>
+              <h2 className="text-lg lg:text-xl font-black uppercase text-slate-950">{t(currentTab)}</h2>
             </div>
-            <div className="flex items-center space-x-6">
-               <div className="text-right hidden sm:block">
-                  <p className="text-sm font-black text-slate-950">{currentUser.name}</p>
-                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest truncate max-w-[150px]">#{currentUser.id.slice(0,8)}</p>
-               </div>
-               <div className="w-14 h-14 bg-slate-950 text-white rounded-[1.75rem] flex items-center justify-center font-black text-xl shadow-xl border-4 border-white">{currentUser.name[0]}</div>
-            </div>
+            <div className="w-10 h-10 lg:w-12 lg:h-12 bg-slate-900 text-white rounded-xl flex items-center justify-center font-black shadow-lg border-2 border-white">{currentUser.name[0]}</div>
           </header>
 
-          <div className="p-10 max-w-[1600px] mx-auto w-full flex-1">
+          <div className="p-4 lg:p-10 max-w-[1600px] mx-auto w-full">
             {isLoading ? (
-              <div className="h-[60vh] flex flex-col items-center justify-center space-y-6 text-slate-400 font-black text-[10px] uppercase tracking-[0.5em]"><Loader2 size={48} className="animate-spin text-blue-600 mb-4" />JX-Cloud Orchestrating Data...</div>
+               <div className="h-96 flex flex-col items-center justify-center text-slate-400 gap-4 uppercase font-black text-[10px] tracking-widest"><Loader2 className="animate-spin text-blue-500" size={32} />Syncing...</div>
             ) : !hasAccess ? (
-              <div className="h-[60vh] flex flex-col items-center justify-center text-center space-y-6">
-                 <div className="w-24 h-24 bg-red-50 text-red-500 rounded-[2.5rem] flex items-center justify-center shadow-inner"><ShieldAlert size={48} /></div>
-                 <div>
-                    <h3 className="text-2xl font-black text-slate-900 tracking-tighter">访问被拒绝 / ACCESS DENIED</h3>
-                    <p className="text-slate-400 mt-2 font-medium">您的账户权限不足，无法访问该安全节点。如有疑问请联系系统管理员。</p>
-                 </div>
-                 <button onClick={() => setCurrentTab('dashboard')} className="px-10 py-4 bg-slate-950 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all shadow-xl">返回控制台首页</button>
-              </div>
+               <div className="h-96 flex flex-col items-center justify-center text-center"><ShieldAlert size={48} className="text-red-500 mb-4" /><h3 className="text-xl font-black">ACCESS DENIED</h3><button onClick={() => setCurrentTab('dashboard')} className="mt-6 px-8 py-3 bg-slate-950 text-white rounded-xl">Back to Dashboard</button></div>
             ) : (
               <div className="animate-fade-up">
                 {currentTab === 'dashboard' && <Dashboard orders={orders} rooms={rooms} expenses={expenses} dishes={dishes} lang={lang} />}
-                {currentTab === 'rooms' && <RoomGrid rooms={rooms} dishes={dishes} onUpdateRoom={(r: HotelRoom) => wrapAsync(() => api.rooms.update(r), t('stationManagement') + '更新成功')} onRefresh={() => fetchData(true)} lang={lang} />}
-                {currentTab === 'orders' && <OrderManagement orders={orders} onUpdateStatus={(id: string, s: OrderStatus) => wrapAsync(() => api.orders.updateStatus(id, s), t('orders') + '同步成功')} lang={lang} />}
-                {currentTab === 'supply_chain' && <SupplyChainManager dishes={dishes} currentUser={currentUser} onAddDish={(d: Dish) => wrapAsync(() => api.dishes.create(d), '商品档案已录入')} onUpdateDish={(d: Dish) => wrapAsync(() => api.dishes.update(d), '档案修改已保存')} onDeleteDish={(id: string) => wrapAsync(() => api.dishes.delete(id), '商品已下架')} lang={lang} />}
-                {currentTab === 'financial_hub' && <FinancialCenter orders={orders} expenses={expenses} partners={partners} onAddExpense={(e: Expense) => wrapAsync(() => api.expenses.create(e), '财务记录已录入')} onDeleteExpense={(id: string) => wrapAsync(() => api.expenses.delete(id), '记录已撤销')} onAddPartner={(p: Partner) => wrapAsync(() => api.partners.create(p), '合伙人入驻成功')} onUpdatePartner={(p: Partner) => wrapAsync(() => api.partners.update(p), '合伙人档案已更新')} onDeletePartner={(id: string) => wrapAsync(() => api.partners.delete(id), '合伙人关系已解除')} lang={lang} />}
-
+                {currentTab === 'rooms' && <RoomGrid rooms={rooms} dishes={dishes} onUpdateRoom={(r) => api.rooms.update(r)} onRefresh={() => fetchData(true)} lang={lang} />}
+                {currentTab === 'orders' && <OrderManagement orders={orders} onUpdateStatus={(id, s) => api.orders.updateStatus(id, s)} lang={lang} />}
+                {currentTab === 'supply_chain' && <SupplyChainManager dishes={dishes} currentUser={currentUser} onAddDish={api.dishes.create} onUpdateDish={api.dishes.update} onDeleteDish={api.dishes.delete} lang={lang} />}
+                {currentTab === 'financial_hub' && <FinancialCenter orders={orders} expenses={expenses} partners={partners} onAddExpense={api.expenses.create} onDeleteExpense={api.expenses.delete} onAddPartner={api.partners.create} onUpdatePartner={api.partners.update} onDeletePartner={api.partners.delete} lang={lang} />}
                 {currentTab === 'images' && <ImageManagement lang={lang} />}
-                {currentTab === 'users' && <StaffManagement users={users} onRefresh={() => fetchData(true)} onAddUser={(u: User) => wrapAsync(() => api.users.create(u), '新员工授权已签发')} onUpdateUser={(u: User) => wrapAsync(() => api.users.update(u), '授权档案已更新')} onDeleteUser={(id: string) => wrapAsync(() => api.users.delete(id), '账号已注销')} lang={lang} />}
-                {currentTab === 'settings' && <SystemSettings lang={lang} onChangeLang={(l: Language) => { setLang(l); localStorage.setItem('jx_lang', l); }} onUpdateConfig={(c: SystemConfig) => wrapAsync(() => api.config.update(c), '系统配置已存档')} />}
+                {currentTab === 'users' && <StaffManagement users={users} onRefresh={() => fetchData(true)} onAddUser={api.users.create} onUpdateUser={api.users.update} onDeleteUser={api.users.delete} lang={lang} />}
+                {currentTab === 'settings' && <SystemSettings lang={lang} onChangeLang={setLang} onUpdateConfig={api.config.update} />}
               </div>
             )}
           </div>

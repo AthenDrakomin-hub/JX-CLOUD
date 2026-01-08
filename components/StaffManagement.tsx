@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { User, UserRole, AppModule, CRUDPermissions } from '../types';
-import { translations, Language } from '../translations';
+import { translations, Language, getTranslation } from '../translations';
 import { 
   UserPlus, X, Save, Trash2, Shield, Lock, Eye, EyeOff, 
   CheckSquare, Square, Globe, Mail, Fingerprint, Activity,
@@ -23,7 +23,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ users, onAddUser, onU
   const [perms, setPerms] = useState<Partial<Record<AppModule, CRUDPermissions>>>({});
   const [showPassword, setShowPassword] = useState(false);
 
-  const t = (key: keyof typeof translations.zh) => (translations[lang] as any)[key] || (translations.zh as any)[key] || key;
+  const t = (key: string): string => getTranslation(lang, key);
 
   const modules: { id: AppModule; label: string; en: string }[] = [
     { id: 'dashboard', label: '经营大盘', en: 'Dashboard' },
@@ -128,8 +128,8 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ users, onAddUser, onU
               <div className="flex items-center space-x-4">
                  <div className="w-12 h-12 bg-blue-600 text-white rounded-2xl flex items-center justify-center shadow-lg"><Settings2 size={24} /></div>
                  <div>
-                    <h3 className="font-black text-slate-950 uppercase tracking-tight text-xl">节点授权协议 / Auth Terminal</h3>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">JX-Cloud Security Protocol v5.5</p>
+                    <h3 className="font-black text-slate-950 uppercase tracking-tight text-xl">{t('nodeAuthProtocol')}</h3>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{t('authTerminalSub')}</p>
                  </div>
               </div>
               <button type="button" onClick={() => setIsOpen(false)} className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white border border-slate-200 text-slate-400 hover:text-slate-950 hover:shadow-md transition-all"><X size={24} /></button>
@@ -262,7 +262,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ users, onAddUser, onU
             <div className="p-10 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row gap-4 sticky bottom-0 z-10">
               <button type="submit" className="flex-1 py-6 bg-slate-950 text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.4em] flex items-center justify-center gap-4 hover:bg-blue-600 transition-all shadow-xl active:scale-95">
                 <Save size={20} />
-                <span>{editing ? '提交并生效变更' : '确认并签发数字授权'}</span>
+                <span>{editing ? t('submitAndApplyChanges') : t('confirmAndIssueAuth')}</span>
               </button>
               {editing && editing.username !== 'admin' && (
                 <button 

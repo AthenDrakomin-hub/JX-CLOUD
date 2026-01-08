@@ -85,7 +85,7 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ lang }) => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('确定彻底删除该支付网关？')) return;
+    if (!confirm(t('confirmDeleteGateway'))) return;
     await api.payments.delete(id);
     fetchPayments();
   };
@@ -124,7 +124,7 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ lang }) => {
           className="bg-slate-950 text-white px-10 py-5 rounded-[2rem] font-black text-xs uppercase tracking-[0.3em] flex items-center space-x-4 shadow-2xl hover:bg-blue-600 transition-all active-scale shrink-0"
         >
           <Plus size={18} />
-          <span>注册新支付网关</span>
+          <span>{t('registerNewGateway')}</span>
         </button>
       </div>
 
@@ -185,7 +185,7 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ lang }) => {
              <div className="p-12 lg:p-16 space-y-10">
                 <div className="flex items-center justify-between">
                    <div className="space-y-1">
-                      <h3 className="text-3xl font-bold text-slate-900 tracking-tight">{editingPayment.id ? t('gatewayConfig') : '注册新支付通道'}</h3>
+                      <h3 className="text-3xl font-bold text-slate-900 tracking-tight">{editingPayment.id ? t('gatewayConfig') : t('registerNewPaymentGateway')}</h3>
                       <div className="flex items-center space-x-2">
                         <Info size={12} className="text-[#d4af37]" />
                         <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em]">Payment Terminal Setup</p>
@@ -254,7 +254,7 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ lang }) => {
                    <div className="flex items-center justify-between p-6 bg-slate-50 rounded-3xl border border-slate-200">
                       <div className="flex items-center space-x-3">
                          <Activity size={18} className="text-blue-500" />
-                         <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">启用状态 / ACTIVE STATUS</span>
+                         <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">{t('activeStatus')}</span>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} className="sr-only peer" />
