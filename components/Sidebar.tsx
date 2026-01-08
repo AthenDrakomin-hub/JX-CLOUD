@@ -34,7 +34,6 @@ const Sidebar: React.FC<SidebarProps> = ({
     { id: 'supply_chain', icon: Truck }, 
     { id: 'financial_hub', icon: Wallet },
     { id: 'images', icon: ImageIcon },   
-    { id: 'database', icon: Database },
     { id: 'users', icon: Users },
     { id: 'settings', icon: Settings }
   ];

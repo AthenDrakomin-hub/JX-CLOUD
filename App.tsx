@@ -188,7 +188,14 @@ const App: React.FC = () => {
     return (
       <GuestOrder 
         roomId={guestRoomId} dishes={dishes} 
-        onSubmitOrder={async (o) => { await api.orders.create(o as Order); fetchData(true); }} 
+        onSubmitOrder={async (o) => { 
+          await api.orders.create(o as Order); 
+          // 触发通知服务
+          import('./services/notification').then(({ notificationService }) => {
+            notificationService.triggerWebhook(o as Order);
+          });
+          fetchData(true); 
+        }} 
         lang={lang} onToggleLang={() => setLang(l => l === 'zh' ? 'en' : 'zh')} onRescan={() => window.location.href = window.location.origin} 
       />
     );

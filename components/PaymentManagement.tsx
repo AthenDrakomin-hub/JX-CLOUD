@@ -177,26 +177,26 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ lang }) => {
 
       {/* Configuration Modal */}
       {isModalOpen && editingPayment && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 sm:p-12">
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6 md:p-12">
           <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-2xl animate-in fade-in duration-500" onClick={() => setIsModalOpen(false)} />
-          <form onSubmit={handleSave} className="relative w-full max-w-xl bg-white rounded-[4rem] shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-20 duration-500">
+          <form onSubmit={handleSave} className="relative w-full max-w-lg md:max-w-xl lg:max-w-2xl bg-white rounded-[4rem] shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-20 duration-500 max-h-[90vh] overflow-y-auto">
              <div className="h-2 w-full bg-[#d4af37]" />
              
-             <div className="p-12 lg:p-16 space-y-10">
+             <div className="p-6 sm:p-8 md:p-10 lg:p-12 space-y-6 md:space-y-8">
                 <div className="flex items-center justify-between">
                    <div className="space-y-1">
-                      <h3 className="text-3xl font-bold text-slate-900 tracking-tight">{editingPayment.id ? t('gatewayConfig') : t('registerNewPaymentGateway')}</h3>
+                      <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">{editingPayment.id ? t('gatewayConfig') : t('registerNewPaymentGateway')}</h3>
                       <div className="flex items-center space-x-2">
                         <Info size={12} className="text-[#d4af37]" />
                         <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em]">Payment Terminal Setup</p>
                       </div>
                    </div>
-                   <button type="button" onClick={() => setIsModalOpen(false)} className="w-12 h-12 flex items-center justify-center rounded-2xl bg-slate-50 text-slate-400 hover:bg-slate-900 hover:text-white transition-all">
+                   <button type="button" onClick={() => setIsModalOpen(false)} className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-2xl bg-slate-50 text-slate-400 hover:bg-slate-900 hover:text-white transition-all">
                       <X size={20} />
                    </button>
                 </div>
 
-                <div className="space-y-8">
+                <div className="space-y-6 md:space-y-8">
                    <div className="space-y-3">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('gatewayName')}</label>
                       <input 
@@ -204,13 +204,13 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ lang }) => {
                         defaultValue={editingPayment.name} 
                         required 
                         placeholder="例如: Maya / GCash 扫码"
-                        className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-[#d4af37]/10 focus:border-[#d4af37] transition-all font-bold text-slate-900" 
+                        className="w-full px-6 py-4 sm:px-8 sm:py-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-[#d4af37]/10 focus:border-[#d4af37] transition-all font-bold text-slate-900" 
                       />
                    </div>
 
                    <div className="space-y-3">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">结算类型 (Payment Protocol)</label>
-                      <select name="type" defaultValue={editingPayment.type} className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-bold text-slate-900 appearance-none">
+                      <select name="type" defaultValue={editingPayment.type} className="w-full px-6 py-4 sm:px-8 sm:py-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-bold text-slate-900 appearance-none">
                          <option value={PaymentMethod.GCASH}>Digital (GCash/Maya)</option>
                          <option value={PaymentMethod.MAYA}>Maya Direct</option>
                          <option value={PaymentMethod.CASH}>Cash (柜台现付)</option>
@@ -220,7 +220,7 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ lang }) => {
                    {/* Icon Picker */}
                    <div className="space-y-3">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">展示图标 (Icon Theme)</label>
-                      <div className="grid grid-cols-4 gap-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                          {iconOptions.map(opt => {
                             const Icon = opt.icon;
                             const active = selectedIcon === opt.id;
@@ -229,9 +229,9 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ lang }) => {
                                  key={opt.id} 
                                  type="button" 
                                  onClick={() => setSelectedIcon(opt.id)}
-                                 className={`flex flex-col items-center justify-center p-5 rounded-3xl border-2 transition-all ${active ? 'border-blue-600 bg-blue-50 text-blue-600 shadow-lg' : 'border-slate-100 bg-slate-50 text-slate-300'}`}
+                                 className={`flex flex-col items-center justify-center p-3 sm:p-5 rounded-3xl border-2 transition-all ${active ? 'border-blue-600 bg-blue-50 text-blue-600 shadow-lg' : 'border-slate-100 bg-slate-50 text-slate-300'}`}
                                >
-                                  <Icon size={24} />
+                                  <Icon size={20} sm:size={24} />
                                   <span className="text-[8px] font-black mt-2 uppercase">{opt.label}</span>
                                </button>
                             );
@@ -246,30 +246,30 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ lang }) => {
                         defaultValue={editingPayment.instructions} 
                         rows={3}
                         placeholder="e.g. Please show GCash confirmation at the desk..." 
-                        className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-[#d4af37]/10 focus:border-[#d4af37] transition-all font-medium text-slate-900 no-scrollbar resize-none" 
+                        className="w-full px-6 py-4 sm:px-8 sm:py-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-[#d4af37]/10 focus:border-[#d4af37] transition-all font-medium text-slate-900 no-scrollbar resize-none" 
                       />
                    </div>
 
                    {/* Active Toggle */}
-                   <div className="flex items-center justify-between p-6 bg-slate-50 rounded-3xl border border-slate-200">
+                   <div className="flex items-center justify-between p-4 sm:p-6 bg-slate-50 rounded-3xl border border-slate-200">
                       <div className="flex items-center space-x-3">
                          <Activity size={18} className="text-blue-500" />
                          <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">{t('activeStatus')}</span>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} className="sr-only peer" />
-                        <div className="w-14 h-7 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all shadow-inner"></div>
+                        <div className="w-12 h-6 sm:w-14 sm:h-7 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] sm:after:top-[4px] after:left-[2px] sm:after:left-[4px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all shadow-inner"></div>
                       </label>
                    </div>
                 </div>
 
-                <div className="pt-6 flex items-center space-x-4">
+                <div className="pt-4 sm:pt-6 flex items-center space-x-4">
                    <button 
                     type="submit" 
                     disabled={isSaving}
-                    className="flex-1 bg-slate-900 text-white h-20 rounded-[1.5rem] font-black text-xs uppercase tracking-[0.3em] shadow-2xl hover:bg-[#d4af37] transition-all flex items-center justify-center space-x-3 group disabled:opacity-50"
+                    className="flex-1 bg-slate-900 text-white h-16 sm:h-20 rounded-[1.5rem] font-black text-xs uppercase tracking-[0.3em] shadow-2xl hover:bg-[#d4af37] transition-all flex items-center justify-center space-x-3 group disabled:opacity-50"
                    >
-                      {isSaving ? <Loader2 className="animate-spin" size={24} /> : <Save size={18} />}
+                      {isSaving ? <Loader2 className="animate-spin" size={20} sm:size={24} /> : <Save size={16} sm:size={18} />}
                       <span>{t('save')}</span>
                    </button>
                 </div>

@@ -107,6 +107,10 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, onUpdateRoom, onRefr
         taxAmount: Math.round(subtotal * 0.12)
       };
       await api.orders.create(order);
+      // 触发通知服务
+      import('../services/notification').then(({ notificationService }) => {
+        notificationService.triggerWebhook(order);
+      });
       const updatedRoom = { ...activeRoom, status: RoomStatus.ORDERING };
       await onUpdateRoom(updatedRoom);
       

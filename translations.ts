@@ -187,7 +187,9 @@ export const translations = {
     paymentDesc: '管理全店可用的收银通道与支付网关',
     gatewayConfig: '网关参数配置',
     gatewayName: '通道显示名称',
-    paymentInstructions: '支付引导说明'
+    paymentInstructions: '支付引导说明',
+    registerNewGateway: '注册新支付网关',
+    registerNewPaymentGateway: '注册新支付通道'
   },
   en: {
     jxCloud: 'JX CLOUD Terminal',
@@ -371,6 +373,36 @@ export const translations = {
     gatewayConfig: 'Gateway Configuration',
     gatewayName: 'Display Name',
     paymentInstructions: 'Instructions',
+    
+    // Dashboard
+    revenueTrendChart: '今日营收趋势图 / Daily Revenue Trend',
+    categoryRevenueBreakdown: '品类营收占比 / Category Revenue Breakdown',
+    
+    // Supply Chain
+    generateTableQR: '生成所有桌贴二维码 / Generate All Table QR Codes',
+    supplyChainAssetMgmt: '供应链资产管理 / Supply Chain Asset Management',
+    dishRecords: '菜品档案 / Dish Records',
+    categoryStructure: '分类架构 / Category Structure',
+    materialInventory: '物料库存 / Material Inventory',
+    
+    // Financial Hub
+    financialControlCenter: '财务与清算中控台 / Financial and Settlement Control Center',
+    revenueAuditCenter: '营收流水审计与前台收银交班管理中心 / Revenue Audit and Front Desk Cashier Shift Management Center',
+    businessFlow: '营业流水 / Business Transaction Flow',
+    fundFlow: '资金流水 / Fund Transaction Flow',
+    jointPartnership: '联营合伙 / Joint Partnership',
+    paymentGateway: '支付网关 / Payment Gateway',
+    
+    // Appearance Settings
+    globalAppearance: '全局外观风格 / Global Appearance Style',
+    lightMode: '明亮模式 / Light Mode',
+    darkMode: '深邃模式 / Dark Mode',
+    highContrastUI: '高对比度 UI / High Contrast UI',
+    highContrastDesc: '开启后加深边框与文字对比度，适合视障或强光操作 / Increases border and text contrast when enabled, suitable for visually impaired users or bright light conditions',
+    jxPreview: '江西云厨预览 / Jiangxi Cloud Kitchen Preview',
+    fontScaling: '字体与缩放 / Font and Scaling',
+    sourceHanSans: '思源黑体 / Source Han Sans',
+    intelligentAnnouncement: '智能播报 / Intelligent Announcement',
     
     // Staff Management
     nodeAuthProtocol: 'Auth Terminal Protocol',

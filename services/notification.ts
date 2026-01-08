@@ -53,26 +53,47 @@ export const notificationService = {
     window.speechSynthesis.speak(utterance);
   },
 
-  triggerWebhook: async (order: Order, webhookUrl?: string) => {
-    if (!webhookUrl) return;
+  triggerWebhook: async (order: Order, supabaseInstance?: any) => {
+    // 使用部署的 notify-proxy 边缘函数
+    const proxyUrl = 'https://zlbemopcgjohrnyyiwvs.supabase.co/functions/v1/notify-proxy';
     const payload = {
       event: 'order.created',
       timestamp: new Date().toISOString(),
-      source: 'JX_CLOUD_V3',
+      source: 'JX_CLOUD_V5',
       data: {
         orderId: order.id,
         room: order.roomId,
         amount: order.totalAmount
       }
     };
+    
     try {
-      await fetch(webhookUrl, {
+      // 获取当前会话
+      const { data: { session } } = supabaseInstance 
+        ? await supabaseInstance.auth.getSession()
+        : await import('./supabaseClient').then(mod => mod.supabase.auth.getSession());
+
+      if (!session?.access_token) {
+        console.warn('No valid session found for webhook request');
+        return;
+      }
+
+      const response = await fetch(proxyUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        mode: 'no-cors'
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,  // 包含身份验证头
+          'X-Client-Info': 'JX-Cloud-Frontend/5.0'
+        },
+        body: JSON.stringify(payload)
       });
-    } catch (error) {}
+
+      if (!response.ok) {
+        console.warn('Webhook proxy request failed:', response.status, await response.text());
+      }
+    } catch (error) {
+      console.error('Webhook proxy request error:', error);
+    }
   },
 
   send: (
