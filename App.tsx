@@ -23,12 +23,20 @@ const App: React.FC = () => {
   const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [currentTab, setCurrentTab] = useState('dashboard');
   const [lang, setLang] = useState<Language>(() => {
-    try { return (localStorage.getItem('jx_lang') as Language) || 'zh'; } catch { return 'zh'; }
+    try {
+      return (localStorage.getItem('jx_lang') as Language) || 'zh';
+    } catch {
+      return 'zh';
+    }
   });
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
-    try { return localStorage.getItem('sidebarCollapsed') === 'true'; } catch { return false; }
+    try {
+      return localStorage.getItem('sidebarCollapsed') === 'true';
+    } catch {
+      return false;
+    }
   });
 
   const [isLoading, setIsLoading] = useState(false);
@@ -49,24 +57,21 @@ const App: React.FC = () => {
   }, []);
 
   const t = useCallback((key: string): string => getTranslation(lang, key), [lang]);
+  
   const guestRoomId = useMemo(() => {
-    try { return new URLSearchParams(window.location.search).get('room'); } catch { return null; }
-  }, []);
-
-  // 响应式监听
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 1024) setIsSidebarOpen(false);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    try {
+      return new URLSearchParams(window.location.search).get('room');
+    } catch {
+      return null;
+    }
   }, []);
 
   useEffect(() => {
     if (!sysConfig) return;
-    document.documentElement.setAttribute('data-theme', sysConfig.theme || 'light');
-    document.documentElement.style.setProperty('--font-family-main', sysConfig.fontFamily || 'inherit');
-    document.documentElement.style.fontSize = `${sysConfig.fontSizeBase || 16}px`;
+    const html = document.documentElement;
+    html.setAttribute('data-theme', sysConfig.theme || 'light');
+    html.style.setProperty('--font-family-main', sysConfig.fontFamily || 'inherit');
+    html.style.fontSize = `${sysConfig.fontSizeBase || 16}px`;
   }, [sysConfig]);
 
   const fetchData = useCallback(async (quiet = false) => {
@@ -84,7 +89,7 @@ const App: React.FC = () => {
         setDishes(d); setSysConfig(config);
       }
     } catch (error) {
-       console.error("Data Sync Error:", error);
+       console.error("Fetch data error:", error);
        if (!quiet) showToast(t('syncError'), "error");
     } finally { if (!quiet) setIsLoading(false); }
   }, [currentUser, guestRoomId, t, showToast]);
@@ -97,13 +102,15 @@ const App: React.FC = () => {
           if (saved) setCurrentUser(JSON.parse(saved));
           return;
         }
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          const profile = await api.users.getProfile(session.user.id);
-          setCurrentUser(profile);
+        if (supabase) {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user) {
+            const profile = await api.users.getProfile(session.user.id);
+            setCurrentUser(profile);
+          }
         }
-      } catch (e) {
-        console.error("Auth Init Error:", e);
+      } catch (err) {
+        console.error("Auth initialization failed", err);
       } finally {
         setIsAuthChecking(false);
       }
@@ -114,8 +121,8 @@ const App: React.FC = () => {
   useEffect(() => {
     if (currentUser || guestRoomId) {
       fetchData();
-      const interval = setInterval(() => fetchData(true), 30000);
-      return () => clearInterval(interval);
+      const syncInterval = window.setInterval(() => fetchData(true), 60000);
+      return () => clearInterval(syncInterval);
     }
   }, [currentUser, guestRoomId, fetchData]);
 
@@ -123,26 +130,47 @@ const App: React.FC = () => {
     e.preventDefault();
     setIsLoggingIn(true);
     const fd = new FormData(e.currentTarget as HTMLFormElement);
+    const email = fd.get('email') as string;
+    const password = fd.get('password') as string;
     try {
       if (isDemoMode) {
-        const user: User = { id: 'u-demo', name: '演示管理员', email: fd.get('email') as string, username: 'demo', role: UserRole.ADMIN, modulePermissions: {} };
+        const user: User = { id: 'u-demo', name: '演示管理员', email, username: 'demo', role: UserRole.ADMIN, modulePermissions: {} };
         setCurrentUser(user);
         localStorage.setItem('jx_user', JSON.stringify(user));
         return;
       }
-      const { error } = await supabase.auth.signInWithPassword({ email: fd.get('email') as string, password: fd.get('password') as string });
-      if (error) throw error;
+      if (supabase) {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+      }
     } catch (err: any) {
       showToast(err.message || t('loginFailed'), "error");
     } finally { setIsLoggingIn(false); }
   };
+
+  const handleLogout = async () => {
+    if (!isDemoMode && supabase) await supabase.auth.signOut();
+    setCurrentUser(null);
+    localStorage.removeItem('jx_user');
+    showToast(lang === 'zh' ? '安全退出成功' : 'Logged out safely', "info");
+  };
+
+  const wrapAsync = useCallback(async (fn: () => Promise<any>, successMsg?: string) => {
+    setIsSyncing(true);
+    try {
+      await fn();
+      await fetchData(true);
+      if (successMsg) showToast(successMsg, "success");
+    } catch (err) {
+      showToast(t('syncError'), "error");
+    } finally { setIsSyncing(false); }
+  }, [fetchData, showToast, t]);
 
   const hasAccess = useMemo(() => {
     if (!currentUser) return false;
     if (currentUser.role === UserRole.ADMIN) return true;
     if (currentTab === 'dashboard') return true;
     const perms = currentUser.modulePermissions || {};
-    // 特殊合并模块权限检查
     if (currentTab === 'financial_hub') return !!(perms.finance?.enabled || perms.partners?.enabled || perms.payments?.enabled);
     if (currentTab === 'supply_chain') return !!(perms.menu?.enabled || perms.inventory?.enabled);
     return !!perms[currentTab as AppModule]?.enabled;
@@ -195,11 +223,20 @@ const App: React.FC = () => {
       <div className="min-h-screen flex bg-[#f8fafc]">
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
         <Sidebar 
-          currentTab={currentTab} setCurrentTab={setCurrentTab} currentUser={currentUser} 
-          onLogout={() => { supabase.auth.signOut(); setCurrentUser(null); localStorage.removeItem('jx_user'); }} 
-          lang={lang} onToggleLang={() => setLang(l => l === 'zh' ? 'en' : 'zh')} 
-          isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)}
-          isCollapsed={isSidebarCollapsed} onToggleCollapse={() => { setIsSidebarCollapsed(!isSidebarCollapsed); localStorage.setItem('sidebarCollapsed', String(!isSidebarCollapsed)); }}
+          currentTab={currentTab} 
+          setCurrentTab={setCurrentTab} 
+          currentUser={currentUser} 
+          onLogout={handleLogout} 
+          lang={lang} 
+          onToggleLang={() => setLang(l => l === 'zh' ? 'en' : 'zh')} 
+          isOpen={isSidebarOpen} 
+          onClose={() => setIsSidebarOpen(false)}
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={() => { 
+            const newVal = !isSidebarCollapsed;
+            setIsSidebarCollapsed(newVal); 
+            localStorage.setItem('sidebarCollapsed', String(newVal)); 
+          }}
         />
         <main className={`flex-1 transition-all duration-300 ${isSidebarCollapsed ? 'lg:pl-24' : 'lg:pl-72'}`}>
           <header className="h-20 lg:h-24 bg-white/80 backdrop-blur-xl border-b border-slate-100 px-6 lg:px-10 flex items-center justify-between sticky top-0 z-40">
@@ -207,7 +244,9 @@ const App: React.FC = () => {
               <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-3 bg-slate-50 rounded-xl"><Menu size={20} /></button>
               <h2 className="text-lg lg:text-xl font-black uppercase text-slate-950">{t(currentTab)}</h2>
             </div>
-            <div className="w-10 h-10 lg:w-12 lg:h-12 bg-slate-900 text-white rounded-xl flex items-center justify-center font-black shadow-lg border-2 border-white">{currentUser.name[0]}</div>
+            <div className="w-10 h-10 lg:w-12 lg:h-12 bg-slate-900 text-white rounded-xl flex items-center justify-center font-black shadow-lg border-2 border-white">
+              {currentUser.name ? currentUser.name[0] : 'U'}
+            </div>
           </header>
 
           <div className="p-4 lg:p-10 max-w-[1600px] mx-auto w-full">
@@ -218,13 +257,13 @@ const App: React.FC = () => {
             ) : (
               <div className="animate-fade-up">
                 {currentTab === 'dashboard' && <Dashboard orders={orders} rooms={rooms} expenses={expenses} dishes={dishes} lang={lang} />}
-                {currentTab === 'rooms' && <RoomGrid rooms={rooms} dishes={dishes} onUpdateRoom={(r) => api.rooms.update(r)} onRefresh={() => fetchData(true)} lang={lang} />}
-                {currentTab === 'orders' && <OrderManagement orders={orders} onUpdateStatus={(id, s) => api.orders.updateStatus(id, s)} lang={lang} />}
-                {currentTab === 'supply_chain' && <SupplyChainManager dishes={dishes} currentUser={currentUser} onAddDish={api.dishes.create} onUpdateDish={api.dishes.update} onDeleteDish={api.dishes.delete} lang={lang} />}
-                {currentTab === 'financial_hub' && <FinancialCenter orders={orders} expenses={expenses} partners={partners} onAddExpense={api.expenses.create} onDeleteExpense={api.expenses.delete} onAddPartner={api.partners.create} onUpdatePartner={api.partners.update} onDeletePartner={api.partners.delete} lang={lang} />}
+                {currentTab === 'rooms' && <RoomGrid rooms={rooms} dishes={dishes} onUpdateRoom={(r) => wrapAsync(() => api.rooms.update(r))} onRefresh={() => fetchData(true)} lang={lang} />}
+                {currentTab === 'orders' && <OrderManagement orders={orders} onUpdateStatus={(id, s) => wrapAsync(() => api.orders.updateStatus(id, s))} lang={lang} />}
+                {currentTab === 'supply_chain' && <SupplyChainManager dishes={dishes} currentUser={currentUser} onAddDish={(d) => wrapAsync(() => api.dishes.create(d))} onUpdateDish={(d) => wrapAsync(() => api.dishes.update(d))} onDeleteDish={(id) => wrapAsync(() => api.dishes.delete(id))} lang={lang} />}
+                {currentTab === 'financial_hub' && <FinancialCenter orders={orders} expenses={expenses} partners={partners} onAddExpense={(e) => wrapAsync(() => api.expenses.create(e))} onDeleteExpense={(id) => wrapAsync(() => api.expenses.delete(id))} onAddPartner={(p) => wrapAsync(() => api.partners.create(p))} onUpdatePartner={(p) => wrapAsync(() => api.partners.update(p))} onDeletePartner={(id) => wrapAsync(() => api.partners.delete(id))} lang={lang} />}
                 {currentTab === 'images' && <ImageManagement lang={lang} />}
-                {currentTab === 'users' && <StaffManagement users={users} onRefresh={() => fetchData(true)} onAddUser={api.users.create} onUpdateUser={api.users.update} onDeleteUser={api.users.delete} lang={lang} />}
-                {currentTab === 'settings' && <SystemSettings lang={lang} onChangeLang={setLang} onUpdateConfig={api.config.update} />}
+                {currentTab === 'users' && <StaffManagement users={users} onRefresh={() => fetchData(true)} onAddUser={(u) => wrapAsync(() => api.users.create(u))} onUpdateUser={(u) => wrapAsync(() => api.users.update(u))} onDeleteUser={(id) => wrapAsync(() => api.users.delete(id))} lang={lang} />}
+                {currentTab === 'settings' && <SystemSettings lang={lang} onChangeLang={setLang} onUpdateConfig={(c) => wrapAsync(() => api.config.update(c))} />}
               </div>
             )}
           </div>
