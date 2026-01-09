@@ -169,10 +169,11 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ users, onAddUser, onU
                   </div>
                   <div className="space-y-3">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] ml-2">角色授权 (Role)</label>
-                    <select name="role" defaultValue={editing?.role || UserRole.STAFF} className="w-full px-8 py-5 bg-slate-50 border-2 border-slate-100 rounded-[1.75rem] font-black text-blue-700 outline-none cursor-pointer shadow-sm appearance-none">
-                      <option value={UserRole.STAFF}>普通员工 (Staff)</option>
+                    <select name="role" defaultValue={editing?.role || UserRole.VIEWER} className="w-full px-8 py-5 bg-slate-50 border-2 border-slate-100 rounded-[1.75rem] font-black text-blue-700 outline-none cursor-pointer shadow-sm appearance-none">
+                      <option value={UserRole.VIEWER}>普通员工 (Viewer)</option>
+                      <option value={UserRole.EDITOR}>编辑员 (Editor)</option>
                       <option value={UserRole.ADMIN}>总管理员 (Admin)</option>
-                      <option value={UserRole.MAINTAINER}>技术维护 (Maintainer)</option>
+                      <option value={UserRole.SUPER_ADMIN}>超级管理员 (Super Admin)</option>
                     </select>
                   </div>
                 </div>

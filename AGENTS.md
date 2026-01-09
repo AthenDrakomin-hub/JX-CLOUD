@@ -95,3 +95,23 @@ The system uses Supabase PostgreSQL with tables for:
 - **Environment Detection**: Enhanced environment variable detection supporting multiple sources (Vite env, Node.js env, browser globals, localStorage)
 - **Error Handling**: RLS-specific error handling with custom error messages for permission denied scenarios
 - **Demo Mode**: Built-in demonstration mode activated when Supabase configuration is not present
+
+## Testing Information
+
+There are no dedicated test files in the repository, but the validation system provides comprehensive production readiness checks via the validation utilities in the `utils/` directory.
+
+## API Service Structure
+
+The `services/api.ts` file implements a comprehensive CRUD API service with methods for:
+- dishes: getAll, create, update, delete
+- rooms: getAll, update
+- orders: getAll, create, updateStatus
+- categories: getAll, saveAll
+- users: getAll, getProfile, create, update, delete, updatePermissions
+- partners: getAll, create, update, delete
+- expenses: getAll, create, delete
+- ingredients: getAll, create, update, delete
+- payments: getAll, create, update, delete, toggle
+- config: get, update
+
+Each method includes proper error handling with RLS error detection.
