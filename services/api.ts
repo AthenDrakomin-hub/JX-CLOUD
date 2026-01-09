@@ -13,10 +13,26 @@ const getAccessToken = async (): Promise<string> => {
   
   try {
     const { data: { session } } = await supabase.auth.getSession();
-    return session?.access_token || '';
+    if (!session) {
+      // 如果没有有效会话，可能需要重定向到登录页
+      console.warn('No active session found. User may need to login.');
+      return '';
+    }
+    return session.access_token || '';
   } catch (error) {
     console.error('Failed to get access token:', error);
     return '';
+  }
+};
+
+// 检查认证状态并处理未认证情况的辅助函数
+const checkAuthAndRedirect = () => {
+  if (typeof window !== 'undefined') {
+    // 检查当前是否已经在登录页面
+    if (!window.location.pathname.includes('login') && !window.location.pathname.includes('auth')) {
+      // 重定向到登录页面
+      window.location.href = '/';
+    }
   }
 };
 
@@ -484,6 +500,13 @@ export const api = {
           }
         });
         
+        if (response.status === 401) {
+          // 未授权，用户需要登录
+          console.warn('Unauthorized access to get config API. Redirecting to login.');
+          checkAuthAndRedirect();
+          throw new Error('Authentication required');
+        }
+        
         if (response.ok) {
           const data = await response.json();
           if (!data) return { hotelName: '江西云厨' } as any;
@@ -509,6 +532,10 @@ export const api = {
           } as any;
         }
       } catch (error) {
+        if (error instanceof Error && error.message === 'Authentication required') {
+          throw error; // Re-throw auth errors to be handled by calling code
+        }
+        
         console.warn('Failed to fetch config via API endpoint, falling back to direct DB access:', error);
       }
       
@@ -618,14 +645,25 @@ export const api = {
           body: JSON.stringify(orderData)
         });
         
+        if (response.status === 401) {
+          // 未授权，用户需要登录
+          console.warn('Unauthorized access to create order API. Redirecting to login.');
+          checkAuthAndRedirect();
+          throw new Error('Authentication required');
+        }
+        
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
         }
         
         return await response.json();
-      } catch (fetchError) {
-        console.error('Failed to create order via API endpoint:', fetchError);
+      } catch (error) {
+        if (error instanceof Error && error.message === 'Authentication required') {
+          throw error; // Re-throw auth errors to be handled by calling code
+        }
+        
+        console.error('Failed to create order via API endpoint:', error);
         // 回退到原有实现
         const { error: supabaseError } = await supabase.from('orders').insert({
           room_id: orderData.room_id,
@@ -659,14 +697,25 @@ export const api = {
           }
         });
         
+        if (response.status === 401) {
+          // 未授权，用户需要登录
+          console.warn('Unauthorized access to get room orders API. Redirecting to login.');
+          checkAuthAndRedirect();
+          throw new Error('Authentication required');
+        }
+        
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
         }
         
         return await response.json();
-      } catch (fetchError) {
-        console.error('Failed to fetch room orders via API endpoint:', fetchError);
+      } catch (error) {
+        if (error instanceof Error && error.message === 'Authentication required') {
+          throw error; // Re-throw auth errors to be handled by calling code
+        }
+        
+        console.error('Failed to fetch room orders via API endpoint:', error);
         // 回退到原有实现
         let query = supabase.from('orders').select('*').eq('room_id', roomId);
         if (status) {
@@ -693,14 +742,25 @@ export const api = {
           }
         });
         
+        if (response.status === 401) {
+          // 未授权，用户需要登录
+          console.warn('Unauthorized access to get payment configs API. Redirecting to login.');
+          checkAuthAndRedirect();
+          throw new Error('Authentication required');
+        }
+        
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
         }
         
         return await response.json();
-      } catch (fetchError) {
-        console.error('Failed to fetch payment configs via API endpoint:', fetchError);
+      } catch (error) {
+        if (error instanceof Error && error.message === 'Authentication required') {
+          throw error; // Re-throw auth errors to be handled by calling code
+        }
+        
+        console.error('Failed to fetch payment configs via API endpoint:', error);
         // 回退到原有实现
         const { data, error: supabaseError } = await supabase.from('payment_configs').select('*').eq('is_active', true);
         if (supabaseError) handleApiError(supabaseError, 'payment_configs');
