@@ -7,6 +7,19 @@ import { supabase, isDemoMode } from './supabaseClient';
  * 江西云厨 - 核心数据适配层 V5.6 (Production Ready)
  */
 
+// 获取访问令牌的辅助函数
+const getAccessToken = async (): Promise<string> => {
+  if (isDemoMode) return '';
+  
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token || '';
+  } catch (error) {
+    console.error('Failed to get access token:', error);
+    return '';
+  }
+};
+
 // 错误处理辅助函数
 const handleApiError = (error: any, tableName: string) => {
   // 检查是否为403错误或RLS相关的错误
@@ -460,6 +473,46 @@ export const api = {
   config: {
     get: async (): Promise<SystemConfig> => {
       if (isDemoMode) return { hotelName: '演示模式' } as any;
+      
+      // 尝试使用新的 API 端点
+      try {
+        const response = await fetch('/api/v1/config/global', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${await getAccessToken()}`
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (!data) return { hotelName: '江西云厨' } as any;
+          return {
+            hotelName: data.hotel_name,
+            version: data.version,
+            theme: data.theme,
+            fontFamily: data.font_family,
+            fontSizeBase: data.font_size_base,
+            fontWeightBase: data.font_weight_base || 500,
+            lineHeightBase: data.line_height_base || 1.5,
+            letterSpacing: data.letter_spacing || 0,
+            contrastStrict: data.contrast_strict,
+            textColorMain: data.text_color_main || '#0f172a',
+            bgColorMain: data.bg_color_main || '#f8fafc',
+            printerIp: data.printer_ip,
+            printerPort: data.printer_port,
+            autoPrintOrder: data.auto_print_order,
+            autoPrintReceipt: data.auto_print_receipt,
+            serviceChargeRate: Number(data.service_charge_rate),
+            voiceBroadcastEnabled: data.voice_broadcast_enabled,
+            voiceVolume: data.voice_volume
+          } as any;
+        }
+      } catch (error) {
+        console.warn('Failed to fetch config via API endpoint, falling back to direct DB access:', error);
+      }
+      
+      // 回退到直接数据库访问
       let { data } = await supabase.from('system_config').select('*').eq('id', 'global').maybeSingle();
       
       // 如果没有找到全局配置记录，则尝试插入默认配置
@@ -546,6 +599,113 @@ export const api = {
         updated_at: new Date().toISOString()
       }).eq('id', 'global');
       if (error) handleApiError(error, 'system_config');
+    }
+  },
+
+  // 新增的 API v1 接口方法
+  v1: {
+    // 【创建订单】POST /api/v1/orders
+    createOrder: async (orderData: { room_id: string; items: any[]; payment_method?: string }) => {
+      if (isDemoMode) return { id: 'demo-order-id', ...orderData, total_amount: 0 };
+      
+      try {
+        const response = await fetch('/api/v1/orders', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${await getAccessToken()}`
+          },
+          body: JSON.stringify(orderData)
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+        
+        return await response.json();
+      } catch (fetchError) {
+        console.error('Failed to create order via API endpoint:', fetchError);
+        // 回退到原有实现
+        const { error: supabaseError } = await supabase.from('orders').insert({
+          room_id: orderData.room_id,
+          items: orderData.items,
+          total_amount: 0, // Will be calculated on server side
+          status: 'pending',
+          payment_method: orderData.payment_method || 'Cash',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+        
+        if (supabaseError) handleApiError(supabaseError, 'orders');
+      }
+    },
+
+    // 【查询房间订单】GET /api/v1/rooms/{room_id}/orders?status={状态}
+    getRoomOrders: async (roomId: string, status?: string) => {
+      if (isDemoMode) return [];
+      
+      try {
+        let url = `/api/v1/rooms/${encodeURIComponent(roomId)}/orders`;
+        if (status) {
+          url += `?status=${encodeURIComponent(status)}`;
+        }
+        
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${await getAccessToken()}`
+          }
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+        
+        return await response.json();
+      } catch (fetchError) {
+        console.error('Failed to fetch room orders via API endpoint:', fetchError);
+        // 回退到原有实现
+        let query = supabase.from('orders').select('*').eq('room_id', roomId);
+        if (status) {
+          query = query.eq('status', status);
+        }
+        query = query.order('created_at', { ascending: false });
+        
+        const { data, error: supabaseError } = await query;
+        if (supabaseError) handleApiError(supabaseError, 'orders');
+        return data || [];
+      }
+    },
+
+    // 【获取支付配置】GET /api/v1/payment_configs
+    getPaymentConfigs: async () => {
+      if (isDemoMode) return [];
+      
+      try {
+        const response = await fetch('/api/v1/payment_configs', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${await getAccessToken()}`
+          }
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+        
+        return await response.json();
+      } catch (fetchError) {
+        console.error('Failed to fetch payment configs via API endpoint:', fetchError);
+        // 回退到原有实现
+        const { data, error: supabaseError } = await supabase.from('payment_configs').select('*').eq('is_active', true);
+        if (supabaseError) handleApiError(supabaseError, 'payment_configs');
+        return data || [];
+      }
     }
   }
 };

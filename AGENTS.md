@@ -79,6 +79,10 @@ The system uses Supabase PostgreSQL with tables for:
   - Data integrity validation
   - Robustness validation with error rate thresholds
 - Validation scripts in `utils/validationRunner.ts` for automated testing
+- Validation commands:
+  - `npm run validate:production` - Run comprehensive production validation
+  - `npm run validate:connection` - Validate Supabase connection
+  - `npm run test:validation` - Run validation tests with environment check
 
 ## Module Access Control
 
@@ -86,6 +90,14 @@ The system uses Supabase PostgreSQL with tables for:
 - Frontend intercepts access based on `module_permissions` field in users table
 - Role-based permissions with admin override capability
 - IP whitelisting for enhanced security
+
+## Additional Architecture Details
+
+- **Environment Detection**: Enhanced environment variable detection supporting multiple sources (Vite env, Node.js env, browser globals, localStorage)
+- **Demo Mode**: Built-in demonstration mode activated when Supabase configuration is not present
+- **Edge Functions**: Vercel edge functions provide secure API gateway that handles sensitive operations requiring Service Role permissions
+- **Security Headers**: Production-grade CORS and security headers implemented in edge functions
+- **Error Handling**: Comprehensive RLS-specific error handling with custom error messages for permission denied scenarios
 
 ## Additional Configuration
 
