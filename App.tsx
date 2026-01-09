@@ -140,11 +140,19 @@ const App: React.FC = () => {
         const user: User = { id: 'u-demo', name: '演示管理员', email, username: 'demo', role: UserRole.ADMIN, modulePermissions: {} };
         setCurrentUser(user);
         localStorage.setItem('jx_user', JSON.stringify(user));
+        setIsAuthChecking(false); // 确保认证检查完成
         return;
       }
       if (supabase) {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        
+        // 登录成功后，获取返回的会话和用户资料
+        if (data?.session?.user) {
+          const profile = await api.users.getProfile(data.session.user.id);
+          setCurrentUser(profile);
+          setIsAuthChecking(false); // 确保认证检查完成
+        }
       }
     } catch (err: any) {
       showToast(err.message || t('loginFailed'), "error");
