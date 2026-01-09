@@ -122,10 +122,10 @@ class ProductionValidator {
       // 验证关键数据表的完整性
       const tablesToValidate = [
         { name: 'system_config', expectedFields: ['hotel_name', 'version', 'theme'] },
-        { name: 'menu_categories', expectedFields: ['name', 'display_order'] },
-        { name: 'menu_dishes', expectedFields: ['id', 'name_zh', 'price_cents', 'category_id'] },
-        { name: 'orders', expectedFields: ['id', 'room_id', 'items', 'total_amount', 'status'] },
-        { name: 'users', expectedFields: ['id', 'username', 'email', 'role', 'module_permissions'] }
+        { name: 'menu_categories', expectedFields: ['name', 'code', 'display_order'] },
+        { name: 'menu_dishes', expectedFields: ['id', 'name_zh', 'price_php', 'category_id'] },
+        { name: 'orders', expectedFields: ['id', 'room_id', 'items', 'total_amount', 'status', 'payment_method'] },
+        { name: 'users', expectedFields: ['id', 'username', 'email', 'role', 'module_permissions', 'full_name'] }
       ];
 
       const validationResults = [];

@@ -23,71 +23,204 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- 系统全局配置
 CREATE TABLE system_config (
-  id TEXT PRIMARY KEY DEFAULT 'global',
-  hotel_name TEXT DEFAULT '江西云厨',
-  version TEXT DEFAULT '5.6.0',
-  theme TEXT DEFAULT 'light',
-  font_family TEXT DEFAULT 'Plus Jakarta Sans',
-  font_size_base INTEGER DEFAULT 16,
-  printer_ip TEXT DEFAULT '192.168.1.100',
-  printer_port TEXT DEFAULT '9100',
-  auto_print_order BOOLEAN DEFAULT TRUE,
-  auto_print_receipt BOOLEAN DEFAULT FALSE,
-  service_charge_rate DECIMAL(5,4) DEFAULT 0.12,
-  contrast_strict BOOLEAN DEFAULT FALSE,
-  voice_broadcast_enabled BOOLEAN DEFAULT TRUE,
-  voice_volume DECIMAL(3,2) DEFAULT 1.0,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+  id text not null default 'global'::text,
+  hotel_name text null default '江西云厨'::text,
+  version text null default '5.2.0'::text,
+  theme text null default 'light'::text,
+  font_family text null default 'Plus Jakarta Sans'::text,
+  font_size_base integer null default 16,
+  font_weight_base integer null default 500,
+  line_height_base numeric(3, 2) null default 1.5,
+  letter_spacing numeric(4, 2) null default 0,
+  contrast_strict boolean null default true,
+  text_color_main text null default '#0f172a'::text,
+  bg_color_main text null default '#f8fafc'::text,
+  printer_ip text null default '192.168.1.100'::text,
+  printer_port text null default '9100'::text,
+  auto_print_order boolean null default true,
+  auto_print_receipt boolean null default true,
+  voice_broadcast_enabled boolean null default true,
+  voice_volume numeric(3, 2) null default 0.8,
+  service_charge_rate numeric(4, 3) null default 0.05,
+  updated_at timestamp with time zone null default now(),
+  source_tag jsonb null,
+  constraint system_config_pkey primary key (id)
+) TABLESPACE pg_default;
+
+create index IF not exists idx_system_config_source_tag on public.system_config using gin (source_tag jsonb_path_ops) TABLESPACE pg_default;
 
 -- 菜品品类
 CREATE TABLE menu_categories (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name TEXT UNIQUE NOT NULL,
-  display_order INTEGER DEFAULT 0,
-  is_active BOOLEAN DEFAULT TRUE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  id integer not null default nextval('menu_categories_id_seq'::regclass),
+  name text not null,
+  code text not null,
+  parent_id integer null,
+  level integer not null default 1,
+  display_order integer not null default 0,
+  is_active boolean not null default true,
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now(),
+  source_tag jsonb null,
+  constraint menu_categories_pkey primary key (id),
+  constraint uq_menu_categories_code unique (code),
+  constraint uq_menu_categories_name_parent unique (name, parent_id),
+  constraint fk_menu_categories_parent foreign KEY (parent_id) references menu_categories (id) on delete set null,
+  constraint chk_menu_categories_display_order_nonneg check ((display_order >= 0)),
+  constraint chk_menu_categories_level_nonzero check ((level >= 1))
 );
 
--- 菜品资产 (金额存分为 BIGINT，前端除以100)
+create index IF not exists idx_menu_categories_source_tag on public.menu_categories using gin (source_tag jsonb_path_ops) TABLESPACE pg_default;
+
+create index IF not exists idx_menu_categories_parent on public.menu_categories using btree (parent_id) TABLESPACE pg_default;
+
+create index IF not exists idx_menu_categories_active_order on public.menu_categories using btree (is_active, display_order) TABLESPACE pg_default;
+
+create trigger trigger_menu_categories_updated_at BEFORE
+update on menu_categories for EACH row
+execute FUNCTION update_menu_categories_updated_at ();
+
+-- 菜品资产 (金额以菲律宾比索为单位存储)
 CREATE TABLE menu_dishes (
-  id TEXT PRIMARY KEY,
-  name_zh TEXT NOT NULL,
-  name_en TEXT,
-  price_cents BIGINT NOT NULL, 
-  category_id UUID REFERENCES menu_categories(id),
-  stock INTEGER DEFAULT 0,
-  image_url TEXT,
-  is_available BOOLEAN DEFAULT TRUE,
-  is_recommended BOOLEAN DEFAULT FALSE,
-  partner_id TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  idx integer null,
+  id text not null,
+  name_zh text not null,
+  name_en text null,
+  price_php integer null,
+  stock integer not null default 0,
+  image_url text null,
+  is_available boolean not null default true,
+  created_at timestamp with time zone not null default now(),
+  category_id integer null,
+  source_tag jsonb null,
+  constraint menu_dishes_new_pkey primary key (id),
+  constraint menu_dishes_new_category_id_fkey foreign KEY (category_id) references menu_categories (id) on delete set null,
+  constraint menu_dishes_new_price_php_positive check ((price_php > 0)),
+  constraint menu_dishes_new_stock_check check ((stock >= 0))
 );
+
+create index IF not exists idx_menu_dishes_new_source_tag on public.menu_dishes using gin (source_tag) TABLESPACE pg_default;
+
+create index IF not exists idx_menu_dishes_new_category on public.menu_dishes using btree (category_id) TABLESPACE pg_default;
+
+create index IF not exists idx_menu_dishes_new_available on public.menu_dishes using btree (is_available) TABLESPACE pg_default;
+
+create index IF not exists idx_menu_dishes_new_price_php on public.menu_dishes using btree (price_php) TABLESPACE pg_default;
 
 -- 订单主表 (JSONB 存储快照)
 CREATE TABLE orders (
-  id TEXT PRIMARY KEY,
-  room_id TEXT NOT NULL,
-  items JSONB NOT NULL,
-  total_amount DECIMAL(12,2) NOT NULL,
-  tax_amount DECIMAL(12,2) DEFAULT 0,
-  status TEXT DEFAULT 'pending',
-  payment_method TEXT DEFAULT 'Cash',
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  id uuid not null default gen_random_uuid (),
+  room_id text not null,
+  items jsonb not null,
+  total_amount numeric(10, 2) not null,
+  tax_amount numeric(10, 2) null default 0,
+  status text null default 'pending'::text,
+  payment_method text null default 'Cash'::text,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  updated_by uuid null,
+  source_tag text null,
+  constraint orders_pkey primary key (id),
+  constraint orders_room_id_fkey foreign KEY (room_id) references rooms (id) on delete CASCADE,
+  constraint orders_updated_by_fkey foreign KEY (updated_by) references users (id)
 );
+
+create index IF not exists idx_orders_room_id on public.orders using btree (room_id) TABLESPACE pg_default;
+
+create index IF not exists idx_orders_source_tag on public.orders using btree (source_tag) TABLESPACE pg_default;
 
 -- 用户与权限体系 (生产环境核心)
 CREATE TABLE users (
-  id UUID PRIMARY KEY REFERENCES auth.users ON DELETE CASCADE,
-  username TEXT UNIQUE NOT NULL,
-  email TEXT UNIQUE NOT NULL,
-  full_name TEXT,
-  role TEXT DEFAULT 'staff', -- admin, staff, maintainer
-  module_permissions JSONB DEFAULT '{}',
-  ip_whitelist TEXT[],
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+  id uuid not null default gen_random_uuid (),
+  email text not null,
+  full_name text null,
+  avatar_url text null,
+  metadata jsonb null default '{}'::jsonb,
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now(),
+  auth_id uuid null,
+  role text null default 'viewer'::text,
+  username text not null,
+  password text null,
+  last_login timestamp with time zone null,
+  module_permissions jsonb null,
+  ip_whitelist text[] null,
+  is_online boolean null default false,
+  source_tag jsonb null,
+  constraint users_pkey primary key (id),
+  constraint users_email_key unique (email),
+  constraint users_username_key unique (username),
+  constraint chk_users_ip_whitelist_format check (
+    (
+      (ip_whitelist is null)
+      or (
+        array_to_string(ip_whitelist, ','::text) ~ '^((\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})(,\s*)?)+$'::text
+      )
+    )
+  ),
+  constraint chk_users_role check (
+    (
+      role = any (
+        array[
+          'viewer'::text,
+          'editor'::text,
+          'admin'::text,
+          'super_admin'::text
+        ]
+      )
+    )
+  )
+) TABLESPACE pg_default;
+
+create index IF not exists idx_users_source_tag on public.users using gin (source_tag jsonb_path_ops) TABLESPACE pg_default;
+
+create index IF not exists idx_users_source_tag_user_type on public.users using gin (
+  ((source_tag -> 'user_type'::text)) jsonb_path_ops
+) TABLESPACE pg_default;
+
+create index IF not exists idx_users_source_tag_region on public.users using gin (((source_tag -> 'region'::text)) jsonb_path_ops) TABLESPACE pg_default;
+
+-- 支付配置表
+CREATE TABLE payment_configs (
+  id uuid not null default gen_random_uuid (),
+  name text not null,
+  type text not null,
+  is_active boolean null default true,
+  icon_type text null default 'credit-card'::text,
+  instructions text null,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  source_tag jsonb null,
+  constraint payment_configs_pkey primary key (id),
+  constraint chk_payment_configs_source_tag_valid check (
+    (
+      (source_tag is null)
+      or (
+        jsonb_typeof(source_tag) = any (array['object'::text, 'array'::text])
+      )
+    )
+  )
+) TABLESPACE pg_default;
+
+create index IF not exists idx_payment_configs_source_tag on public.payment_configs using gin (source_tag jsonb_path_ops) TABLESPACE pg_default;
+
+-- 房间/桌位表
+CREATE TABLE rooms (
+  idx serial not null,
+  id text not null,
+  status text null default 'ready'::text,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  source_tag text null,
+  constraint rooms_pkey primary key (id)
+) TABLESPACE pg_default;
+
+create index IF not exists idx_rooms_id on public.rooms using btree (id) TABLESPACE pg_default;
+
+create index IF not exists idx_rooms_source_tag on public.rooms using btree (source_tag) TABLESPACE pg_default;
+
+create trigger trigger_rooms_updated_at BEFORE
+update on rooms for EACH row
+execute FUNCTION update_rooms_updated_at ();
 ```
 
 ### 2. 注入超级管理员 (Seed Data)

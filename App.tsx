@@ -12,6 +12,8 @@ import FinancialCenter from './components/FinancialCenter';
 import GuestOrder from './components/GuestOrder';
 import Toast, { ToastType } from './components/Toast';
 import ErrorBoundary from './components/ErrorBoundary';
+import RLSErrorHandler from './components/RLSErrorHandler';
+import DatabaseManagement from './components/DatabaseManagement';
 import { api } from './services/api';
 import { supabase, isDemoMode } from './services/supabaseClient';
 import { User, Order, HotelRoom, Expense, Dish, Partner, SystemConfig, OrderStatus, UserRole, AppModule } from './types';
@@ -42,6 +44,7 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [apiError, setApiError] = useState<Error | null>(null);
   
   const [rooms, setRooms] = useState<HotelRoom[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -161,7 +164,11 @@ const App: React.FC = () => {
       await fn();
       await fetchData(true);
       if (successMsg) showToast(successMsg, "success");
-    } catch (err) {
+    } catch (err: any) {
+      // 检查是否为RLS错误
+      if (err.message?.includes('RLS_FORBIDDEN_403')) {
+        setApiError(err);
+      }
       showToast(t('syncError'), "error");
     } finally { setIsSyncing(false); }
   }, [fetchData, showToast, t]);
@@ -271,11 +278,20 @@ const App: React.FC = () => {
                 {currentTab === 'images' && <ImageManagement lang={lang} />}
                 {currentTab === 'users' && <StaffManagement users={users} onRefresh={() => fetchData(true)} onAddUser={(u) => wrapAsync(() => api.users.create(u))} onUpdateUser={(u) => wrapAsync(() => api.users.update(u))} onDeleteUser={(id) => wrapAsync(() => api.users.delete(id))} lang={lang} />}
                 {currentTab === 'settings' && <SystemSettings lang={lang} onChangeLang={setLang} onUpdateConfig={(c) => wrapAsync(() => api.config.update(c))} />}
+                {currentTab === 'database' && <DatabaseManagement lang={lang} />}
               </div>
             )}
           </div>
         </main>
       </div>
+      {apiError && currentUser && (
+        <RLSErrorHandler 
+          error={apiError} 
+          lang={lang} 
+          userRole={currentUser.role}
+          tableName={apiError.message.match(/table "([^"]+)"/)?.[1] || undefined}
+        />
+      )}
     </ErrorBoundary>
   );
 };

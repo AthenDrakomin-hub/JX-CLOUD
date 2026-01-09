@@ -6,12 +6,59 @@ import { createClient } from '@supabase/supabase-js';
  * V5.6 - 增强型环境变量探测
  */
 
-// 尝试从不同的全局作用域获取环境变量
+// 尝試從不同的全局作用域獲取環境變量，兼容更多部署環境
 const getEnv = (key: string): string => {
+  // 瀏覽器環境中的全局變量
+  const globalEnv = typeof window !== 'undefined' ? (window as any).__ENV__ || {} : {};
+  
+  // Vite 環境變量
   const metaEnv = (import.meta as any).env || {};
+  
+  // Node.js 環境變量
   const procEnv = (typeof process !== 'undefined' ? process.env : {}) || {};
-  // 按照优先级探测变量名
-  return metaEnv[key] || metaEnv[`VITE_${key}`] || procEnv[key] || procEnv[`VITE_${key}`] || '';
+  
+  // 瀏覽器存儲中的環境變量（作為最後備選）
+  let storageEnv = {};
+  if (typeof localStorage !== 'undefined') {
+    try {
+      const storedEnv = localStorage.getItem('jx_env');
+      if (storedEnv) {
+        storageEnv = JSON.parse(storedEnv);
+      }
+    } catch (e) {
+      // 忽略存儲錯誤
+    }
+  }
+  
+  // 按優先級順序查找環境變量
+  return (
+    // 瀏覽器全局變量
+    globalEnv[key] || 
+    globalEnv[`VITE_${key}`] || 
+    globalEnv[key.toUpperCase()] || 
+    globalEnv[`VITE_${key.toUpperCase()}`] ||
+    
+    // Vite 環境變量
+    metaEnv[key] || 
+    metaEnv[`VITE_${key}`] || 
+    metaEnv[key.toUpperCase()] || 
+    metaEnv[`VITE_${key.toUpperCase()}`] ||
+    
+    // Node.js 環境變量
+    procEnv[key] || 
+    procEnv[`VITE_${key}`] || 
+    procEnv[key.toUpperCase()] || 
+    procEnv[`VITE_${key.toUpperCase()}`] ||
+    
+    // 瀏覽器存儲
+    (storageEnv as any)[key] || 
+    (storageEnv as any)[`VITE_${key}`] || 
+    (storageEnv as any)[key.toUpperCase()] || 
+    (storageEnv as any)[`VITE_${key.toUpperCase()}`] ||
+    
+    // 默認值
+    ''
+  );
 };
 
 const SUPABASE_URL = getEnv('PROJECT_URL') || getEnv('SUPABASE_URL');

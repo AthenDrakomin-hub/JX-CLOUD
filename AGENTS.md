@@ -52,14 +52,14 @@ This is the "江西云厨终端系统" (JX Cloud) - an enterprise hospitality ma
 The system uses Supabase PostgreSQL with tables for:
 - `system_config` - Global system settings
 - `menu_categories` - Food category definitions
-- `menu_dishes` - Food items (prices stored in cents as BIGINT)
+- `menu_dishes` - Food items (prices stored in PHP as INTEGER)
 - `orders` - Order records with JSONB for items
 - `users` - User accounts with role-based permissions
 - `rooms` - Hotel room tracking
 - `expenses` - Financial tracking
 - `partners` - Business partner management
 - `ingredients` - Inventory management
-- `payments` - Payment method configurations
+- `payment_configs` - Payment method configurations
 
 ## Security Features
 
@@ -86,3 +86,12 @@ The system uses Supabase PostgreSQL with tables for:
 - Frontend intercepts access based on `module_permissions` field in users table
 - Role-based permissions with admin override capability
 - IP whitelisting for enhanced security
+
+## Additional Configuration
+
+- **Build Configuration**: Vite configuration in `vite.config.ts` includes chunk optimization with manual chunking for vendor libraries (React core, charts engine, UI icons, utilities)
+- **Constants**: Default room numbers, dish catalog, and user permissions defined in `constants.ts`
+- **Translations**: Multi-language support available via `translations.ts`
+- **Environment Detection**: Enhanced environment variable detection supporting multiple sources (Vite env, Node.js env, browser globals, localStorage)
+- **Error Handling**: RLS-specific error handling with custom error messages for permission denied scenarios
+- **Demo Mode**: Built-in demonstration mode activated when Supabase configuration is not present

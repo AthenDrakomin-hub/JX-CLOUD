@@ -1,8 +1,9 @@
 
 export enum UserRole {
-  ADMIN = 'admin',      
-  STAFF = 'staff',
-  MAINTAINER = 'maintainer' 
+  VIEWER = 'viewer',
+  EDITOR = 'editor',
+  ADMIN = 'admin',
+  SUPER_ADMIN = 'super_admin'
 }
 
 export type AppModule = 
@@ -17,7 +18,7 @@ export interface CRUDPermissions {
 
 export interface User {
   id: string;
-  email: string; // 生产环境必须字段，对齐 Supabase Auth
+  email: string;
   username: string;
   password?: string; 
   role: UserRole;
@@ -25,7 +26,13 @@ export interface User {
   lastLogin?: string;
   modulePermissions?: Partial<Record<AppModule, CRUDPermissions>>;
   ipWhitelist?: string[]; 
-  isOnline?: boolean;         
+  isOnline?: boolean;
+  fullName?: string;
+  avatarUrl?: string;
+  metadata?: any;
+  authId?: string;
+  lastLoginTime?: string;
+  sourceTag?: any;
 }
 
 export interface SystemConfig {
@@ -86,6 +93,8 @@ export interface Order {
   createdAt: string;
   updatedAt: string;
   taxAmount: number;
+  updatedBy?: string;
+  sourceTag?: string;
 }
 
 export interface Dish {

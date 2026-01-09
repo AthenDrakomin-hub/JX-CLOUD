@@ -404,6 +404,11 @@ export const translations = {
     sourceHanSans: '思源黑体 / Source Han Sans',
     intelligentAnnouncement: '智能播报 / Intelligent Announcement',
     
+    // RLS Error Messages
+    rlsForbidden: 'RLS策略阻止访问 / RLS Policy Blocked Access',
+    rlsPermissionDenied: '权限不足：RLS策略阻止访问 / Permission Denied: RLS Policy Blocked Access',
+    rlsBlocked: 'RLS策略阻止操作 / RLS Policy Blocked Operation',
+    
     // Staff Management
     nodeAuthProtocol: 'Auth Terminal Protocol',
     authTerminalSub: 'JX-Cloud Security Protocol v5.5',
