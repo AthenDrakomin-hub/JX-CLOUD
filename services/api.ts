@@ -500,9 +500,9 @@ export const api = {
           }
         });
         
-        if (response.status === 401) {
-          // 未授权，用户需要登录
-          console.warn('Unauthorized access to get config API. Redirecting to login.');
+        if (response.status === 401 || response.status === 403) {
+          // 未授权或权限不足，用户需要登录或检查权限
+          console.warn(`Authorization error (${response.status}) accessing config API. Redirecting to login.`);
           checkAuthAndRedirect();
           throw new Error('Authentication required');
         }
