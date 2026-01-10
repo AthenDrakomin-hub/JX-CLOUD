@@ -23,7 +23,7 @@ This is the "江西云厨终端系统" (JX Cloud) - an enterprise hospitality ma
 - **Authentication**: Supabase Auth with role-based permissions (admin, staff, maintainer)
 - **State Management**: React hooks in App.tsx with centralized data fetching
 - **UI Components**: Located in `components/` directory with modular structure
-- **Edge Functions**: Vercel edge functions in `api/` directory for secure API gateway
+- **Edge Functions**: Vercel edge functions in `api/` directory for secure API gateway with modular routes in `/api/v1/`
 - **Validation Layer**: Production validation utilities in `utils/` directory
 
 ## Key Data Flow
@@ -45,7 +45,12 @@ This is the "江西云厨终端系统" (JX Cloud) - an enterprise hospitality ma
 - `utils/productionValidation.ts` - Production environment validation logic
 - `utils/validationRunner.ts` - Validation runner script
 - `components/` - UI components directory
-- `api/index.ts` - Vercel edge function for secure API gateway
+- `api/index.ts` - Vercel edge function root API gateway
+- `api/v1/route.ts` - Vercel edge function for versioned API endpoints
+- `api/_shared/` - Shared utilities for API functions
+- `api/admin/` - Administrative API endpoints
+- `api/storage/` - Storage-related API endpoints
+- `api/users/` - User management API endpoints
 
 ## Database Schema
 
@@ -83,6 +88,7 @@ The system uses Supabase PostgreSQL with tables for:
   - `npm run validate:production` - Run comprehensive production validation
   - `npm run validate:connection` - Validate Supabase connection
   - `npm run test:validation` - Run validation tests with environment check
+- Production readiness checklist includes SSL/TLS, JWT auth, CORS policies, and monitoring configurations
 
 ## Module Access Control
 
@@ -107,6 +113,8 @@ The system uses Supabase PostgreSQL with tables for:
 - **Environment Detection**: Enhanced environment variable detection supporting multiple sources (Vite env, Node.js env, browser globals, localStorage)
 - **Error Handling**: RLS-specific error handling with custom error messages for permission denied scenarios
 - **Demo Mode**: Built-in demonstration mode activated when Supabase configuration is not present
+- **Edge Function API Structure**: Modular API architecture with routes in `/api/v1/` for enhanced security and maintainability
+- **API Gateway**: Edge functions in `/api/` directory serve as secure API gateway that handles sensitive operations requiring Service Role permissions
 
 ## Testing Information
 
@@ -127,3 +135,149 @@ The `services/api.ts` file implements a comprehensive CRUD API service with meth
 - config: get, update
 
 Each method includes proper error handling with RLS error detection.
+
+For system configuration retrieval, the service uses the Supabase Edge Function:
+- `GET https://zlbemopcgjohrnyyiwvs.supabase.co/functions/v1/global-config` with Authorization header
+- Falls back to direct Supabase database access if the Edge Function is unavailable
+
+## Edge Function API Structure
+
+The system uses Supabase Edge Functions for backend operations:
+
+### Supabase Edge Functions:
+- `global-config` - Supabase-hosted function for retrieving system configuration:
+  - URL: `https://zlbemopcgjohrnyyiwvs.supabase.co/functions/v1/global-config`
+  - `GET` method with `Authorization: Bearer <access_token>` header
+  - Uses `requireAuth` middleware to validate authorization token
+  - Leverages `SUPABASE_SERVICE_ROLE_KEY` for direct database access (bypassing RLS)
+  - Returns system configuration with user role information for debugging/auditing
+  - Supports CORS with configurable origins
+  - Unified error response format: `{ error: { message, details? } }`
+
+## Constants and Default Values
+
+The system defines initial data in `constants.ts`:
+- ROOM_NUMBERS: 64 standard rooms (8201-8232, 8301-8332) plus VIP rooms (VIP-666, VIP-888, VIP-000)
+- INITIAL_DISHES: Over 120 predefined dishes across multiple categories (主食套餐类, 中式炒菜类, 粤式菜品, 中式主食类, 基础主食)
+- INITIAL_USERS: Default admin user with full permissions
+- CATEGORIES: Menu categories including '主食套餐类', '中式炒菜类', '粤式菜品', '中式主食类', '基础主食'
+
+## Environment Configuration
+
+The system uses enhanced environment variable detection supporting multiple sources:
+- Vite environment variables (import.meta.env)
+- Node.js process.env
+- Browser globals (window.__ENV__)
+- LocalStorage fallback
+
+Environment variable prefixes:
+- Frontend (requires VITE_ prefix for client-side access):
+  - `VITE_PROJECT_URL` or `VITE_SUPABASE_URL`: Supabase project URL
+  - `VITE_SUPABASE_ANON_KEY`: Supabase anonymous key
+- Edge Functions (no prefix required, accessed via process.env):
+  - `SUPABASE_URL`: Supabase URL
+  - `SUPABASE_SERVICE_ROLE_KEY`: Service role key
+
+## Demo Mode
+
+The system includes a built-in demo mode that activates when Supabase configuration is not present:
+- Uses localStorage for user data persistence
+- Provides mock data for all entities
+- Simulates all API operations locally
+- Identified by the `isDemoMode` flag in `supabaseClient.ts`
+
+## Additional Security Features
+
+- RLS (Row Level Security) specific error handling with custom error messages
+- Automatic service charge calculation (5% by default) on orders
+- IP whitelisting for enhanced account security
+- JWT token authentication with automatic refresh
+- Client-side data validation before API submission
+
+## Row Level Security (RLS) Policies
+
+The database implements comprehensive RLS policies for fine-grained access control using standardized role-based patterns:
+
+### Recommended RLS Policy Structure
+
+Current policies should follow the unified pattern using `auth.jwt() ->> 'role'` for role determination:
+
+**users**: User management with role-based access
+- Policy: `users_admin_all` - Allows all operations for 'admin' role
+- Policy: `users_developer_all` - Allows all operations for 'developer' role
+- Policy: `users_authenticated_select` - Allows SELECT operations for any authenticated user
+
+**system_config**: System-wide configuration with restricted access
+- Policy: `Allow All Authenticated Read Access to System Config` - Allows SELECT operations for any authenticated user
+- Policy: `system_config_admin_all` - Allows all operations for 'admin' role
+- Policy: `system_config_developer_all` - Allows all operations for 'developer' role
+
+**menu_categories**: Category management with role-based access
+- Policy: `menu_categories_admin_dev_all` - Allows all operations for 'admin' and 'developer' roles
+- Policy: `menu_categories_public_select` - Allows SELECT operations for public (unauthenticated) users
+
+**rooms**: Room management with role-based access
+- Policy: `rooms_admin_dev_all` - Allows all operations for 'admin' and 'developer' roles
+- Policy: `rooms_staff_select` - Allows SELECT operations for 'staff' role only
+
+**ingredients**: Inventory management with role-based access
+- Policy: `ingredients_admin_dev_all` - Allows all operations for 'admin' and 'developer' roles
+- Policy: `ingredients_staff_select` - Allows SELECT operations for 'staff' role only
+
+**material_images**: Media assets with role-based access
+- Policy: `material_images_admin_dev_all` - Allows all operations for 'admin' and 'developer' roles
+- Policy: `material_images_staff_select` - Allows SELECT operations for 'staff' role only
+
+**partners**: Partner management with tiered access
+- Policy: `partners_admin_all` - Allows all operations for 'admin' role
+- Policy: `partners_dev_maintainer_all` - Allows all operations for 'developer' and 'maintainer' roles
+- Policy: `Allow Staff Read Access to Partners` - Allows SELECT operations for 'staff' role
+
+**expenses**: Multi-role expense management
+- Policy: `expenses_admin_dev_all` - Allows all operations for 'admin' and 'developer' roles
+- Policy: `expenses_staff_select` - Allows SELECT operations for 'staff' role only
+
+**payment_configs**: Payment configuration with role-based access
+- Policy: `payment_configs_admin_all` - Allows all operations for 'admin' role
+- Policy: `payment_configs_staff_select` - Allows SELECT operations for 'staff' role only
+
+**audit_logs**: Audit log access restricted to admin role
+- Policy: `audit_logs_admin_select` - Allows all operations for 'admin' role only
+
+**orders**: Complex order access based on user role and ownership
+- Policy: `orders_admin_via_users` - Allows all operations for users with 'admin' role
+- Policy: `orders_staff_own` - Allows operations only on orders created by the user (updated_by = auth.uid())
+- Policy: `orders_viewer_completed` - Allows SELECT operations for 'authenticated' users only on completed orders
+
+### Policy Best Practices
+
+- All policies should use `auth.jwt() ->> 'role'` for consistent role checking
+- Overly permissive policies (USING (true) / WITH CHECK (true)) should be replaced with specific role-based checks
+- Policies should be consolidated to avoid duplicate functionality
+- Public access should be granted sparingly and explicitly
+- Ownership-based policies (using auth.uid()) should be used for personal data access
+
+### Common RLS Issues and Troubleshooting
+
+- **403 Forbidden errors**: Usually indicate insufficient role permissions for the operation. Check that the user has the appropriate role (admin, developer, etc.) for the requested action.
+- **OPTIONS vs POST requests**: The OPTIONS request is a CORS preflight that checks if the actual request is allowed. If OPTIONS passes but POST fails with 403, the issue is typically with RLS policies, not CORS configuration.
+- **System config access**: The `system_config` table typically allows SELECT for authenticated users but restricts INSERT/UPDATE/DELETE to admin roles only.
+- **Permission debugging**: Use the RLSErrorHandler component to get specific error messages and policy suggestions when encountering access issues.
+
+### API Endpoints and Deployment Troubleshooting
+
+- **404 Not Found errors**: Indicate that the requested API endpoint doesn't exist or isn't properly deployed. Common causes:
+  - Endpoint not deployed to Supabase functions
+  - URL path incorrect (case-sensitive)
+  - Missing edge function configuration
+  - Verify the function is deployed by checking Supabase dashboard
+
+- **API Deployment Structure**: 
+  - Supabase Edge functions are deployed to Supabase platform
+  - Verify environment variables are set in Supabase deployment settings
+
+- **Common API Issues**:
+  - Missing VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY (frontend) or SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY (edge functions) in environment variables
+  - Authentication token not properly passed to edge functions
+  - CORS misconfiguration between frontend and edge function
+  - Rate limiting on edge functions causing intermittent failures

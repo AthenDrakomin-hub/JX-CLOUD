@@ -492,7 +492,7 @@ export const api = {
       
       // 尝试使用新的 API 端点
       try {
-        const response = await fetch('/api/v1/config/global', {
+        const response = await fetch('https://zlbemopcgjohrnyyiwvs.supabase.co/functions/v1/global-config', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
