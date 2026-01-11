@@ -154,6 +154,16 @@ The system uses Supabase Edge Functions for backend operations:
   - Supports CORS with configurable origins
   - Unified error response format: `{ error: { message, details? } }`
 
+- `custom-jwt-claims` - Supabase-hosted function for adding custom claims to JWT tokens:
+  - URL: `https://zlbemopcgjohrnyyiwvs.supabase.co/functions/v1/custom-jwt-claims`
+  - Called automatically by Supabase Auth to enrich JWT tokens with custom claims
+  - Implements HMAC-SHA256 signature verification for security
+  - Supports verification headers `x-supabase-signature` or `x-hook-signature`
+  - Format: `v1,whsec_<sig>` or `v1,<sig>`
+  - Uses `CUSTOM_ACCESS_TOKEN_SECRET` environment variable for signature verification
+  - Adds custom claims to JWT tokens based on user roles and permissions from the database
+  - Enables fine-grained access control at the Hasura/GraphQL level
+
 ## Constants and Default Values
 
 The system defines initial data in `constants.ts`:
