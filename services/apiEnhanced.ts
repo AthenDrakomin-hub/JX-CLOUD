@@ -39,8 +39,19 @@ export async function apiFetch(path: string, opts: ApiOptions = {}) {
     const refreshedSession = await refreshSessionIfNeeded();
     
     if (!refreshedSession) {
-      // 如果无法刷新会话，登出用户
+      // 如果无法刷新会话，登出用户并清除所有会话状态
       await supabase.auth.signOut();
+      
+      // 清除所有前端会话状态和缓存
+      if (typeof window !== 'undefined') {
+        localStorage.clear();
+        sessionStorage.clear();
+        // Clear cookies by setting them to expire
+        document.cookie.split(";").forEach(function(c) { 
+          document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+        });
+      }
+      
       throw new Error('Unauthorized and session refresh failed');
     }
     

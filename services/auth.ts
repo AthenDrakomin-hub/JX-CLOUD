@@ -1,4 +1,3 @@
-
 /**
  * JX CLOUD - 极简 TOTP 算法实现 (Web Crypto API)
  * 支持与 Google Authenticator 对齐
@@ -87,3 +86,32 @@ export const totp = {
     return otp.toString().padStart(6, '0');
   }
 };
+
+/**
+ * Google OAuth 登录功能
+ */
+export async function signInWithGoogle() {
+  // 导入 supabase 客户端
+  const { supabase } = await import('./supabaseClient');
+  
+  if (!supabase) {
+    throw new Error('Supabase client not initialized');
+  }
+
+  try {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/`,
+      },
+    });
+    
+    if (error) throw error;
+    
+    // 成功触发 OAuth 后会被重定向到 Google 登录页
+    console.log('Google OAuth initiated successfully');
+  } catch (err) {
+    console.error('Google sign-in error', err);
+    throw err;
+  }
+}

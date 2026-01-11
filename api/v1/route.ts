@@ -140,6 +140,76 @@ export default async function handler(req: Request) {
       return jsonResponse(data, 200);
     }
 
+    // Handle /api/v1/assign-role (POST for assigning user roles)
+    if (path === '/assign-role' && req.method === 'POST') {
+      const body = await req.json();
+      const { email, userId } = body;
+
+      if (!email || !userId) {
+        return jsonResponse({ error: 'Missing required fields: email, userId' }, 400);
+      }
+
+      // Load admin email configuration from system_config table
+      const { data: configData, error: configError } = await ctx.serviceClient
+        .from('system_config')
+        .select('source_tag')
+        .eq('id', 'global')
+        .single();
+
+      let adminEmails: string[] = [];
+      let adminEmailDomains: string[] = [];
+
+      if (!configError && configData?.source_tag) {
+        // Extract admin emails and domains from configuration
+        adminEmails = configData.source_tag.adminEmails || [];
+        adminEmailDomains = configData.source_tag.adminEmailDomains || [];
+      } else {
+        // Fallback to default configuration if not found in database
+        adminEmails = ["athendrakominproton.me [blocked]", "28111284084qq.com [blocked]"];
+        adminEmailDomains = [];
+      }
+
+      // Determine user role based on email configuration
+      let assignedRole = 'viewer'; // Default role
+
+      // Process admin emails - remove blocked ones from consideration
+      const validAdminEmails = adminEmails
+        .map(adminEmail => {
+          // Remove [blocked] tag if present and trim whitespace
+          return adminEmail.replace(/\s*\[blocked\]\s*/g, '').trim();
+        })
+        .filter(cleanEmail => cleanEmail && cleanEmail.length > 0); // Remove empty strings
+
+      // Check if email is in the valid admin list
+      if (validAdminEmails.includes(email)) {
+        assignedRole = 'admin';
+      } else {
+        // Check if email domain matches any admin domain
+        const emailDomain = email.split('@')[1]?.toLowerCase();
+        if (emailDomain && adminEmailDomains.some(domain => emailDomain.endsWith(domain.toLowerCase()))) {
+          assignedRole = 'admin';
+        }
+      }
+
+      // Update the user's role in the users table using service role
+      const { error: updateError } = await ctx.serviceClient
+        .from('users')
+        .update({ role: assignedRole })
+        .eq('id', userId);
+
+      if (updateError) {
+        console.error('Error updating user role:', updateError);
+        return jsonResponse({ error: 'Failed to update user role', details: updateError.message }, 500);
+      }
+
+      return jsonResponse({ 
+        message: 'Role assigned successfully', 
+        userId, 
+        email, 
+        assignedRole 
+      }, 200);
+    }
+
     return jsonResponse({ 
       error: "Protocol mismatch", 
       message: "API Node reached, but specific endpoint not defined." 

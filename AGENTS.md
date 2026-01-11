@@ -281,3 +281,9 @@ Current policies should follow the unified pattern using `auth.jwt() ->> 'role'`
   - Authentication token not properly passed to edge functions
   - CORS misconfiguration between frontend and edge function
   - Rate limiting on edge functions causing intermittent failures
+
+## Type Checking and Linting
+
+- Use `tsc` for type checking (part of the build process)
+- No dedicated linting configuration found in the project (no ESLint/Prettier setup detected)
+- The build process includes type checking as part of the `npm run build` command

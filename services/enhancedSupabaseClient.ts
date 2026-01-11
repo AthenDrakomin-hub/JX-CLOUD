@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient, Session, User } from '@supabase/supabase-js';
+import { isDemoMode } from './supabaseClient';
 
 // 尝試從不同的全局作用域獲取環境變量，兼容更多部署環境
 const getEnv = (key: string): string => {
@@ -58,6 +59,11 @@ const getEnv = (key: string): string => {
 const SUPABASE_URL = getEnv('PROJECT_URL') || getEnv('SUPABASE_URL');
 const SUPABASE_ANON_KEY = getEnv('SUPABASE_ANON_KEY'); // 仅使用 anon key，绝不能使用 service_role key
 
+console.log("ENHANCED DEBUG: getEnv('PROJECT_URL') returned:", getEnv('PROJECT_URL'));
+console.log("ENHANCED DEBUG: getEnv('SUPABASE_URL') returned:", getEnv('SUPABASE_URL'));
+console.log("ENHANCED DEBUG: Final SUPABASE_URL used:", SUPABASE_URL);
+console.log("ENHANCED DEBUG: Final SUPABASE_ANON_KEY used (first 5 chars):", SUPABASE_ANON_KEY ? SUPABASE_ANON_KEY.substring(0, 5) : "N/A");
+
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   console.warn('Missing Supabase env vars SUPABASE_URL or SUPABASE_ANON_KEY');
 }
@@ -109,4 +115,37 @@ export async function refreshSessionIfNeeded() {
   }
   
   return session;
+}
+
+// 同步用户角色到 auth.users 表的函数
+// 注意：这个函数依赖于数据库中已创建的 sync_user_role_to_auth 函数和触发器
+export async function syncUserRoleToAuth(userId: string, role: string) {
+  if (isDemoMode) {
+    // 演示模式下不执行数据库操作
+    return;
+  }
+
+  if (!supabase) {
+    throw new Error('Supabase client not initialized');
+  }
+
+  try {
+    // 调用数据库函数同步角色
+    const { data, error } = await supabase
+      .rpc('sync_user_role_to_auth', { 
+        user_id_param: userId,
+        role_param: role
+      });
+
+    if (error) {
+      console.error('Failed to sync user role to auth:', error);
+      throw error;
+    }
+
+    console.log('User role synced to auth successfully:', data);
+    return data;
+  } catch (error) {
+    console.error('Error syncing user role to auth:', error);
+    throw error;
+  }
 }

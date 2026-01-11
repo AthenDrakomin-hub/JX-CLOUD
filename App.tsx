@@ -100,11 +100,80 @@ const App: React.FC = () => {
   useEffect(() => {
     const initAuth = async () => {
       try {
+        // 检查是否是 OAuth 回调
+        const urlParams = new URLSearchParams(window.location.search);
+        const error = urlParams.get('error');
+        if (error) {
+          console.error('OAuth error:', error);
+          showToast('认证失败，请重试', 'error');
+          // 清除 URL 参数
+          window.history.replaceState({}, document.title, window.location.pathname);
+          setIsAuthChecking(false);
+          return;
+        }
+
+        // 检查是否是 OAuth 回调并处理会话
+        const isOAuthCallback = urlParams.has('provider_access_token') || urlParams.has('code') || urlParams.has('error') || urlParams.has('access_token');
+        if (isOAuthCallback) {
+          if (supabase) {
+            try {
+              // 处理 OAuth 回调并获取会话
+              const { data, error } = await supabase.auth.getSessionFromUrl();
+              if (error) throw error;
+
+              const session = data?.session;
+              if (session?.user) {
+                // 清除 URL 参数
+                window.history.replaceState({}, document.title, window.location.pathname);
+                
+                // 准备用户资料同步的载荷
+                const user = session.user;
+                const userMetadata = (user.user_metadata ?? (user as any).raw_user_meta_data) as Record<string, any> | undefined;
+                
+                const profilePayload = {
+                  id: user.id,
+                  email: user.email ?? userMetadata?.email ?? null,
+                  name: userMetadata?.name ?? userMetadata?.full_name ?? null,
+                  avatar_url: userMetadata?.picture ?? userMetadata?.avatar_url ?? null,
+                  raw_user_meta_data: user.user_metadata ?? (user as any).raw_user_meta_data ?? {},
+                };
+                
+                // 使用 API 同步用户资料到数据库
+                try {
+                  await api.users.upsertProfile(profilePayload);
+                } catch (syncError) {
+                  console.error('Failed to sync user profile:', syncError);
+                  // 即使同步失败，也要让用户继续使用应用
+                }
+                
+                // 获取用户资料并更新状态
+                const profile = await api.users.getProfile(session.user.id);
+                setCurrentUser(profile);
+                
+                // 成功登录后，可能需要同步用户角色到 auth.users 表
+                try {
+                  const { syncUserRoleToAuth } = await import('./services/enhancedSupabaseClient');
+                  await syncUserRoleToAuth(session.user.id, profile.role);
+                } catch (syncError) {
+                  console.error('Failed to sync user role to auth:', syncError);
+                }
+              }
+            } catch (callbackError) {
+              console.error('OAuth callback handling error:', callbackError);
+              showToast('登录处理失败，请重试', 'error');
+            }
+          }
+          setIsAuthChecking(false);
+          return;
+        }
+
         if (isDemoMode) {
           const saved = localStorage.getItem('jx_user');
           if (saved) setCurrentUser(JSON.parse(saved));
+          setIsAuthChecking(false);
           return;
         }
+        
         if (supabase) {
           const { data: { session } } = await supabase.auth.getSession();
           if (session?.user) {
@@ -131,10 +200,23 @@ const App: React.FC = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // 清除所有前端会话状态和缓存
+    localStorage.clear();
+    sessionStorage.clear();
+    // Clear cookies by setting them to expire
+    document.cookie.split(";").forEach(function(c) { 
+      document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+    });
+    
     setIsLoggingIn(true);
     const fd = new FormData(e.currentTarget as HTMLFormElement);
     const email = fd.get('email') as string;
     const password = fd.get('password') as string;
+    
+    // 仔细检查并 log 登录参数
+    console.log('Login attempt with email:', email, 'and password:', password ? '*'.repeat(password.length) : '');
+    
     try {
       if (isDemoMode) {
         const user: User = { id: 'u-demo', name: '演示管理员', email, username: 'demo', role: UserRole.ADMIN, modulePermissions: {} };
@@ -149,20 +231,33 @@ const App: React.FC = () => {
         
         // 登录成功后，获取返回的会话和用户资料
         if (data?.session?.user) {
+          console.log('Login successful, user ID:', data.session.user.id);
+          // 通过我们的 API 获取用户资料，确保获取最新的角色和权限信息
           const profile = await api.users.getProfile(data.session.user.id);
           setCurrentUser(profile);
           setIsAuthChecking(false); // 确保认证检查完成
         }
       }
     } catch (err: any) {
+      console.error('Login error:', err);
       showToast(err.message || t('loginFailed'), "error");
     } finally { setIsLoggingIn(false); }
   };
 
   const handleLogout = async () => {
+    // 清除所有前端会话状态和缓存
     if (!isDemoMode && supabase) await supabase.auth.signOut();
     setCurrentUser(null);
     localStorage.removeItem('jx_user');
+    
+    // 额外清除可能的缓存和会话数据
+    localStorage.clear();
+    sessionStorage.clear();
+    // Clear cookies by setting them to expire
+    document.cookie.split(";").forEach(function(c) { 
+      document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+    });
+    
     showToast(lang === 'zh' ? '安全退出成功' : 'Logged out safely', "info");
   };
 
@@ -183,7 +278,8 @@ const App: React.FC = () => {
 
   const hasAccess = useMemo(() => {
     if (!currentUser) return false;
-    if (currentUser.role === UserRole.ADMIN) return true;
+    // 检查是否为管理员（admin 或 super_admin）
+    if (currentUser.role === UserRole.ADMIN || currentUser.role === UserRole.SUPER_ADMIN) return true;
     if (currentTab === 'dashboard') return true;
     const perms = currentUser.modulePermissions || {};
     if (currentTab === 'financial_hub') return !!(perms.finance?.enabled || perms.partners?.enabled || perms.payments?.enabled);
@@ -234,6 +330,29 @@ const App: React.FC = () => {
                 {isLoggingIn ? <Loader2 className="animate-spin" size={20} /> : <><Lock size={16} />确认接入</>}
               </button>
             </form>
+            
+            <div className="mt-6">
+              <button 
+                onClick={async () => {
+                  try {
+                    const { signInWithGoogle } = await import('./services/auth');
+                    await signInWithGoogle();
+                  } catch (error) {
+                    console.error('Google sign-in error', error);
+                    showToast('Google 登录失败，请重试', 'error');
+                  }
+                }}
+                className="w-full py-3 bg-red-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest flex items-center justify-center gap-3 active:scale-95 transition-all"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M22.56 12.25C22.56 11.47 22.49 10.72 22.36 10H12V14.26H17.92C17.66 15.63 16.88 16.79 15.71 17.57V20.34H19.28C21.36 18.42 22.56 15.6 22.56 12.25Z" fill="#4285F4"/>
+                  <path d="M12 23C14.97 23 17.46 22.02 19.28 20.34L15.71 17.57C14.73 18.23 13.48 18.66 12 18.66C9.14 18.66 6.71 16.6 5.83 13.9H2.18V16.74C3.98 20.1 7.71 22.41 12 23Z" fill="#34A853"/>
+                  <path d="M5.83 13.9C5.62 13.3 5.49 12.66 5.49 12C5.49 11.34 5.62 10.7 5.83 10.1V7.26H2.18C1.43 8.75 1 10.45 1 12.25C1 14.05 1.43 15.75 2.18 17.24L5.83 14.4V13.9Z" fill="#FBBC05"/>
+                  <path d="M12 5.34C13.48 5.34 14.83 5.88 15.96 6.92L19.34 3.54C17.45 1.84 14.97 1 12 1C7.71 1 3.98 3.31 2.18 6.74L5.83 9.58C6.71 6.88 9.14 5.34 12 5.34Z" fill="#EA4335"/>
+                </svg>
+                使用 Google 登录
+              </button>
+            </div>
           </div>
         </div>
       </div>

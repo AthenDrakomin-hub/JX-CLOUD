@@ -64,6 +64,11 @@ const getEnv = (key: string): string => {
 const SUPABASE_URL = getEnv('PROJECT_URL') || getEnv('SUPABASE_URL');
 const SUPABASE_KEY = getEnv('SUPABASE_ANON_KEY'); // 仅使用 anon key，绝不能使用 service_role key
 
+console.log("DEBUG: getEnv('PROJECT_URL') returned:", getEnv('PROJECT_URL'));
+console.log("DEBUG: getEnv('SUPABASE_URL') returned:", getEnv('SUPABASE_URL'));
+console.log("DEBUG: Final SUPABASE_URL used:", SUPABASE_URL);
+console.log("DEBUG: Final SUPABASE_ANON_KEY used (first 5 chars):", SUPABASE_KEY ? SUPABASE_KEY.substring(0, 5) : "N/A");
+
 export const supabaseUrl = SUPABASE_URL;
 export const isDemoMode = !SUPABASE_URL || !SUPABASE_KEY;
 
