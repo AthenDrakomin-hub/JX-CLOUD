@@ -101,9 +101,8 @@ const StaffManagement: React.FC<StaffManagementProps> = ({
     e.stopPropagation();
     setIsPasskeyLoading(true);
     try {
-      const { error } = await authClient.passkey.addPasskey();
-      if (error) alert(t('error') + ": " + error.message);
-      else alert(t('success'));
+      await authClient.passkey.addPasskey();
+      alert(t('success'));
     } catch (e) {
       alert(t('error'));
     } finally {

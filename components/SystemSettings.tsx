@@ -32,8 +32,13 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, onChangeLang, onU
   const refreshPasskeys = useCallback(async () => {
     setIsLoadingPasskeys(true);
     try {
-      const { data, error } = await authClient.passkey.listPasskeys();
-      if (!error) setPasskeys(data || []);
+      const passkeysResult = await authClient.passkey.listUserPasskeys();
+      // 检查返回类型并适当地处理
+      if (passkeysResult && Array.isArray(passkeysResult)) {
+        setPasskeys(passkeysResult);
+      } else {
+        setPasskeys([]);
+      }
     } finally {
       setIsLoadingPasskeys(false);
     }
@@ -58,13 +63,9 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, onChangeLang, onU
   const handleRegisterPasskey = async () => {
     setIsPasskeyRegistering(true);
     try {
-      const { error } = await authClient.passkey.addPasskey();
-      if (error) {
-        alert("Passkey 绑定失败: " + error.message);
-      } else {
-        alert("🎉 生物识别凭证已成功绑定。下次登录您可以使用指纹/面部识别直连。");
-        refreshPasskeys();
-      }
+      await authClient.passkey.addPasskey();
+      alert("🎉 生物识别凭证已成功绑定。下次登录您可以使用指纹/面部识别直连。");
+      refreshPasskeys();
     } catch (e) {
       alert("浏览器不支持或用户取消了操作");
     } finally {

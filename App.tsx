@@ -23,7 +23,7 @@ import {
   HotelRoom, Order, Dish, OrderStatus, 
   Expense, Partner, Category, SystemConfig, User, UserRole 
 } from './types';
-import { Language, getTranslation } from '../translations';
+import { Language, getTranslation } from './translations';
 import { Bell, Command, Loader2, ShieldCheck, Wifi, WifiOff } from 'lucide-react';
 import ErrorBoundary from './components/ErrorBoundary';
 
@@ -103,7 +103,7 @@ const App: React.FC = () => {
   // Realtime Subscriptions
   useEffect(() => {
     if (isDemoMode || !supabase || !session?.user) return;
-    const channel = supabase.channel('orders_realtime_v11').on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+    const channel = supabase.channel('orders_realtime_v11').on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload: any) => {
         if (payload.eventType === 'INSERT') {
           const updatedOrder = { ...payload.new, totalAmount: Number((payload.new as any).total_amount) } as any;
           setOrders(prev => [updatedOrder, ...prev]);
@@ -112,7 +112,7 @@ const App: React.FC = () => {
         } else {
           refreshData();
         }
-    }).subscribe(s => setIsRealtimeActive(s === 'SUBSCRIBED'));
+    }).subscribe((s: any) => setIsRealtimeActive(s === 'SUBSCRIBED'));
     return () => { supabase.removeChannel(channel); };
   }, [session, lang, t, refreshData]);
 

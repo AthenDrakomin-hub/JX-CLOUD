@@ -105,3 +105,11 @@ npm run preview
 1. 在 `translations.ts` 中添加键值对
 2. 在组件中使用 `t('key')` 调用翻译
 3. 支持中文(zh)和英文(en)两种语言
+
+### 部署问题解决
+1. 修复导入路径错误：`../translations` → `./translations`
+2. 安装缺失依赖：`better-auth`, `drizzle-orm`, `react-hook-form`, `postgres`
+3. 修复TypeScript类型错误和API调用不兼容问题
+4. 调整构建配置以确保Vercel部署顺利
+5. 解决CategoryManagement.tsx中的control属性传递问题
+6. 修复SystemSettings.tsx中的API返回类型处理

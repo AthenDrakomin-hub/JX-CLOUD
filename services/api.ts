@@ -45,7 +45,7 @@ export const api = {
       if (isDemoMode || !supabase) return Array.from({length: 20}, (_, i) => ({ id: (8201 + i).toString(), status: 'ready' }));
       const { data, error } = await supabase.from('rooms').select('*').order('id');
       if (error) throw error;
-      return data.map(r => ({ id: r.id, status: r.status }));
+      return data.map((r: any) => ({ id: r.id, status: r.status }));
     },
     updateStatus: async (id: string, status: string) => {
       if (isDemoMode || !supabase) return;
@@ -62,7 +62,7 @@ export const api = {
       }
       const { data, error } = await query.order('id');
       if (error) return INITIAL_DISHES;
-      return data.map(d => ({
+      return data.map((d: any) => ({
         id: d.id, name: d.name, name_en: d.name_en, description: d.description,
         tags: d.tags || [], price: Number(d.price), category: d.category,
         stock: d.stock, image_url: d.image_url, is_available: d.is_available,
@@ -106,7 +106,7 @@ export const api = {
       }
       const { data, error } = await query.order('created_at', { ascending: false });
       if (error) return [];
-      return data.map(o => ({
+      return data.map((o: any) => ({
         id: o.id, roomId: o.room_id, customerId: o.customer_id, items: o.items,
         totalAmount: Number(o.total_amount), status: o.status as OrderStatus,
         paymentMethod: o.payment_method, paymentProof: o.payment_proof,
@@ -134,7 +134,7 @@ export const api = {
       if (isDemoMode || !supabase) return INITIAL_CATEGORIES;
       const { data, error } = await supabase.from('menu_categories').select('*').order('display_order');
       if (error || !data) return INITIAL_CATEGORIES;
-      return data.map(c => ({
+      return data.map((c: any) => ({
         id: c.id, name: c.name, name_en: c.name_en, code: c.code, level: c.level,
         display_order: c.display_order, is_active: c.is_active, parent_id: c.parent_id, partnerId: c.partner_id
       }));
@@ -153,7 +153,7 @@ export const api = {
     getAll: async (): Promise<Partner[]> => {
       if (isDemoMode || !supabase) return [];
       const { data } = await supabase.from('partners').select('*').order('name');
-      return (data || []).map(p => ({
+      return (data || []).map((p: any) => ({
         id: p.id, name: p.name, ownerName: p.owner_name, status: p.status,
         commissionRate: Number(p.commission_rate), balance: Number(p.balance),
         contact: p.contact, email: p.email, authorizedCategories: p.authorized_categories || [],
@@ -201,7 +201,7 @@ export const api = {
     getAll: async (): Promise<Expense[]> => {
       if (isDemoMode || !supabase) return [];
       const { data } = await supabase.from('expenses').select('*').order('date', { ascending: false });
-      return (data || []).map(e => ({
+      return (data || []).map((e: any) => ({
         id: e.id, amount: Number(e.amount), category: e.category, date: e.date
       }));
     },
@@ -221,7 +221,7 @@ export const api = {
     getAll: async (): Promise<User[]> => {
       if (isDemoMode || !supabase) return [];
       const { data } = await supabase.from('users').select('*').order('role');
-      return (data || []).map(u => ({
+      return (data || []).map((u: any) => ({
         id: u.id, username: u.username, email: u.email, role: u.role as UserRole,
         name: u.name, partnerId: u.partner_id, modulePermissions: u.module_permissions
       }));
@@ -251,7 +251,7 @@ export const api = {
       if (isDemoMode || !supabase) return [];
       const { data, error } = await supabase.from('payment_methods').select('*').order('sort_order');
       if (error) return [];
-      return data.map(p => ({
+      return data.map((p: any) => ({
         id: p.id, name: p.name, name_en: p.name_en, currency: p.currency,
         currency_symbol: p.currency_symbol, exchange_rate: Number(p.exchange_rate),
         isActive: p.is_active, payment_type: p.payment_type, sort_order: p.sort_order,
@@ -295,7 +295,7 @@ export const api = {
       if (isDemoMode || !supabase) return [];
       const { data, error } = await supabase.from('ingredients').select('*').order('name');
       if (error) return [];
-      return data.map(i => ({
+      return data.map((i: any) => ({
         id: i.id, name: i.name, unit: i.unit, stock: Number(i.stock),
         minStock: Number(i.min_stock), category: i.category, last_restocked: i.last_restocked
       }));

@@ -42,9 +42,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang }) => {
       console.log("Master authority detected. Activating Local Session Injection...");
       // 尝试匿名认证作为占位符
       try {
-        await authClient.signIn.anonymous({
-          metadata: { role: 'admin', isRoot: true }
-        });
+        await authClient.signIn.anonymous();
       } catch (e) {
         console.warn("Remote auth node unreachable, proceeding with local bypass.");
       }
@@ -64,12 +62,12 @@ const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang }) => {
     setIsPasskeyLoading(true);
     setError(null);
     try {
-      const { error: authError } = await authClient.signIn.passkey({ callbackURL: "/" });
-      if (authError && authError.message !== 'User canceled') {
+      await authClient.signIn.passkey();
+      window.location.href = "/";
+    } catch (err: any) {
+      if (err.message !== 'User canceled') {
         setError(t('auth_passkey_error'));
       }
-    } catch (err) {
-      setError(t('auth_passkey_error'));
     } finally {
       setIsPasskeyLoading(false);
     }

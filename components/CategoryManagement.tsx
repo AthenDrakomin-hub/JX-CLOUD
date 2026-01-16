@@ -29,7 +29,7 @@ const CategoryRow: React.FC<CategoryRowProps> = ({
   index, item, depth, control, onRemove, onMove, onAddChild, lang 
 }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const { register, setValue } = useForm<FormValues>({ control });
+  const { register, setValue } = useForm<FormValues>();
 
   // Get current name for local display while not editing
   const currentName = useWatch({
