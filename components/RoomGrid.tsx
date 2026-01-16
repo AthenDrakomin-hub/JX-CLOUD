@@ -167,7 +167,7 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, categories = [], onU
              <div className="px-8 py-6 border-b-2 border-slate-200 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 sticky top-0 z-30">
                 <div className="flex items-center space-x-6">
                    <div className="w-16 h-16 bg-slate-950 text-[#d4af37] rounded-2xl flex items-center justify-center text-2xl font-black shadow-xl border-2 border-white dark:border-slate-800">{activeRoom.id}</div>
-                   <div><h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter uppercase">{t('manualOrder')}</h3><div className="flex items-center space-x-3"><span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Station POS Terminal</span><div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" /></div></div>
+                   <div><h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter uppercase">{t('manualOrder')}</h3><div className="flex items-center space-x-3"><span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('station_pos_terminal')}</span><div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" /></div></div>
                 </div>
                 <button onClick={closeModal} className="w-12 h-12 flex items-center justify-center bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-slate-950 dark:hover:text-white rounded-xl transition-all"><X size={24} /></button>
              </div>
@@ -239,7 +239,7 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, categories = [], onU
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={closeModal} />
           <div className="relative w-full max-w-sm bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl overflow-hidden border border-slate-300 dark:border-slate-800 animate-in zoom-in-95">
              <div className="p-8 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                <div><h3 className="text-2xl font-black text-slate-900 dark:text-white">{t('station')} {activeRoom.id}</h3><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Space Registry Node</p></div>
+                <div><h3 className="text-2xl font-black text-slate-900 dark:text-white">{t('station')} {activeRoom.id}</h3><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('space_registry_node')}</p></div>
                 <button onClick={closeModal} className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all border border-slate-200 dark:border-slate-700"><X size={20} /></button>
              </div>
              <div className="p-8 space-y-4">
@@ -253,7 +253,7 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, categories = [], onU
                 <button onClick={() => setViewMode('manualOrder')} className="w-full p-6 bg-blue-600 text-white rounded-3xl flex items-center justify-between group active-scale transition-all border border-white/10">
                   <div className="flex items-center space-x-4">
                     <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center"><Plus size={24} /></div>
-                    <div className="text-left"><p className="font-bold text-sm leading-tight">{t('manualOrder')}</p><p className="text-[9px] opacity-40 uppercase tracking-widest">{t('staffOperatedDesc')}</p></div>
+                    <div className="text-left"><p className="font-bold text-sm leading-tight">{t('manualOrder')}</p><p className="text-[9px] opacity-40 uppercase tracking-widest">{t('staff_operated_desc')}</p></div>
                   </div>
                   <ChevronRight size={20} />
                 </button>
@@ -267,7 +267,7 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, categories = [], onU
           <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-2xl animate-in fade-in" onClick={closeModal} />
           <div className="relative w-full max-w-sm bg-white dark:bg-slate-900 rounded-[4rem] shadow-2xl overflow-hidden border border-white dark:border-slate-800 p-10 text-center space-y-8 animate-in zoom-in-95 slide-in-from-bottom-20">
              <div className="space-y-2">
-               <div className="flex items-center justify-center space-x-2 text-blue-600 dark:text-blue-400 mb-2"><Sparkles size={14} /><span className="text-[10px] font-black uppercase tracking-[0.4em]">Digital Table Access</span></div>
+               <div className="flex items-center justify-center space-x-2 text-blue-600 dark:text-blue-400 mb-2"><Sparkles size={14} /><span className="text-[10px] font-black uppercase tracking-[0.4em]">{t('digital_table_access')}</span></div>
                <h3 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white leading-none">{t('station')} {activeRoom.id}</h3>
                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('displayQRDesc')}</p>
              </div>

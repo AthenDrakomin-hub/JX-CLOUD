@@ -17,7 +17,12 @@ import GuestEntry from './GuestEntry';
 import Toast, { ToastType } from './components/Toast';
 import { useSession, signOut } from './services/auth-client';
 import { api } from './services/api';
-import { supabase, isDemoMode } from './services/supabaseClient';
+import { isDemoMode } from './services/supabaseClient';
+// 保持对supabase的引用，仅用于实时功能
+import { createClient } from '@supabase/supabase-js';
+const supabaseUrl = process.env.VITE_SUPABASE_URL || (import.meta.env as any).VITE_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || (import.meta.env as any).VITE_SUPABASE_ANON_KEY || '';
+const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
 import { notificationService } from './services/notification';
 import { INITIAL_USERS } from './constants';
 import { 

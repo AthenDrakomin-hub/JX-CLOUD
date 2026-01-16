@@ -151,7 +151,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({
            <div className="w-16 h-16 bg-slate-900 text-blue-500 rounded-[1.75rem] flex items-center justify-center shadow-2xl border-4 border-white"><Shield size={28} /></div>
            <div>
               <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase">{t('rbac_title')}</h2>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Enterprise RBAC Orchestration</p>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{t('enterprise_rbac_orchestration')}</p>
            </div>
         </div>
 

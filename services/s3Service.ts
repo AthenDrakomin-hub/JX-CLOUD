@@ -1,5 +1,5 @@
 
-import { supabase } from "./supabaseClient";
+import { supabase } from "./supabaseClient"; // 保留supabase用于存储功能，因为这是Supabase Storage
 
 /**
  * 针对生产环境 Web 端优化的存储服务

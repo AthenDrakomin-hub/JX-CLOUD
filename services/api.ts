@@ -1,5 +1,23 @@
 
-import { supabase, isDemoMode } from './supabaseClient';
+import { db } from './db';
+import { eq, ilike, asc, desc, and, or } from 'drizzle-orm';
+import { 
+  systemConfig, menuDishes, orders, menuCategories, partners, 
+  users, paymentMethods, ingredients, expenses, rooms 
+} from '../schema';
+
+// 演示模式仍然保留，但在生产环境中优先使用drizzle
+const isDemoMode = !process.env.POSTGRES_URL;
+
+// 强制检查数据库连接字符串
+const isProductionDB = !!process.env.POSTGRES_URL;
+
+if (isProductionDB) {
+  console.log("🚀 API层：生产数据库已就绪，正在关闭 Demo 模式...");
+  // 初始化生产环境数据网关
+} else {
+  console.warn("⚠️ API层：未检测到 POSTGRES_URL，系统进入演示模式。");
+}
 import { 
   Partner, Order, Dish, OrderStatus, SystemConfig, UserRole, 
   Category, Ingredient, PaymentMethodConfig, HotelRoom, User, Expense
@@ -14,321 +32,548 @@ import { INITIAL_DISHES, INITIAL_CATEGORIES } from '../constants';
 export const api = {
   config: {
     get: async (): Promise<SystemConfig> => {
-      if (isDemoMode || !supabase) return { hotelName: '江西云厨(演示)', theme: 'light', autoPrintOrder: true, ticketStyle: 'standard', fontFamily: 'Plus Jakarta Sans' } as any;
-      const { data, error } = await supabase.from('system_config').select('*').eq('id', 'global').maybeSingle();
-      if (error || !data) return { hotelName: '江西云厨', theme: 'light', autoPrintOrder: true, ticketStyle: 'standard', fontFamily: 'Plus Jakarta Sans' } as any;
-      return {
-        hotelName: data.hotel_name,
-        version: data.version,
-        theme: data.theme || 'light',
-        autoPrintOrder: data.auto_print ?? true,
-        ticketStyle: data.ticket_style || 'standard',
-        fontFamily: data.font_family || 'Plus Jakarta Sans'
-      } as any;
+      if (isDemoMode) return { hotelName: '江西云厨(演示)', theme: 'light', autoPrintOrder: true, ticketStyle: 'standard', fontFamily: 'Plus Jakarta Sans' } as any;
+      try {
+        const result = await db.select().from(systemConfig).where(eq(systemConfig.id, 'global')).execute();
+        const data = result[0];
+        if (!data) return { hotelName: '江西云厨', theme: 'light', autoPrintOrder: true, ticketStyle: 'standard', fontFamily: 'Plus Jakarta Sans' } as any;
+        return {
+          hotelName: data.hotelName,
+          version: data.version,
+          theme: data.theme || 'light',
+          autoPrintOrder: data.autoPrintOrder ?? true,
+          ticketStyle: data.ticketStyle || 'standard',
+          fontFamily: data.fontFamily || 'Plus Jakarta Sans'
+        } as any;
+      } catch (error) {
+        console.error("获取系统配置失败:", error);
+        return { hotelName: '江西云厨', theme: 'light', autoPrintOrder: true, ticketStyle: 'standard', fontFamily: 'Plus Jakarta Sans' } as any;
+      }
     },
     update: async (config: SystemConfig) => {
-      if (isDemoMode || !supabase) return;
-      await supabase.from('system_config').upsert({
-        id: 'global',
-        hotel_name: config.hotelName,
-        theme: config.theme,
-        auto_print: config.autoPrintOrder,
-        ticket_style: config.ticketStyle,
-        font_family: config.fontFamily,
-        updated_at: new Date().toISOString()
-      });
+      if (isDemoMode) return;
+      try {
+        await db.insert(systemConfig).values({
+          id: 'global',
+          hotelName: config.hotelName,
+          theme: config.theme,
+          autoPrintOrder: config.autoPrintOrder,
+          ticketStyle: config.ticketStyle,
+          fontFamily: config.fontFamily,
+        }).onConflictDoUpdate({
+          target: systemConfig.id,
+          set: {
+            hotelName: config.hotelName,
+            theme: config.theme,
+            autoPrintOrder: config.autoPrintOrder,
+            ticketStyle: config.ticketStyle,
+            fontFamily: config.fontFamily,
+            updatedAt: new Date()
+          }
+        }).execute();
+      } catch (error) {
+        console.error("更新系统配置失败:", error);
+      }
     }
   },
 
   rooms: {
     getAll: async (): Promise<HotelRoom[]> => {
-      if (isDemoMode || !supabase) {
+      if (isDemoMode) {
         // 使用与 constants.ts 中一致的房间号
         const { ROOM_NUMBERS } = await import('../constants');
         return ROOM_NUMBERS.map(id => ({ id, status: 'ready' }));
       }
-      const { data, error } = await supabase.from('rooms').select('*').order('id');
-      if (error) throw error;
-      return data.map((r: any) => ({ id: r.id, status: r.status }));
+      try {
+        const data = await db.select().from(rooms).orderBy(asc(rooms.id)).execute();
+        return data.map((r: any) => ({ id: r.id, status: r.status }));
+      } catch (error) {
+        console.error("获取房间列表失败:", error);
+        throw error;
+      }
     },
     updateStatus: async (id: string, status: string) => {
-      if (isDemoMode || !supabase) return;
-      await supabase.from('rooms').update({ status, updated_at: new Date().toISOString() }).eq('id', id);
+      if (isDemoMode) return;
+      try {
+        await db.update(rooms).set({ 
+          status, 
+          updatedAt: new Date() 
+        }).where(eq(rooms.id, id)).execute();
+      } catch (error) {
+        console.error("更新房间状态失败:", error);
+      }
     }
   },
 
   dishes: {
     getAll: async (sessionUser?: any): Promise<Dish[]> => {
-      if (isDemoMode || !supabase) return INITIAL_DISHES;
-      let query = supabase.from('menu_dishes').select('*');
-      if (sessionUser?.role === UserRole.PARTNER && sessionUser.partnerId) {
-        query = query.eq('partner_id', sessionUser.partnerId);
+      if (isDemoMode) return INITIAL_DISHES;
+      try {
+        let query = db.select().from(menuDishes);
+        if (sessionUser?.role === UserRole.PARTNER && sessionUser.partnerId) {
+          query = query.where(eq(menuDishes.partnerId, sessionUser.partnerId));
+        }
+        const data = await query.orderBy(asc(menuDishes.id)).execute();
+        return data.map((d: any) => ({
+          id: d.id, name: d.name, name_en: d.nameEn, description: d.description,
+          tags: d.tags || [], price: Number(d.price), category: d.category,
+          stock: d.stock, image_url: d.imageUrl, is_available: d.isAvailable,
+          is_recommended: d.isRecommended, partnerId: d.partnerId
+        }));
+      } catch (error) {
+        console.error("获取菜品列表失败:", error);
+        return INITIAL_DISHES;
       }
-      const { data, error } = await query.order('id');
-      if (error) return INITIAL_DISHES;
-      return data.map((d: any) => ({
-        id: d.id, name: d.name, name_en: d.name_en, description: d.description,
-        tags: d.tags || [], price: Number(d.price), category: d.category,
-        stock: d.stock, image_url: d.image_url, is_available: d.is_available,
-        is_recommended: d.is_recommended, partnerId: d.partner_id
-      }));
     },
     create: async (data: Dish, sessionUser: any) => {
-      if (isDemoMode || !supabase) return;
-      const partnerId = sessionUser?.role === UserRole.PARTNER ? sessionUser.partnerId : data.partnerId;
-      await supabase.from('menu_dishes').insert({
-        id: data.id, name: data.name, name_en: data.name_en, description: data.description,
-        tags: data.tags, price: data.price, category: data.category, stock: data.stock,
-        image_url: data.image_url, is_available: data.is_available,
-        is_recommended: data.is_recommended, partner_id: partnerId
-      });
+      if (isDemoMode) return;
+      try {
+        const partnerId = sessionUser?.role === UserRole.PARTNER ? sessionUser.partnerId : data.partnerId;
+        await db.insert(menuDishes).values({
+          id: data.id, name: data.name, nameEn: data.name_en, description: data.description,
+          tags: data.tags, price: data.price, category: data.category, stock: data.stock,
+          imageUrl: data.image_url, isAvailable: data.is_available,
+          isRecommended: data.is_recommended, partnerId: partnerId
+        }).execute();
+      } catch (error) {
+        console.error("创建菜品失败:", error);
+      }
     },
     update: async (data: Dish, sessionUser: any) => {
-      if (isDemoMode || !supabase) return;
-      const query = supabase.from('menu_dishes').update({
-        name: data.name, name_en: data.name_en, description: data.description,
-        tags: data.tags, price: data.price, category: data.category, stock: data.stock,
-        image_url: data.image_url, is_available: data.is_available, is_recommended: data.is_recommended
-      }).eq('id', data.id);
-      if (sessionUser.role !== UserRole.ADMIN) query.eq('partner_id', sessionUser.partnerId);
-      await query;
+      if (isDemoMode) return;
+      try {
+        const updateQuery = db.update(menuDishes).set({
+          name: data.name, nameEn: data.name_en, description: data.description,
+          tags: data.tags, price: data.price, category: data.category, stock: data.stock,
+          imageUrl: data.image_url, isAvailable: data.is_available, isRecommended: data.is_recommended
+        }).where(eq(menuDishes.id, data.id));
+        
+        if (sessionUser.role !== UserRole.ADMIN) {
+          updateQuery.where(and(
+            eq(menuDishes.id, data.id),
+            eq(menuDishes.partnerId, sessionUser.partnerId)
+          ));
+        }
+        await updateQuery.execute();
+      } catch (error) {
+        console.error("更新菜品失败:", error);
+      }
     },
     delete: async (id: string, sessionUser: any) => {
-      if (isDemoMode || !supabase) return;
-      const query = supabase.from('menu_dishes').delete().eq('id', id);
-      if (sessionUser.role !== UserRole.ADMIN) query.eq('partner_id', sessionUser.partnerId);
-      await query;
+      if (isDemoMode) return;
+      try {
+        let deleteQuery = db.delete(menuDishes).where(eq(menuDishes.id, id));
+        if (sessionUser.role !== UserRole.ADMIN) {
+          deleteQuery = deleteQuery.where(eq(menuDishes.partnerId, sessionUser.partnerId));
+        }
+        await deleteQuery.execute();
+      } catch (error) {
+        console.error("删除菜品失败:", error);
+      }
     }
   },
 
   orders: {
     getAll: async (sessionUser?: any): Promise<Order[]> => {
-      if (isDemoMode || !supabase) return [];
-      let query = supabase.from('orders').select('*');
-      if (sessionUser?.role === UserRole.PARTNER && sessionUser.partnerId) {
-        query = query.filter('items', 'cs', JSON.stringify([{ partnerId: sessionUser.partnerId }]));
+      if (isDemoMode) return [];
+      try {
+        let query = db.select().from(orders);
+        if (sessionUser?.role === UserRole.PARTNER && sessionUser.partnerId) {
+          // 对于合伙人，我们筛选他们的订单 - 注意这里需要检查items字段中是否包含partnerId
+          // 由于items是JSONB字段，我们需要特殊的处理方式
+          query = query.where(ilike(orders.items, `%${sessionUser.partnerId}%`));
+        }
+        const data = await query.orderBy(desc(orders.createdAt)).execute();
+        return data.map((o: any) => ({
+          id: o.id, roomId: o.roomId, customerId: o.customerId, items: o.items,
+          totalAmount: Number(o.totalAmount), status: o.status as OrderStatus,
+          paymentMethod: o.paymentMethod, paymentProof: o.paymentProof,
+          cash_received: Number(o.cashReceived || 0), cash_change: Number(o.cashChange || 0),
+          createdAt: o.createdAt, updatedAt: o.updatedAt
+        }));
+      } catch (error) {
+        console.error("获取订单列表失败:", error);
+        return [];
       }
-      const { data, error } = await query.order('created_at', { ascending: false });
-      if (error) return [];
-      return data.map((o: any) => ({
-        id: o.id, roomId: o.room_id, customerId: o.customer_id, items: o.items,
-        totalAmount: Number(o.total_amount), status: o.status as OrderStatus,
-        paymentMethod: o.payment_method, paymentProof: o.payment_proof,
-        cash_received: Number(o.cash_received || 0), cash_change: Number(o.cash_change || 0),
-        createdAt: o.created_at, updatedAt: o.updated_at
-      }));
     },
     create: async (data: Order) => {
-      if (isDemoMode || !supabase) return;
-      await supabase.from('orders').insert({
-        id: data.id, room_id: data.roomId, customer_id: data.customerId,
-        items: data.items, total_amount: data.totalAmount, status: data.status,
-        payment_method: data.paymentMethod, payment_proof: data.paymentProof,
-        cash_received: data.cash_received, cash_change: data.cash_change
-      });
+      if (isDemoMode) return;
+      try {
+        await db.insert(orders).values({
+          id: data.id, roomId: data.roomId, customerId: data.customerId,
+          items: data.items, totalAmount: data.totalAmount, status: data.status,
+          paymentMethod: data.paymentMethod, paymentProof: data.paymentProof,
+          cashReceived: data.cash_received, cashChange: data.cash_change
+        }).execute();
+      } catch (error) {
+        console.error("创建订单失败:", error);
+      }
     },
     updateStatus: async (id: string, status: OrderStatus) => {
-      if (isDemoMode || !supabase) return;
-      await supabase.from('orders').update({ status, updated_at: new Date().toISOString() }).eq('id', id);
+      if (isDemoMode) return;
+      try {
+        await db.update(orders).set({ 
+          status, 
+          updatedAt: new Date() 
+        }).where(eq(orders.id, id)).execute();
+      } catch (error) {
+        console.error("更新订单状态失败:", error);
+      }
     }
   },
 
   categories: {
     getAll: async (): Promise<Category[]> => {
-      if (isDemoMode || !supabase) return INITIAL_CATEGORIES;
-      const { data, error } = await supabase.from('menu_categories').select('*').order('display_order');
-      if (error || !data) return INITIAL_CATEGORIES;
-      return data.map((c: any) => ({
-        id: c.id, name: c.name, name_en: c.name_en, code: c.code, level: c.level,
-        display_order: c.display_order, is_active: c.is_active, parent_id: c.parent_id, partnerId: c.partner_id
-      }));
+      if (isDemoMode) return INITIAL_CATEGORIES;
+      try {
+        const data = await db.select().from(menuCategories).orderBy(asc(menuCategories.displayOrder)).execute();
+        return data.map((c: any) => ({
+          id: c.id, name: c.name, name_en: c.nameEn, code: c.code, level: c.level,
+          display_order: c.displayOrder, is_active: c.isActive, parent_id: c.parentId, partnerId: c.partnerId
+        }));
+      } catch (error) {
+        console.error("获取分类列表失败:", error);
+        return INITIAL_CATEGORIES;
+      }
     },
     saveAll: async (cats: Category[]) => {
-      if (isDemoMode || !supabase) return;
-      const payload = cats.map(c => ({
-        id: c.id, name: c.name, name_en: c.name_en, code: c.code, level: c.level,
-        display_order: c.display_order, is_active: c.is_active, parent_id: c.parent_id, partner_id: c.partnerId
-      }));
-      await supabase.from('menu_categories').upsert(payload);
+      if (isDemoMode) return;
+      try {
+        const payload = cats.map(c => ({
+          id: c.id, name: c.name, nameEn: c.name_en, code: c.code, level: c.level,
+          displayOrder: c.display_order, isActive: c.is_active, parentId: c.parent_id, partnerId: c.partnerId
+        }));
+        await db.insert(menuCategories).values(payload).onConflictDoUpdate({
+          target: menuCategories.id,
+          set: {
+            name: (c: typeof menuCategories.$inferInsert) => c.name,
+            nameEn: (c: typeof menuCategories.$inferInsert) => c.nameEn,
+            code: (c: typeof menuCategories.$inferInsert) => c.code,
+            level: (c: typeof menuCategories.$inferInsert) => c.level,
+            displayOrder: (c: typeof menuCategories.$inferInsert) => c.displayOrder,
+            isActive: (c: typeof menuCategories.$inferInsert) => c.isActive,
+            parentId: (c: typeof menuCategories.$inferInsert) => c.parentId,
+            partnerId: (c: typeof menuCategories.$inferInsert) => c.partnerId
+          }
+        }).execute();
+      } catch (error) {
+        console.error("保存分类失败:", error);
+      }
     }
   },
 
   partners: {
     getAll: async (): Promise<Partner[]> => {
-      if (isDemoMode || !supabase) return [];
-      const { data } = await supabase.from('partners').select('*').order('name');
-      return (data || []).map((p: any) => ({
-        id: p.id, name: p.name, ownerName: p.owner_name, status: p.status,
-        commissionRate: Number(p.commission_rate), balance: Number(p.balance),
-        contact: p.contact, email: p.email, authorizedCategories: p.authorized_categories || [],
-        totalSales: Number(p.total_sales || 0), joinedAt: p.joined_at
-      } as any));
+      if (isDemoMode) return [];
+      try {
+        const data = await db.select().from(partners).orderBy(asc(partners.name)).execute();
+        return data.map((p: any) => ({
+          id: p.id, name: p.name, ownerName: p.ownerName, status: p.status,
+          commissionRate: Number(p.commissionRate), balance: Number(p.balance),
+          contact: p.contact, email: p.email, authorizedCategories: p.authorized_categories || [],
+          totalSales: Number(p.totalSales || 0), joinedAt: p.createdAt
+        } as any));
+      } catch (error) {
+        console.error("获取合伙人列表失败:", error);
+        return [];
+      }
     },
     getProfile: async (userId: string): Promise<Partner | null> => {
-      if (isDemoMode || !supabase) return null;
-      const { data: userData } = await supabase.from('users').select('partner_id').eq('id', userId).maybeSingle();
-      if (!userData?.partner_id) return null;
-      const { data: partnerData } = await supabase.from('partners').select('*').eq('id', userData.partner_id).maybeSingle();
-      if (!partnerData) return null;
-      return {
-        id: partnerData.id, name: partnerData.name, ownerName: partnerData.owner_name,
-        status: partnerData.status, commissionRate: Number(partnerData.commission_rate),
-        balance: Number(partnerData.balance), contact: partnerData.contact, email: partnerData.email,
-        authorizedCategories: partnerData.authorized_categories || [], totalSales: Number(partnerData.total_sales || 0),
-        joinedAt: partnerData.joined_at
-      } as any;
+      if (isDemoMode) return null;
+      try {
+        // 首先获取用户信息
+        const userDataResult = await db.select({ partnerId: users.partnerId }).from(users).where(eq(users.id, userId)).execute();
+        const userData = userDataResult[0];
+        if (!userData?.partnerId) return null;
+        
+        // 然后获取合伙人信息
+        const partnerDataResult = await db.select().from(partners).where(eq(partners.id, userData.partnerId)).execute();
+        const partnerData = partnerDataResult[0];
+        if (!partnerData) return null;
+        
+        return {
+          id: partnerData.id, name: partnerData.name, ownerName: partnerData.ownerName,
+          status: partnerData.status, commissionRate: Number(partnerData.commissionRate),
+          balance: Number(partnerData.balance), contact: partnerData.contact, email: partnerData.email,
+          authorizedCategories: partnerData.authorized_categories || [], totalSales: Number(partnerData.totalSales || 0),
+          joinedAt: partnerData.createdAt
+        } as any;
+      } catch (error) {
+        console.error("获取合伙人资料失败:", error);
+        return null;
+      }
     },
     create: async (data: Partner) => {
-      if (isDemoMode || !supabase) return;
-      await supabase.from('partners').insert({
-        id: data.id, name: data.name, owner_name: data.ownerName, status: data.status,
-        commission_rate: data.commissionRate, balance: data.balance,
-        contact: data.contact, email: data.email, authorized_categories: data.authorizedCategories,
-        total_sales: data.totalSales
-      });
+      if (isDemoMode) return;
+      try {
+        await db.insert(partners).values({
+          id: data.id, name: data.name, ownerName: data.ownerName, status: data.status,
+          commissionRate: data.commissionRate, balance: data.balance,
+          contact: data.contact, email: data.email, authorized_categories: data.authorizedCategories,
+          totalSales: data.totalSales
+        }).execute();
+      } catch (error) {
+        console.error("创建合伙人失败:", error);
+      }
     },
     update: async (data: Partner) => {
-      if (isDemoMode || !supabase) return;
-      await supabase.from('partners').update({
-        name: data.name, owner_name: data.ownerName, status: data.status,
-        commission_rate: data.commissionRate, contact: data.contact, email: data.email,
-        authorized_categories: data.authorizedCategories
-      }).eq('id', data.id);
+      if (isDemoMode) return;
+      try {
+        await db.update(partners).set({
+          name: data.name, ownerName: data.ownerName, status: data.status,
+          commissionRate: data.commissionRate, contact: data.contact, email: data.email,
+          authorized_categories: data.authorizedCategories
+        }).where(eq(partners.id, data.id)).execute();
+      } catch (error) {
+        console.error("更新合伙人失败:", error);
+      }
     },
     delete: async (id: string) => {
-      if (isDemoMode || !supabase) return;
-      await supabase.from('partners').delete().eq('id', id);
+      if (isDemoMode) return;
+      try {
+        await db.delete(partners).where(eq(partners.id, id)).execute();
+      } catch (error) {
+        console.error("删除合伙人失败:", error);
+      }
     }
   },
 
   expenses: {
     getAll: async (): Promise<Expense[]> => {
-      if (isDemoMode || !supabase) return [];
-      const { data } = await supabase.from('expenses').select('*').order('date', { ascending: false });
-      return (data || []).map((e: any) => ({
-        id: e.id, amount: Number(e.amount), category: e.category, date: e.date
-      }));
+      if (isDemoMode) return [];
+      try {
+        const data = await db.select().from(expenses).orderBy(desc(expenses.date)).execute();
+        return data.map((e: any) => ({
+          id: e.id, amount: Number(e.amount), category: e.category, date: e.date
+        }));
+      } catch (error) {
+        console.error("获取支出列表失败:", error);
+        return [];
+      }
     },
     create: async (data: Expense) => {
-      if (isDemoMode || !supabase) return;
-      await supabase.from('expenses').insert({
-        id: data.id, amount: data.amount, category: data.category, date: data.date
-      });
+      if (isDemoMode) return;
+      try {
+        await db.insert(expenses).values({
+          id: data.id, amount: data.amount, category: data.category, date: data.date
+        }).execute();
+      } catch (error) {
+        console.error("创建支出记录失败:", error);
+      }
     },
     delete: async (id: string) => {
-      if (isDemoMode || !supabase) return;
-      await supabase.from('expenses').delete().eq('id', id);
+      if (isDemoMode) return;
+      try {
+        await db.delete(expenses).where(eq(expenses.id, id)).execute();
+      } catch (error) {
+        console.error("删除支出记录失败:", error);
+      }
     }
   },
 
   users: {
     getAll: async (): Promise<User[]> => {
-      if (isDemoMode || !supabase) return [];
-      const { data } = await supabase.from('users').select('*').order('role');
-      return (data || []).map((u: any) => ({
-        id: u.id, username: u.username, email: u.email, role: u.role as UserRole,
-        name: u.name, partnerId: u.partner_id, modulePermissions: u.module_permissions
-      }));
+      if (isDemoMode) return [];
+      try {
+        const data = await db.select().from(users).orderBy(asc(users.role)).execute();
+        return data.map((u: any) => ({
+          id: u.id, username: u.username, email: u.email, role: u.role as UserRole,
+          name: u.name, partnerId: u.partnerId, modulePermissions: u.modulePermissions
+        }));
+      } catch (error) {
+        console.error("获取用户列表失败:", error);
+        return [];
+      }
     },
     upsert: async (data: User) => {
-      if (isDemoMode || !supabase) return;
-      // 根管理员硬保护逻辑
-      if (data.email === 'athendrakomin@proton.me') {
-         data.role = UserRole.ADMIN;
+      if (isDemoMode) return;
+      try {
+        // 根管理员硬保护逻辑
+        if (data.email === 'athendrakomin@proton.me') {
+          data.role = UserRole.ADMIN;
+        }
+        await db.insert(users).values({
+          id: data.id, username: data.username, email: data.email, name: data.name,
+          role: data.role, partnerId: data.partnerId, modulePermissions: data.modulePermissions,
+          updatedAt: new Date()
+        }).onConflictDoUpdate({
+          target: users.id,
+          set: {
+            username: data.username,
+            email: data.email,
+            name: data.name,
+            role: data.role,
+            partnerId: data.partnerId,
+            modulePermissions: data.modulePermissions,
+            updatedAt: new Date()
+          }
+        }).execute();
+      } catch (error) {
+        console.error("更新用户失败:", error);
       }
-      await supabase.from('users').upsert({
-        id: data.id, username: data.username, email: data.email, name: data.name,
-        role: data.role, partner_id: data.partnerId, module_permissions: data.modulePermissions,
-        updated_at: new Date().toISOString()
-      });
     },
     delete: async (id: string, requesterEmail?: string) => {
-      if (isDemoMode || !supabase) return;
-      const { data: target } = await supabase.from('users').select('email').eq('id', id).single();
-      if (target?.email === 'athendrakomin@proton.me') throw new Error("物理资产锁定：无法删除根管理员。");
-      await supabase.from('users').delete().eq('id', id);
+      if (isDemoMode) return;
+      try {
+        // 检查是否为根管理员
+        const targetResult = await db.select({ email: users.email }).from(users).where(eq(users.id, id)).execute();
+        const target = targetResult[0];
+        if (target?.email === 'athendrakomin@proton.me') throw new Error("物理资产锁定：无法删除根管理员。");
+        await db.delete(users).where(eq(users.id, id)).execute();
+      } catch (error) {
+        console.error("删除用户失败:", error);
+      }
     }
   },
 
   payments: {
     getAll: async (): Promise<PaymentMethodConfig[]> => {
-      if (isDemoMode || !supabase) return [];
-      const { data, error } = await supabase.from('payment_methods').select('*').order('sort_order');
-      if (error) return [];
-      return data.map((p: any) => ({
-        id: p.id, name: p.name, name_en: p.name_en, currency: p.currency,
-        currency_symbol: p.currency_symbol, exchange_rate: Number(p.exchange_rate),
-        isActive: p.is_active, payment_type: p.payment_type, sort_order: p.sort_order,
-        description: p.description, description_en: p.description_en,
-        iconType: p.icon_type, wallet_address: p.wallet_address, qr_url: p.qr_url
-      }));
+      if (isDemoMode) return [];
+      try {
+        const data = await db.select().from(paymentMethods).orderBy(asc(paymentMethods.sortOrder)).execute();
+        return data.map((p: any) => ({
+          id: p.id, name: p.name, name_en: p.nameEn, currency: p.currency,
+          currency_symbol: p.currencySymbol, exchange_rate: Number(p.exchangeRate),
+          isActive: p.isActive, payment_type: p.paymentType, sort_order: p.sortOrder,
+          description: p.description, description_en: p.descriptionEn,
+          iconType: p.iconType, wallet_address: p.walletAddress, qr_url: p.qrUrl
+        }));
+      } catch (error) {
+        console.error("获取支付方式列表失败:", error);
+        return [];
+      }
     },
     toggle: async (id: string) => {
-      if (isDemoMode || !supabase) return;
-      const { data } = await supabase.from('payment_methods').select('is_active').eq('id', id).single();
-      if (data) await supabase.from('payment_methods').update({ is_active: !data.is_active }).eq('id', id);
+      if (isDemoMode) return;
+      try {
+        const dataResult = await db.select({ isActive: paymentMethods.isActive }).from(paymentMethods).where(eq(paymentMethods.id, id)).execute();
+        const record = dataResult[0];
+        if (record) {
+          await db.update(paymentMethods).set({ 
+            isActive: !record.isActive 
+          }).where(eq(paymentMethods.id, id)).execute();
+        }
+      } catch (error) {
+        console.error("切换支付方式状态失败:", error);
+      }
     },
     create: async (data: PaymentMethodConfig) => {
-      if (isDemoMode || !supabase) return;
-      await supabase.from('payment_methods').insert({
-        id: data.id, name: data.name, name_en: data.name_en, currency: data.currency,
-        currency_symbol: data.currency_symbol, exchange_rate: data.exchange_rate,
-        is_active: data.isActive, payment_type: data.payment_type, sort_order: data.sort_order,
-        description: data.description, description_en: data.description_en,
-        icon_type: data.iconType, wallet_address: data.wallet_address, qr_url: data.qr_url
-      });
+      if (isDemoMode) return;
+      try {
+        await db.insert(paymentMethods).values({
+          id: data.id, name: data.name, nameEn: data.name_en, currency: data.currency,
+          currencySymbol: data.currency_symbol, exchangeRate: data.exchange_rate,
+          isActive: data.isActive, paymentType: data.payment_type, sortOrder: data.sort_order,
+          description: data.description, descriptionEn: data.description_en,
+          iconType: data.iconType, walletAddress: data.wallet_address, qrUrl: data.qr_url
+        }).execute();
+      } catch (error) {
+        console.error("创建支付方式失败:", error);
+      }
     },
     update: async (data: PaymentMethodConfig) => {
-      if (isDemoMode || !supabase) return;
-      await supabase.from('payment_methods').update({
-        name: data.name, name_en: data.name_en, currency: data.currency,
-        currency_symbol: data.currency_symbol, exchange_rate: data.exchange_rate,
-        is_active: data.isActive, payment_type: data.payment_type, sort_order: data.sort_order,
-        description: data.description, description_en: data.description_en,
-        icon_type: data.iconType, wallet_address: data.wallet_address, qr_url: data.qr_url
-      }).eq('id', data.id);
+      if (isDemoMode) return;
+      try {
+        await db.update(paymentMethods).set({
+          name: data.name, nameEn: data.name_en, currency: data.currency,
+          currencySymbol: data.currency_symbol, exchangeRate: data.exchange_rate,
+          isActive: data.isActive, paymentType: data.payment_type, sortOrder: data.sort_order,
+          description: data.description, descriptionEn: data.description_en,
+          iconType: data.iconType, walletAddress: data.wallet_address, qrUrl: data.qr_url
+        }).where(eq(paymentMethods.id, data.id)).execute();
+      } catch (error) {
+        console.error("更新支付方式失败:", error);
+      }
     },
     delete: async (id: string) => {
-      if (isDemoMode || !supabase) return;
-      await supabase.from('payment_methods').delete().eq('id', id);
+      if (isDemoMode) return;
+      try {
+        await db.delete(paymentMethods).where(eq(paymentMethods.id, id)).execute();
+      } catch (error) {
+        console.error("删除支付方式失败:", error);
+      }
     }
   },
 
   ingredients: {
     getAll: async (): Promise<Ingredient[]> => {
-      if (isDemoMode || !supabase) return [];
-      const { data, error } = await supabase.from('ingredients').select('*').order('name');
-      if (error) return [];
-      return data.map((i: any) => ({
-        id: i.id, name: i.name, unit: i.unit, stock: Number(i.stock),
-        minStock: Number(i.min_stock), category: i.category, last_restocked: i.last_restocked
-      }));
+      if (isDemoMode) return [];
+      try {
+        const data = await db.select().from(ingredients).orderBy(asc(ingredients.name)).execute();
+        return data.map((i: any) => ({
+          id: i.id, name: i.name, unit: i.unit, stock: Number(i.stock),
+          minStock: Number(i.minStock), category: i.category, last_restocked: i.lastRestocked
+        }));
+      } catch (error) {
+        console.error("获取食材列表失败:", error);
+        return [];
+      }
     },
     create: async (data: Ingredient) => {
-      if (isDemoMode || !supabase) return;
-      await supabase.from('ingredients').insert({
-        id: data.id, name: data.name, unit: data.unit, stock: data.stock,
-        min_stock: data.minStock, category: data.category, last_restocked: data.last_restocked
-      });
+      if (isDemoMode) return;
+      try {
+        await db.insert(ingredients).values({
+          id: data.id, name: data.name, unit: data.unit, stock: data.stock,
+          minStock: data.minStock, category: data.category, lastRestocked: data.last_restocked
+        }).execute();
+      } catch (error) {
+        console.error("创建食材记录失败:", error);
+      }
     },
     update: async (data: Ingredient) => {
-      if (isDemoMode || !supabase) return;
-      await supabase.from('ingredients').update({
-        name: data.name, unit: data.unit, stock: data.stock, min_stock: data.minStock,
-        category: data.category, last_restocked: data.last_restocked
-      }).eq('id', data.id);
+      if (isDemoMode) return;
+      try {
+        await db.update(ingredients).set({
+          name: data.name, unit: data.unit, stock: data.stock, minStock: data.minStock,
+          category: data.category, lastRestocked: data.last_restocked
+        }).where(eq(ingredients.id, data.id)).execute();
+      } catch (error) {
+        console.error("更新食材记录失败:", error);
+      }
     },
     delete: async (id: string) => {
-      if (isDemoMode || !supabase) return;
-      await supabase.from('ingredients').delete().eq('id', id);
+      if (isDemoMode) return;
+      try {
+        await db.delete(ingredients).where(eq(ingredients.id, id)).execute();
+      } catch (error) {
+        console.error("删除食材记录失败:", error);
+      }
     }
   },
 
   db: {
     getRows: async (table: string) => {
-      if (isDemoMode || !supabase) return [];
-      const { data } = await supabase.from(table).select('*').limit(100);
-      return data || [];
+      if (isDemoMode) return [];
+      try {
+        // 根据不同的表名使用对应的drizzle表对象
+        switch(table) {
+          case 'orders':
+            return await db.select().from(orders).limit(100).execute();
+          case 'menu_dishes':
+            return await db.select().from(menuDishes).limit(100).execute();
+          case 'menu_categories':
+            return await db.select().from(menuCategories).limit(100).execute();
+          case 'rooms':
+            return await db.select().from(rooms).limit(100).execute();
+          case 'users':
+            return await db.select().from(users).limit(100).execute();
+          case 'ingredients':
+            return await db.select().from(ingredients).limit(100).execute();
+          case 'partners':
+            return await db.select().from(partners).limit(100).execute();
+          case 'expenses':
+            return await db.select().from(expenses).limit(100).execute();
+          case 'payment_methods':
+            return await db.select().from(paymentMethods).limit(100).execute();
+          case 'system_config':
+            return await db.select().from(systemConfig).limit(100).execute();
+          default:
+            return [];
+        }
+      } catch (error) {
+        console.error(`获取表 ${table} 数据失败:`, error);
+        return [];
+      }
     }
   },
 

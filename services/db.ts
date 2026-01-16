@@ -8,15 +8,27 @@ import * as schema from '../schema.js';
  * 为 Vercel Edge 运行时和 Serverless 函数优化
  */
 
-const getDatabaseUrl = () => {
-    // Vercel 环境变量优先级
-    return (process.env as any).DATABASE_URL || 
-           (process.env as any).POSTGRES_URL || 
-           (process.env as any).DIRECT_URL || // Supabase CLI 使用的变量
-           "";
-};
+// 架构师指令：优先寻找 Vercel 注入的各种可能的连接字符串
+const connectionString = 
+  process.env.POSTGRES_URL || 
+  process.env.DATABASE_URL || 
+  process.env.POSTGRES_PRISMA_URL ||  // Vercel 自动关联 Supabase 时生成的变量名
+  process.env.POSTGRES_URL_NON_POOLING ||  // Vercel 自动关联 Supabase 时生成的变量名
+  process.env.DIRECT_URL; // Supabase CLI 使用的变量
 
-const rawConnectionString = getDatabaseUrl();
+if (!connectionString) {
+  throw new Error("❌ 严重错误：生产环境未检测到任何有效的数据库连接字符串！");
+}
+
+// 强制检查数据库连接字符串
+const isProductionDB = !!connectionString;
+
+if (isProductionDB) {
+  console.log("🚀 生产数据库已就绪，正在关闭 Demo 模式...");
+  // 初始化 Drizzle 生产连接
+} else {
+  console.warn("⚠️ 未检测到数据库连接字符串，系统进入演示模式。");
+}
 
 // 自动切换至 Supabase 事务池端口 6543 (关键优化)
 const getPooledUrl = (url: string) => {
@@ -37,7 +49,7 @@ const getPooledUrl = (url: string) => {
   }
 };
 
-const pooledUrl = getPooledUrl(rawConnectionString);
+const pooledUrl = getPooledUrl(connectionString);
 
 // Vercel Serverless 优化的连接池配置
 const pool = new Pool({ 

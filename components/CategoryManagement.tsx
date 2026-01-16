@@ -261,7 +261,7 @@ const CategoryManagement: React.FC<{ lang: Language; onRefreshGlobal?: () => voi
            </div>
            <div>
               <h2 className="text-3xl font-black text-slate-900 tracking-tight uppercase leading-none">{t('taxonomy_mgmt')}</h2>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-2">Dynamic Field Orchestrator</p>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-2">{t('dynamic_field_orchestrator')}</p>
            </div>
         </div>
         

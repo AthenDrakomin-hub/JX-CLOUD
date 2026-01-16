@@ -51,7 +51,7 @@ const FinancialCenter: React.FC<FinancialCenterProps> = ({
               <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase">{t('financial_console')}</h2>
               <div className="flex items-center space-x-2 mt-1">
                 <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em]">JX-Cloud Financial Settlement Node</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em]">{t('jx_cloud_financial_node')}</p>
               </div>
            </div>
         </div>

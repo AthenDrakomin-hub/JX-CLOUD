@@ -114,7 +114,7 @@ const ImageManagement: React.FC<ImageManagementProps> = ({ lang }) => {
 
         <div className="bg-slate-950 p-10 rounded-[3rem] shadow-2xl flex flex-col justify-center space-y-6 border border-white/5">
            <div className="flex items-center justify-between">
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Op Command</p>
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('op_command')}</p>
               <button 
                 onClick={() => fetchFiles(false)} 
                 disabled={isRefreshing}

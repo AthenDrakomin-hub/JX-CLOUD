@@ -108,14 +108,14 @@ const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang }) => {
              <div className="p-6 rounded-3xl bg-white/5 border border-white/5 backdrop-blur-md space-y-2">
                 <div className="flex items-center gap-2 text-emerald-400">
                    <Activity size={14} />
-                   <span className="text-[9px] font-black uppercase tracking-widest">Auth Protocol</span>
+                   <span className="text-[9px] font-black uppercase tracking-widest">{t('auth_protocol')}</span>
                 </div>
                 <p className="text-xl font-bold tracking-tight">{isMasterUser ? 'BYPASS_ACTIVE' : t('stable_status')}</p>
              </div>
              <div className="p-6 rounded-3xl bg-white/5 border border-white/5 backdrop-blur-md space-y-2">
                 <div className="flex items-center gap-2 text-blue-400">
                    <Zap size={14} />
-                   <span className="text-[9px] font-black uppercase tracking-widest">Mode</span>
+                   <span className="text-[9px] font-black uppercase tracking-widest">{t('mode')}</span>
                 </div>
                 <p className="text-xl font-bold tracking-tight">{isMasterUser ? 'GOD_MODE' : 'STANDARD'}</p>
              </div>

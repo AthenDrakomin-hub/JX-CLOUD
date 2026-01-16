@@ -4,7 +4,7 @@ This file provides guidance to Qoder (qoder.com) when working with code in this 
 
 ## 🏨 项目概述
 
-这是一个名为"江西云厨"的现代化酒店管理生态系统，采用全栈架构设计，包含客房点餐、订单管理、财务管理等核心功能。
+这是一个名为"江西云厨"的现代化酒店管理生态系统，采用全栈架构设计，包含客房点餐、订单管理、财务管理等核心功能。该系统专门针对现代化酒店运营需求设计，集成了客房实时点餐（QR Ordering）、订单调度矩阵（KDS）、多维财务清算等功能。
 
 ## 🛠 核心技术栈
 
@@ -17,11 +17,12 @@ This file provides guidance to Qoder (qoder.com) when working with code in this 
 - **图表库**: Recharts
 - **数据库工具**: Drizzle ORM
 - **状态管理**: React hooks + Supabase Realtime
+- **构建工具**: Vite with custom chunk splitting for optimized loading
 
 ## 📁 项目架构
 
 ```
-src/
+根目录/
 ├── components/          # React组件 (30+个业务组件)
 ├── services/           # 核心服务层
 │   ├── api.ts         # 数据网关 (统一API接口)
@@ -32,10 +33,12 @@ src/
 │   ├── s3Service.ts       # 文件存储服务
 │   └── db.ts              # 数据库连接
 ├── api/                # API路由 (服务器端)
+├── scripts/            # 数据库初始化脚本
 ├── constants.ts       # 初始数据常量
 ├── types.ts          # TypeScript类型定义
 ├── translations.ts   # 国际化翻译
 ├── App.tsx          # 主应用入口
+├── GuestEntry.tsx   # 客户端点餐入口
 └── index.html       # HTML模板
 ```
 
@@ -52,8 +55,17 @@ npm run build
 npm run preview
 
 # 数据库迁移 (开发)
-npx drizzle-kit generate
-npx drizzle-kit migrate
+npm run db:generate
+npm run db:migrate
+
+# 数据库推送 (直接推送到数据库)
+npm run db:push
+
+# 初始化数据库表结构
+npm run db:init
+
+# 初始化用户数据
+npm run users:init
 
 # 生成新的迁移文件
 npx drizzle-kit generate --out ./drizzle --schema ./schema.ts
@@ -83,6 +95,7 @@ npx drizzle-kit migrate --config=drizzle.config.ts
 4. **初始化数据库表**
    - 在 Supabase SQL 编辑器中执行 `database_setup.sql` 内容
    - 创建所有必需的表、RLS 策略和初始数据
+   - 激活实时复制频道: ALTER PUBLICATION supabase_realtime ADD TABLE public.orders;
 
 5. **本地开发注意事项**
    - 认证与数据库完全解耦：Better Auth 负责认证，Supabase 仅提供数据库服务
@@ -92,18 +105,20 @@ npx drizzle-kit migrate --config=drizzle.config.ts
 ## 🏗 核心架构特点
 
 ### 1. 数据流架构
-- 使用 `api.ts` 作为统一数据网关
+- 使用 `services/api.ts` 作为统一数据网关
 - 所有组件通过 `api.[模块].[方法]` 访问数据
 - 支持演示模式和生产模式切换
-- 演示模式下使用本地常量数据，生产模式连接Supabase
-- 认证与数据库完全解耦：Better Auth负责认证，Supabase仅提供数据库服务
+- 演示模式下使用本地常量数据，生产模式连接Drizzle ORM (直连PostgreSQL)
+- 认证与数据库完全解耦：Better Auth负责认证，Drizzle ORM负责数据库操作
+- 实时功能仍使用Supabase (仅用于监听)，数据库操作已完全迁移到Drizzle
 - 用户数据双重架构：`user` 表用于认证系统，`users` 表用于业务逻辑
 
 ### 2. 权限体系
-- 三种用户角色: ADMIN, PARTNER, STAFF
+- 四种用户角色: ADMIN, PARTNER, STAFF, MAINTAINER
 - 合伙人数据物理隔离 (通过partner_id过滤)
 - 根管理员特殊权限 (`athendrakomin@proton.me`) - 可通过本地存储绕过认证
 - 模块级权限控制
+- 细粒度CRUD权限管理
 
 ### 3. 实时通信
 - 基于Supabase Realtime实现订单实时推送
@@ -121,25 +136,39 @@ npx drizzle-kit migrate --config=drizzle.config.ts
 - StaffManagement (员工管理)
 - ImageManagement (图片管理)
 - SystemSettings (系统设置)
+- CommandCenter (命令中心)
+- DatabaseManagement (数据库管理)
 
 ### 5. 国际化支持
 - 支持中文(zh)和英文(en)双语
 - 动态语言切换功能
 - 集中式翻译管理
+- 翻译文件位于 `translations.ts`，包含完整的中英文对照
+- 支持参数化翻译 (使用 `{paramName}` 语法)
+- 翻译函数 `getTranslation(lang, key, params?)` 在 `translations.ts` 中定义
+- 界面元素现已全部支持中英文翻译
+
+### 6. 客户端点餐流程
+- 通过 GuestEntry.tsx 处理客户点餐流程
+- 支持通过 `?room=xxx` URL 参数直接访问指定房间
+- 无需登录即可浏览菜单、选择菜品、下单支付
 
 ## 🔧 开发注意事项
 
 ### 数据库操作规范
-- 所有数据库操作必须通过 `api.ts` 服务层
+- 所有数据库操作必须通过 `services/api.ts` 服务层 (使用Drizzle ORM)
 - 合伙人相关查询需添加 `partner_id` 过滤条件
 - 删除操作前需检查根管理员保护逻辑
 - 使用Drizzle ORM进行类型安全的数据库操作
+- 环境变量检查：优先查找 POSTGRES_URL、DATABASE_URL、POSTGRES_PRISMA_URL 或 POSTGRES_URL_NON_POOLING
+- 生产环境强制使用Drizzle直连，废弃Supabase客户端的数据库操作功能
 
 ### 组件开发原则
 - 组件间通过props传递数据和回调函数
 - 使用TypeScript严格类型检查
 - 国际化通过 `getTranslation()` 函数处理
 - 使用ErrorBoundary进行错误边界处理
+- 遵循React最佳实践，合理使用useMemo/useCallback优化性能
 
 ### 实时功能开发
 - 新增实时监听需在 `useEffect` 中注册channel
@@ -163,6 +192,11 @@ npx drizzle-kit migrate --config=drizzle.config.ts
 - `rooms` 表：存储房间信息，用于点餐和状态管理
 - `menu_dishes` 表：存储菜单菜品信息 (字段: id, name, name_en, description, tags, price, category, stock, image_url, is_available, is_recommended, partner_id)
 - `menu_categories` 表：存储分类信息 (字段: id, name, name_en, code, level, display_order, is_active, parent_id, partner_id)
+- `system_config` 表：存储系统全局配置
+- `partners` 表：存储合作伙伴信息
+- `expenses` 表：存储支出记录
+- `payment_methods` 表：存储支付方式配置
+- `ingredients` 表：存储食材信息
 - 两表通过用户 ID 关联，实现认证与业务逻辑的解耦
 
 ### 用户注册流程
@@ -191,16 +225,18 @@ npx drizzle-kit migrate --config=drizzle.config.ts
 
 ### 添加新业务模块
 1. 在 `types.ts` 中定义相关类型
-2. 在 `api.ts` 中添加对应的服务方法
+2. 在 `services/api.ts` 中添加对应的服务方法
 3. 创建新的组件文件
 4. 在 `App.tsx` 中注册路由和导航
 5. 更新侧边栏菜单项
+6. 添加相应的权限控制
 
 ### 修改数据库结构
 1. 更新 `database_setup.sql` 脚本
 2. 在 `schema.ts` 中同步类型定义
-3. 更新 `api.ts` 中的相关方法
+3. 更新 `services/api.ts` 中的相关方法
 4. 修改对应的组件UI
+5. 生成并运行数据库迁移
 
 ### 添加国际化文本
 1. 在 `translations.ts` 中添加键值对
@@ -223,6 +259,7 @@ npx drizzle-kit migrate --config=drizzle.config.ts
 - `DATABASE_URL`: PostgreSQL数据库连接字符串
 - `BETTER_AUTH_SECRET`: 认证密钥
 - `VITE_BETTER_AUTH_URL`: 生产环境完整域名
+- `NODE_ENV`: 环境标识 (development/production)
 
 ## 🧪 测试与质量保证
 
@@ -234,7 +271,37 @@ npx drizzle-kit migrate --config=drizzle.config.ts
 
 ## 📊 性能优化
 
-- 代码分割：Vite自动分割vendor包
+- 代码分割：Vite自动分割vendor包，自定义chunk策略优化加载
 - 图片优化：使用OptimizedImage组件
 - 数据缓存：合理使用useMemo和useCallback
 - 分页加载：大数据列表分页处理
+- 实时连接：智能订阅管理，减少不必要的实时更新
+- 组件懒加载：关键路径优先加载，非关键组件按需加载
+
+## 🚨 重要安全措施
+
+- 根管理员保护：对特定邮箱地址的删除操作有硬编码保护
+- 权限验证：所有API操作都会验证用户权限
+- SQL注入防护：使用参数化查询和ORM层保护
+- XSS防护：输入验证和输出转义
+- 认证与业务分离：认证数据与业务数据存储分离
+
+## 🌐 国际化开发指南
+
+### Translation Management
+- All UI text is managed in `translations.ts`
+- Two languages supported: Chinese (zh) and English (en)
+- New translations should be added to both language objects
+- Use `t('key')` function in components to access translations
+- Parameter substitution uses `{paramName}` syntax
+
+### Adding New Translations
+1. Add the translation key-value pair to both zh and en objects in `translations.ts`
+2. Use the `getTranslation(lang, key, params?)` function or `t('key')` helper in components
+3. For parameterized translations, use format: `t('key', { paramName: value })`
+
+### Internationalization Notes
+All UI elements are now fully translated between Chinese and English:
+- All interface text is now properly localized using translation keys
+- Components use the t('key') function for dynamic translations
+- Both zh and en language variants are maintained in translations.ts

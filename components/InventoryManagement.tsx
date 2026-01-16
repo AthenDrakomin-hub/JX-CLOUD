@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Ingredient } from '../types';
-import { translations, Language } from '../translations';
+import { Language, getTranslation } from '../translations';
 import { 
   Plus, Trash2, Search, X, 
   Sparkles, Box, AlertTriangle,
@@ -15,7 +15,7 @@ const InventoryManagement: React.FC<{ lang: Language }> = ({ lang }) => {
   const [editingIng, setEditingIng] = useState<Ingredient | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const t = (key: string) => (translations[lang] as any)[key] || key;
+  const t = useCallback((key: string) => getTranslation(lang, key), [lang]);
 
   const fetchIngredients = useCallback(async () => {
     const data = await api.ingredients.getAll();
@@ -61,10 +61,10 @@ const InventoryManagement: React.FC<{ lang: Language }> = ({ lang }) => {
         <div className="space-y-2">
            <div className="flex items-center space-x-2 text-[#d4af37]">
               <Sparkles size={14} />
-              <span className="text-[10px] font-black uppercase tracking-[0.4em]">JX Stocks & Supply Chain</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.4em]">{t('jx_supply_chain')}</span>
            </div>
-           <h2 className="text-5xl font-serif italic text-slate-900 tracking-tighter">食材与物料库存</h2>
-           <p className="text-sm text-slate-400 font-medium">实时监控后厨核心资产消耗水位</p>
+           <h2 className="text-5xl font-serif italic text-slate-900 tracking-tighter">{t('inventory_management')}</h2>
+           <p className="text-sm text-slate-400 font-medium">{t('real_time_monitoring')}</p>
         </div>
       </div>
 
@@ -73,7 +73,7 @@ const InventoryManagement: React.FC<{ lang: Language }> = ({ lang }) => {
            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#d4af37] transition-colors" size={20} />
            <input 
              type="text" 
-             placeholder="搜索食材名称或分类..."
+             placeholder={t('search_ingredients')}
              className="w-full pl-16 pr-8 py-5 bg-white border border-slate-100 rounded-[2rem] text-sm font-bold shadow-sm outline-none focus:ring-8 focus:ring-slate-50 transition-all"
              value={searchTerm}
              onChange={(e) => setSearchTerm(e.target.value)}
@@ -111,7 +111,7 @@ const InventoryManagement: React.FC<{ lang: Language }> = ({ lang }) => {
                    </div>
                    <div className="flex flex-col space-y-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={() => { setEditingIng(ing); setIsModalOpen(true); }} className="p-3 bg-slate-50 text-slate-400 hover:text-slate-950 hover:bg-white hover:shadow-md rounded-xl transition-all"><Edit3 size={16} /></button>
-                      <button onClick={async () => { if(confirm('确定删除该物料？')) { await api.ingredients.delete(ing.id); fetchIngredients(); } }} className="p-3 bg-slate-50 text-slate-400 hover:text-red-600 hover:bg-white hover:shadow-md rounded-xl transition-all"><Trash2 size={16} /></button>
+                      <button onClick={async () => { if(confirm(t('confirm_delete_material'))) { await api.ingredients.delete(ing.id); fetchIngredients(); } }} className="p-3 bg-slate-50 text-slate-400 hover:text-red-600 hover:bg-white hover:shadow-md rounded-xl transition-all"><Trash2 size={16} /></button>
                    </div>
                 </div>
 
@@ -123,7 +123,7 @@ const InventoryManagement: React.FC<{ lang: Language }> = ({ lang }) => {
                       </p>
                    </div>
                    <div className="bg-slate-50 p-6 rounded-[2.5rem] space-y-2 border border-slate-100 shadow-inner">
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">预警阈值</p>
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t('warning_threshold')}</p>
                       <p className="text-4xl font-black text-slate-900 opacity-20">
                          {ing.minStock} <span className="text-sm font-bold">{ing.unit}</span>
                       </p>
@@ -158,16 +158,16 @@ const InventoryManagement: React.FC<{ lang: Language }> = ({ lang }) => {
                       <div className="space-y-3">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('category')}</label>
                         <select name="category" defaultValue={editingIng?.category || '主食类'} className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-bold">
-                           <option value="主食类">主食类</option><option value="油脂类">油脂类</option><option value="水产类">水产类</option><option value="调味类">调味类</option><option value="蔬果类">蔬果类</option>
+                           <option value="主食类">{t('ingredient_category_main_food')}</option><option value="油脂类">{t('ingredient_category_oil')}</option><option value="水产类">{t('ingredient_category_seafood')}</option><option value="调味类">{t('ingredient_category_seasoning')}</option><option value="蔬果类">{t('ingredient_category_vegetables')}</option>
                         </select>
                       </div>
                    </div>
                    <div className="grid grid-cols-2 gap-6">
-                      <div className="space-y-3"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">当前库存</label><input name="stock" type="number" step="0.01" defaultValue={editingIng?.stock || 0} required className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-bold" /></div>
+                      <div className="space-y-3"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('current_stock_amount')}</label><input name="stock" type="number" step="0.01" defaultValue={editingIng?.stock || 0} required className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-bold" /></div>
                       <div className="space-y-3"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">警戒水位</label><input name="minStock" type="number" step="0.01" defaultValue={editingIng?.minStock || 10} required className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-bold" /></div>
                    </div>
                 </div>
-                <button type="submit" className="w-full py-6 bg-slate-900 text-white rounded-[2rem] font-black text-xs uppercase tracking-widest shadow-2xl hover:bg-[#d4af37] transition-all flex items-center justify-center space-x-3"><Save size={18} /><span>保存档案</span></button>
+                <button type="submit" className="w-full py-6 bg-slate-900 text-white rounded-[2rem] font-black text-xs uppercase tracking-widest shadow-2xl hover:bg-[#d4af37] transition-all flex items-center justify-center space-x-3"><Save size={18} /><span>{t('save_records')}</span></button>
              </div>
           </form>
         </div>

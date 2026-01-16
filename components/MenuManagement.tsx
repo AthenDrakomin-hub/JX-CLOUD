@@ -121,7 +121,7 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
     <div className="flex flex-col lg:flex-row gap-10 relative pb-20 max-w-[1600px] mx-auto">
       <aside className="w-full lg:w-80 shrink-0 space-y-6 sticky top-28 h-fit no-print hidden lg:block">
         <div className="bg-white p-6 rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
-           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 px-2">Navigation Node</p>
+           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 px-2">{t('navigation_node')}</p>
            <nav className="space-y-1 max-h-[60vh] overflow-y-auto no-scrollbar pr-2">
               <button onClick={() => setActiveCategoryId('All')} className={`w-full text-left px-5 py-4 rounded-2xl font-bold text-sm transition-all flex items-center justify-between group ${activeCategoryId === 'All' ? 'bg-slate-900 text-white shadow-xl' : 'text-slate-500 hover:bg-slate-50'}`}>
                 <div className="flex items-center space-x-3"><Layers size={14} /><span>{t('all_assets')}</span></div>

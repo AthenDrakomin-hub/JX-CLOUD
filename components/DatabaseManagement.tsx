@@ -7,7 +7,8 @@ import {
   FileCode, Key, ServerOff
 } from 'lucide-react';
 import { api } from '../services/api';
-import { isDemoMode, getConnectionStatus } from '../services/supabaseClient';
+import { isDemoMode } from '../services/supabaseClient';
+import { getConnectionStatus } from '../services/supabaseClient'; // 假设getConnectionStatus仍然可用
 
 const DatabaseManagement: React.FC<{ lang: string }> = ({ lang }) => {
   const [tables] = useState([
