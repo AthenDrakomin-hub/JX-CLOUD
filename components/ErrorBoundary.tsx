@@ -48,7 +48,8 @@ class ErrorBoundary extends Component<Props, State> {
 
     if (hasError) {
       const lang = propsLang || 'zh';
-      const t = (key: keyof typeof translations.zh) => 
+      // Fix: Relax the type parameter to 'string' to resolve TS errors with missing keys
+      const t = (key: string) => 
         (translations[lang] as any)[key] || (translations.zh as any)[key] || key;
 
       return (

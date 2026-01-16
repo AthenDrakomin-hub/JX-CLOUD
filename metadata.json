@@ -1,5 +1,5 @@
 {
-  "name": "JX CLOUD Enterprise Hospitality Suite",
-  "description": "Production-ready hotel management system with Supabase cloud integration and localized privacy-first architecture.",
+  "name": "江西云厨终端系统 - JX CLOUD Terminal",
+  "description": "Enterprise-grade hospitality management terminal with multi-layered IP security, direct database manipulation and RLS auditing.",
   "requestFramePermissions": []
 }

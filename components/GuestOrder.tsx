@@ -1,349 +1,284 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
-import { Dish, Order, OrderStatus, PaymentMethod, PaymentMethodConfig } from '../types';
-import { translations, Language, getTranslation } from '../translations';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { Dish, Order, OrderStatus, Category, PaymentMethodConfig } from '../types';
+import { Language, getTranslation } from '../translations';
 import { api } from '../services/api';
 import { 
   Plus, Minus, Globe, Search,
   ChevronRight, ShoppingCart, 
-  Smartphone, ArrowLeft, Flame, Loader2, CheckCircle2,
-  Banknote, Wallet, ShoppingBag, CreditCard, Info
+  Loader2, CheckCircle2,
+  ArrowLeft, CreditCard, Sparkles,
+  Copy, Check, Image as ImageIcon, ChevronLeft
 } from 'lucide-react';
+import OptimizedImage from './OptimizedImage';
 
 interface GuestOrderProps {
   roomId: string;
   dishes: Dish[];
+  categories?: Category[];
   onSubmitOrder: (order: Partial<Order>) => Promise<void>;
   lang: Language;
   onToggleLang: () => void;
   onRescan: () => void;
 }
 
-const GuestOrder: React.FC<GuestOrderProps> = ({ roomId, dishes, onSubmitOrder, lang, onToggleLang, onRescan }) => {
+const GuestOrder: React.FC<GuestOrderProps> = ({ 
+  roomId, dishes = [], categories = [], onSubmitOrder, lang, onToggleLang
+}) => {
   const [cart, setCart] = useState<{ [dishId: string]: number }>({});
   const [isCheckout, setIsCheckout] = useState(false);
+  const [isPaymentDetails, setIsPaymentDetails] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
   const [availablePayments, setAvailablePayments] = useState<PaymentMethodConfig[]>([]);
-  const [selectedPayment, setSelectedPayment] = useState<PaymentMethod | null>(null);
+  const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   
-  const t = (key: keyof typeof translations.zh) => getTranslation(lang, key);
-  const C = t('currency');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeCategoryId, setActiveCategoryId] = useState('All');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 8;
+  
+  const [paymentProof, setPaymentProof] = useState('');
+
+  const t = useCallback((key: string, params?: any) => getTranslation(lang, key, params), [lang]);
 
   useEffect(() => {
-    fetchActivePayments();
+    api.payments.getAll().then(pAll => {
+      const active = pAll.filter(p => p.isActive).sort((a, b) => a.sort_order - b.sort_order);
+      setAvailablePayments(active);
+      if (active.length > 0) setSelectedPaymentId(active[0].id);
+    });
   }, []);
 
-  const fetchActivePayments = async () => {
-    const all = await api.payments.getAll();
-    const active = all.filter((p: any) => p.isActive);
-    setAvailablePayments(active);
-    if (active.length > 0) setSelectedPayment(active[0].type);
-  };
-
-  const visibleDishes = useMemo(() => dishes.filter(d => d.isAvailable !== false), [dishes]);
-  const recommendedDishes = useMemo(() => visibleDishes.filter(d => d.isRecommended), [visibleDishes]);
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, activeCategoryId]);
 
   const filteredDishes = useMemo(() => {
-    return visibleDishes.filter(d => 
-      d.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      (d.nameEn || '').toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [visibleDishes, searchTerm]);
+    return (dishes || []).filter(d => {
+      const matchSearch = (d.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          (d.name_en || '').toLowerCase().includes(searchTerm.toLowerCase());
+      
+      let matchCat = true;
+      if (activeCategoryId !== 'All') {
+        const cat = categories.find(c => c.id === activeCategoryId);
+        if (cat?.level === 1) {
+          const subs = categories.filter(c => c.parent_id === activeCategoryId).map(c => c.id);
+          matchCat = d.category === activeCategoryId || subs.includes(d.category);
+        } else {
+          matchCat = d.category === activeCategoryId;
+        }
+      }
+      return matchSearch && matchCat && d.is_available;
+    });
+  }, [dishes, searchTerm, activeCategoryId, categories]);
 
-  const cartItems = useMemo(() => {
-    return (Object.entries(cart) as [string, number][])
-      .filter(([_, qty]) => qty > 0)
-      .map(([id, qty]) => {
-        const dish = visibleDishes.find(d => d.id === id);
-        return { dish, quantity: qty };
-      })
-      .filter(item => item.dish !== undefined);
-  }, [cart, visibleDishes]);
+  const paginatedDishes = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredDishes.slice(start, start + pageSize);
+  }, [filteredDishes, currentPage]);
 
-  const subtotal = useMemo(() => cartItems.reduce((sum, item) => sum + (item.dish!.price * item.quantity), 0), [cartItems]);
-  const tax = subtotal * 0.12; 
-  const totalAmount = subtotal + tax;
+  const totalPages = Math.ceil(filteredDishes.length / pageSize);
 
-  const handlePlaceOrder = async () => {
-    if (!selectedPayment) return;
+  const totalAmount = useMemo(() => 
+    Object.entries(cart).reduce((sum, [id, qty]) => {
+      const dish = dishes.find(d => d.id === id);
+      return sum + (dish ? dish.price * (qty as number) : 0);
+    }, 0)
+  , [cart, dishes]);
+
+  const handleFinalSubmit = async () => {
+    if (!selectedPaymentId) return;
     setIsProcessing(true);
-    await new Promise(r => setTimeout(r, 1500));
-    
-    const newOrder: Partial<Order> = {
-      roomId,
-      items: cartItems.map(item => ({
-        dishId: item.dish!.id,
-        name: lang === 'zh' ? item.dish!.name : (item.dish!.nameEn || item.dish!.name),
-        quantity: item.quantity,
-        price: item.dish!.price
-      })),
-      totalAmount,
-      taxAmount: tax,
-      status: OrderStatus.PENDING,
-      paymentMethod: selectedPayment,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      pointsEarned: Math.floor(totalAmount / 10)
-    };
-
     try {
-      await onSubmitOrder(newOrder);
+      await onSubmitOrder({ 
+        roomId, 
+        items: Object.entries(cart).filter(([_, q]) => (q as number) > 0).map(([id, q]) => {
+          const d = dishes.find(x => x.id === id)!;
+          return { dishId: id, name: lang === 'zh' ? d.name : (d.name_en || d.name), quantity: q as number, price: d.price, partnerId: d.partnerId };
+        }), 
+        totalAmount: totalAmount, 
+        status: OrderStatus.PENDING, 
+        paymentMethod: selectedPaymentId, 
+        paymentProof: paymentProof,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
       setIsSuccess(true);
-    } catch (e) {
-      console.error(e);
-      alert('Order Submission Failed.');
+    } catch (err) {
+      alert(t('error'));
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const QuantitySelector = ({ dishId }: { dishId: string }) => {
-    const qty = cart[dishId] || 0;
-    
-    if (qty === 0) {
-      return (
-        <div className="flex items-center">
-          <button 
-            onClick={() => setCart(p => ({...p, [dishId]: 1}))}
-            className="flex items-center space-x-2 px-6 py-3 bg-[#d4af37] text-white rounded-full font-black text-[10px] uppercase tracking-widest shadow-lg active:scale-95 hover:bg-slate-900 transition-all border border-white/20 animate-in fade-in zoom-in-95 duration-200"
-          >
-            <Plus size={14} />
-            <span>{t('addToCart')}</span>
-          </button>
-        </div>
-      );
-    }
-
-    return (
-      <div className="flex items-center p-1 bg-slate-950 rounded-full shadow-2xl border border-white/10 animate-in fade-in zoom-in-95 duration-200">
-        <button 
-          onClick={() => setCart(p => ({...p, [dishId]: Math.max(0, qty - 1)}))} 
-          className="w-10 h-10 flex items-center justify-center text-white/60 hover:text-white transition-colors hover:bg-white/5 rounded-full"
-        >
-          <Minus size={18} />
-        </button>
-        <div className="w-10 flex flex-col items-center">
-          <span className="text-sm font-black text-white">{qty}</span>
-        </div>
-        <button 
-          onClick={() => setCart(p => ({...p, [dishId]: qty + 1}))} 
-          className="w-10 h-10 flex items-center justify-center bg-[#d4af37] text-white rounded-full shadow-lg active:scale-90 transition-all hover:bg-amber-500"
-        >
-          <Plus size={18} />
-        </button>
-      </div>
-    );
-  };
-
-  const getPaymentIcon = (type: string) => {
-    switch (type) {
-      case 'smartphone': return <Smartphone size={24} />;
-      case 'wallet': return <Wallet size={24} />;
-      case 'banknote': return <Banknote size={24} />;
-      default: return <CreditCard size={24} />;
-    }
-  };
-
   if (isSuccess) {
     return (
-      <div className="min-h-screen bg-[#0f172a] flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-1000">
-        <div className="w-24 h-24 bg-emerald-500/20 text-[#d4af37] rounded-[2.5rem] flex items-center justify-center mb-10 shadow-[0_0_50px_rgba(212,175,55,0.4)] animate-bounce border border-[#d4af37]/30">
-          <CheckCircle2 size={48} />
-        </div>
-        <h2 className="text-4xl font-serif italic text-white mb-4 tracking-tighter">{lang === 'zh' ? '尊享点餐成功' : 'Order Received'}</h2>
-        <p className="text-slate-300 font-medium mb-12 max-w-xs mx-auto leading-relaxed text-sm">
-          {lang === 'zh' 
-            ? `您的美味正在由江西云厨精心准备。房间 ${roomId} 将在 20-30 分钟内送达。`
-            : `Delicacies for Room ${roomId} are being prepared. Estimated delivery: 20-30 mins.`}
-        </p>
-        <button 
-          onClick={() => { setIsSuccess(false); setIsCheckout(false); setCart({}); }} 
-          className="px-12 py-5 bg-[#d4af37] text-white rounded-full font-black text-xs uppercase tracking-[0.3em] shadow-2xl active:scale-95 transition-all"
-        >
-          {lang === 'zh' ? '继续点购' : 'Back to Menu'}
-        </button>
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-10 text-center animate-in fade-in duration-700">
+         <div className="w-24 h-24 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-2xl mb-8 animate-bounce"><CheckCircle2 size={48} /></div>
+         <h2 className="text-3xl font-black text-slate-950 uppercase">{t('guest_order_issued')}</h2>
+         <p className="text-sm text-slate-400 mt-2 font-medium">{t('guest_kitchen_wait')}</p>
+         <button onClick={() => window.location.reload()} className="mt-12 w-full max-w-xs py-5 bg-slate-950 text-white rounded-2xl font-black text-xs uppercase tracking-widest">{t('guest_order_more')}</button>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col max-w-lg mx-auto relative shadow-2xl font-sans text-slate-900 overflow-hidden border-x border-slate-100">
-      <div className="bg-[#0f172a] text-xs text-white py-2 flex items-center justify-center space-x-2 font-black uppercase tracking-[0.2em] relative z-50">
-        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-        <span>JX Cloud Enterprise Gateway • AES-256</span>
-      </div>
-
-      <header className="bg-white/80 px-8 py-8 sticky top-0 z-40 flex items-center justify-between border-b border-slate-100 backdrop-blur-xl">
-        <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 bg-[#0f172a] rounded-2xl flex items-center justify-center text-[#d4af37] shadow-xl font-black text-lg italic font-serif border border-white/10">
-            {roomId}
-          </div>
-          <div className="flex flex-col">
-            <h1 className="text-xl font-serif italic tracking-tighter text-slate-900 leading-none">江西云厨</h1>
-            <span className="text-xs font-black uppercase tracking-widest text-slate-500 mt-1">Smart Hospitality</span>
-          </div>
-        </div>
+    <div className="min-h-screen bg-white flex flex-col max-w-lg mx-auto font-sans text-slate-900 pb-32">
+      <header className="px-6 py-5 sticky top-0 z-[60] bg-white/80 backdrop-blur-md flex items-center justify-between border-b border-slate-100">
         <div className="flex items-center space-x-3">
-          <button onClick={onToggleLang} className="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex items-center space-x-2 active:bg-slate-100 transition-colors">
-            <Globe size={16} className="text-slate-500" />
-            <span className="text-xs font-black uppercase tracking-widest text-slate-700">{lang === 'zh' ? 'EN' : '中'}</span>
-          </button>
+          <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-blue-500 font-black italic">{roomId}</div>
+          <h1 className="text-lg font-black tracking-tighter">JX CLOUD</h1>
         </div>
+        <button onClick={onToggleLang} className="px-3 h-9 bg-slate-100 rounded-lg text-slate-900 font-bold text-[10px] flex items-center gap-1.5 uppercase">
+          <Globe size={14} /> {lang === 'zh' ? 'English' : '中文'}
+        </button>
       </header>
 
       {!isCheckout ? (
-        <div className="flex flex-1 flex-col overflow-y-auto p-6 space-y-10 no-scrollbar bg-[#fcfcfc] pb-40 relative">
-           <div className="relative group">
-              <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-[#d4af37]" size={18} />
-              <input type="text" placeholder={t('searchDishes')} className="w-full pl-14 pr-6 py-5 bg-white border border-slate-200 rounded-[2rem] text-sm outline-none shadow-sm focus:ring-4 focus:ring-[#d4af37]/10 transition-all font-medium" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-           </div>
-
-           {recommendedDishes.length > 0 && !searchTerm && (
-             <div className="space-y-6 animate-in slide-in-from-left duration-700">
-                <div className="flex items-center justify-between px-2">
-                   <div className="flex items-center space-x-2 text-[#d4af37]">
-                      <ShoppingBag size={18} />
-                      <h2 className="text-lg font-black uppercase tracking-widest">{t('recommendedForYou')}</h2>
-                   </div>
-                </div>
-                <div className="flex overflow-x-auto no-scrollbar space-x-6 pb-4 -mx-6 px-6">
-                   {recommendedDishes.map((dish) => (
-                      <div key={dish.id} className="min-w-[280px] bg-white rounded-[3rem] border border-slate-100 shadow-xl overflow-hidden group relative flex flex-col">
-                         <div className="relative aspect-[4/3] overflow-hidden">
-                            <img src={dish.imageUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" alt={dish.name} />
-                            <div className="absolute top-4 left-4">
-                               <div className="bg-[#d4af37] text-white text-[9px] font-black uppercase px-4 py-1.5 rounded-full shadow-lg border border-white/20 backdrop-blur-md flex items-center space-x-1">
-                                  <Flame size={12} />
-                                  <span>Top Pick</span>
-                               </div>
-                            </div>
-                         </div>
-                         <div className="p-6 space-y-4 flex-1 flex flex-col justify-between">
-                            <div className="flex justify-between items-start">
-                               <div className="space-y-0.5">
-                                  <h3 className="text-lg font-bold text-slate-900 truncate max-w-[150px]">{dish.name}</h3>
-                                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{dish.nameEn}</p>
-                               </div>
-                               <p className="text-xl font-serif italic text-slate-900 tracking-tighter">{C}{dish.price}</p>
-                            </div>
-                            <div className="flex justify-end pt-2">
-                               <QuantitySelector dishId={dish.id} />
-                            </div>
-                         </div>
-                      </div>
-                   ))}
-                </div>
-             </div>
-           )}
-
-           <div className="space-y-8">
-              <div className="px-2">
-                 <h2 className="text-lg font-black uppercase tracking-widest text-slate-900">{t('curatedMenu')}</h2>
+        <div className="flex-1">
+           <div className="p-4 space-y-4">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                <input 
+                  type="text" 
+                  placeholder={t('search_dishes')}
+                  className="w-full pl-11 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold outline-none focus:bg-white"
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                />
               </div>
-              <div className="grid grid-cols-1 gap-14">
-                {filteredDishes.map((dish, idx) => (
-                   <div key={dish.id} className="group animate-in fade-in slide-in-from-bottom-8" style={{ animationDelay: `${idx * 100}ms` }}>
-                     <div className="relative aspect-[4/3] rounded-[3.5rem] overflow-hidden shadow-2xl mb-6 bg-slate-200">
-                        <img src={dish.imageUrl} className="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-110" alt={dish.name} loading="lazy" />
-                        {dish.isRecommended && <div className="absolute top-8 left-8 bg-[#d4af37] text-white text-[10px] font-black uppercase px-5 py-2.5 rounded-full shadow-2xl flex items-center border border-white/20 backdrop-blur-md"><Flame size={16} className="mr-2" /> {lang === 'zh' ? '主厨推荐' : 'Chef Special'}</div>}
-                     </div>
-                     <div className="flex items-center justify-between px-2">
-                        <div className="space-y-1">
-                           <h3 className="text-2xl font-bold text-slate-900 tracking-tight">{dish.name}</h3>
-                           <p className="text-xs font-black text-slate-500 uppercase tracking-widest leading-none mb-3">{dish.nameEn}</p>
-                           <p className="text-2xl font-serif italic text-slate-900 tracking-tighter">{C}{dish.price}</p>
+
+              <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar py-1">
+                 <button onClick={() => setActiveCategoryId('All')} className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shrink-0 border ${activeCategoryId === 'All' ? 'bg-slate-900 border-slate-900 text-white shadow-md' : 'bg-white border-slate-200 text-slate-500'}`}>{t('all_cats')}</button>
+                 {categories.filter(c => c.level === 1).map(cat => (
+                   <button key={cat.id} onClick={() => setActiveCategoryId(cat.id)} className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shrink-0 border ${activeCategoryId === cat.id ? 'bg-blue-600 border-blue-600 text-white shadow-md' : 'bg-white border-slate-200 text-slate-500'}`}>{lang === 'zh' ? cat.name : (cat.name_en || cat.name)}</button>
+                 ))}
+              </div>
+
+              <div className="grid grid-cols-1 gap-4">
+                {paginatedDishes.map(dish => (
+                  <div key={dish.id} className="bg-slate-50 p-4 rounded-3xl flex gap-4 transition-all hover:shadow-md active:scale-[0.98]">
+                    <div className="w-24 h-24 rounded-2xl bg-white p-1 overflow-hidden shrink-0 border border-slate-100">
+                      <OptimizedImage src={dish.image_url} alt={dish.name} className="w-full h-full object-cover rounded-xl" />
+                    </div>
+                    <div className="flex-1 flex flex-col justify-between py-1">
+                      <div>
+                        <h3 className="font-black text-slate-900 text-sm">{lang === 'zh' ? dish.name : (dish.name_en || dish.name)}</h3>
+                        {dish.description && <p className="text-[9px] text-slate-400 mt-1 line-clamp-1">{dish.description}</p>}
+                      </div>
+                      <div className="flex justify-between items-center mt-2">
+                        <span className="text-blue-600 font-black text-lg">₱{dish.price}</span>
+                        <div className="flex items-center bg-white rounded-xl border border-slate-200 p-1">
+                           {cart[dish.id] > 0 && (
+                             <>
+                               <button onClick={() => setCart(p => ({...p, [dish.id]: Math.max(0, p[dish.id]-1)}))} className="w-8 h-8 flex items-center justify-center text-slate-400"><Minus size={14}/></button>
+                               <span className="w-6 text-center text-xs font-black">{cart[dish.id]}</span>
+                             </>
+                           )}
+                           <button onClick={() => setCart(p => ({...p, [dish.id]: (p[dish.id]||0)+1}))} className="w-8 h-8 flex items-center justify-center bg-slate-900 text-white rounded-lg"><Plus size={14}/></button>
                         </div>
-                        <div className="shrink-0 flex items-center">
-                           <QuantitySelector dishId={dish.id} />
-                        </div>
-                     </div>
-                   </div>
+                      </div>
+                    </div>
+                  </div>
                 ))}
               </div>
+
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-4 py-8">
+                  <button onClick={() => setCurrentPage(p => Math.max(1, p-1))} disabled={currentPage === 1} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 disabled:opacity-30"><ChevronLeft size={18}/></button>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                    {t('page_info', { current: currentPage, total: totalPages })}
+                  </span>
+                  <button onClick={() => setCurrentPage(p => Math.min(totalPages, p+1))} disabled={currentPage === totalPages} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 disabled:opacity-30"><ChevronRight size={18}/></button>
+                </div>
+              )}
+
+              {filteredDishes.length === 0 && (
+                <div className="py-20 text-center opacity-30">
+                   <p className="text-xs font-black uppercase tracking-widest">{t('noData')}</p>
+                </div>
+              )}
            </div>
            
-           {subtotal > 0 && (
-             <div className="fixed bottom-10 left-1/2 -translate-x-1/2 w-full max-w-lg px-8 z-40">
-               <button onClick={() => setIsCheckout(true)} className="w-full bg-slate-950 text-white h-20 rounded-[2.5rem] flex items-center justify-between px-8 font-black shadow-[0_30px_60px_-10px_rgba(0,0,0,0.6)] active:scale-95 transition-all border border-white/20 animate-in slide-in-from-bottom duration-300">
-                 <div className="flex items-center space-x-4">
-                   <div className="w-12 h-12 bg-[#d4af37] rounded-2xl flex items-center justify-center relative shadow-lg">
-                     <ShoppingCart size={24} className="text-slate-950" />
+           {totalAmount > 0 && (
+             <div className="fixed bottom-6 left-4 right-4 z-[70] animate-in slide-in-from-bottom-10">
+               <button onClick={() => setIsCheckout(true)} className="w-full bg-slate-950 text-white h-18 rounded-2xl flex items-center justify-between px-6 font-black shadow-2xl active-scale">
+                 <div className="flex items-center space-x-3">
+                   <div className="relative">
+                      <ShoppingCart size={18} />
+                      <div className="absolute -top-2 -right-2 w-4 h-4 bg-blue-500 rounded-full text-[8px] flex items-center justify-center">
+                         {Object.values(cart).reduce((a, b) => (a as number) + (b as number), 0)}
+                      </div>
                    </div>
-                   <div className="flex flex-col text-left">
-                     <span className="text-[10px] uppercase tracking-[0.3em] opacity-60 leading-none mb-1">Total Bill</span>
-                     <span className="text-xl font-serif italic">{C}{totalAmount.toFixed(2)}</span>
-                   </div>
+                   <div className="text-left"><span className="text-[8px] uppercase text-slate-400">{t('bill_total')}</span><br/><span className="text-lg font-serif italic">₱{totalAmount}</span></div>
                  </div>
-                 <div className="flex items-center space-x-4">
-                   <span className="bg-[#d4af37] text-slate-950 px-3 py-1 rounded-full text-xs font-black">
-                     {cartItems.reduce((acc, curr) => acc + curr.quantity, 0)} Items
-                   </span>
-                   <ChevronRight size={24} className="text-[#d4af37]" />
-                 </div>
+                 <div className="flex items-center gap-1.5 text-blue-400"><span className="text-[9px] tracking-widest uppercase">{t('checkout')}</span><ChevronRight size={18} /></div>
                </button>
              </div>
            )}
         </div>
       ) : (
-        <div className="flex-1 flex flex-col bg-white animate-in slide-in-from-right duration-500">
-           <div className="p-8 flex items-center space-x-6 border-b border-slate-100">
-             <button onClick={() => setIsCheckout(false)} className="w-12 h-12 flex items-center justify-center bg-slate-100 rounded-2xl text-slate-900 hover:bg-slate-200 transition-all"><ArrowLeft size={24} /></button>
-             <h2 className="text-3xl font-bold tracking-tighter">Confirm & Pay</h2>
+        <div className="flex-1 p-6">
+           <button onClick={() => setIsCheckout(false)} className="mb-6 flex items-center gap-2 text-slate-400 font-bold text-sm uppercase"><ArrowLeft size={18} /> {t('back')}</button>
+           <h2 className="text-2xl font-black mb-6 uppercase">{t('guest_checkout_title')}</h2>
+           <div className="bg-slate-50 p-6 rounded-3xl mb-8">
+              <div className="flex justify-between font-black text-xl mb-4 border-b pb-4 uppercase"><span>{t('bill_total')}</span><span className="text-blue-600 font-serif">₱{totalAmount}</span></div>
+              <div className="space-y-3">
+                 {Object.entries(cart).filter(([_, q]) => (q as number) > 0).map(([id, q]) => (
+                   <div key={id} className="flex justify-between text-sm font-bold text-slate-600">
+                      <span>{lang === 'zh' ? dishes.find(d => d.id === id)?.name : dishes.find(d => d.id === id)?.name_en} x {q}</span>
+                      <span>₱{(dishes.find(d => d.id === id)?.price || 0) * (q as number)}</span>
+                   </div>
+                 ))}
+              </div>
            </div>
            
-           <div className="p-10 space-y-8 flex-1 overflow-y-auto no-scrollbar pb-32">
-              <div className="bg-[#fdfdfd] rounded-[3.5rem] p-10 space-y-6 border border-slate-200 shadow-inner">
-                 <div className="flex justify-between items-center text-slate-500">
-                    <span className="text-sm font-black uppercase tracking-[0.3em]">Subtotal</span>
-                    <span className="text-base font-bold">{C}{subtotal.toFixed(2)}</span>
-                 </div>
-                 <div className="flex justify-between items-center text-slate-500">
-                    <span className="text-sm font-black uppercase tracking-[0.3em]">{t('tax')}</span>
-                    <span className="text-base font-bold">{C}{tax.toFixed(2)}</span>
-                 </div>
-                 <div className="pt-8 border-t border-slate-200 flex justify-between items-center">
-                    <span className="text-sm font-black text-slate-900 uppercase tracking-[0.3em]">{t('total')}</span>
-                    <span className="text-4xl font-serif italic text-[#d4af37]">{C}{totalAmount.toFixed(2)}</span>
-                 </div>
-              </div>
-
-              <div className="space-y-6">
-                <p className="text-xs font-black text-slate-500 uppercase tracking-[0.4em] ml-2">{lang === 'zh' ? '支付方式' : 'Payment Method'}</p>
+           {!isPaymentDetails ? (
+             <button onClick={() => setIsPaymentDetails(true)} className="w-full py-5 bg-slate-950 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl">{t('select_payment')}</button>
+           ) : (
+             <div className="space-y-6">
                 <div className="grid grid-cols-1 gap-3">
-                   {availablePayments.map(method => (
-                      <button 
-                        key={method.id} 
-                        onClick={() => setSelectedPayment(method.type)} 
-                        className={`p-6 rounded-[2.5rem] border-2 flex flex-col transition-all text-left ${selectedPayment === method.type ? 'border-[#d4af37] bg-amber-50/40 shadow-xl' : 'border-slate-100 hover:bg-slate-50'}`}
-                      >
-                         <div className="flex items-center justify-between w-full">
-                            <div className="flex items-center space-x-5">
-                               <div className={`w-14 h-14 rounded-2xl flex items-center justify-center bg-white shadow-sm text-slate-900 border border-slate-100`}>
-                                  {getPaymentIcon(method.iconType)}
-                               </div>
-                               <span className="font-black uppercase tracking-widest text-sm text-slate-900">{method.name}</span>
-                            </div>
-                            {selectedPayment === method.type && <CheckCircle2 size={28} className="text-[#d4af37]" />}
-                         </div>
-                         {selectedPayment === method.type && method.instructions && (
-                           <div className="mt-6 p-4 bg-white/60 rounded-2xl border border-amber-100 flex items-start space-x-3">
-                              <Info size={14} className="text-[#d4af37] shrink-0 mt-0.5" />
-                              <p className="text-[10px] text-slate-500 font-medium leading-relaxed italic">{method.instructions}</p>
+                   {availablePayments.map(p => (
+                     <button 
+                        key={p.id}
+                        onClick={() => setSelectedPaymentId(p.id)}
+                        className={`p-5 rounded-2xl border-2 flex items-center justify-between transition-all ${selectedPaymentId === p.id ? 'border-blue-600 bg-blue-50' : 'border-slate-100'}`}
+                     >
+                        <div className="flex items-center gap-4">
+                           <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${selectedPaymentId === p.id ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                              <CreditCard size={18} />
                            </div>
-                         )}
-                      </button>
+                           <div className="text-left">
+                              <p className="font-black text-sm">{lang === 'zh' ? p.name : p.name_en}</p>
+                              <p className="text-[10px] text-slate-400 uppercase font-bold">{p.currency}</p>
+                           </div>
+                        </div>
+                        {selectedPaymentId === p.id && <CheckCircle2 size={18} className="text-blue-600" />}
+                     </button>
                    ))}
                 </div>
-              </div>
-           </div>
 
-           <div className="p-8 bg-white safe-area-bottom border-t border-slate-100 absolute bottom-0 left-0 w-full">
-             <button onClick={handlePlaceOrder} disabled={isProcessing || !selectedPayment} className="w-full h-20 rounded-[2.5rem] font-black text-sm uppercase tracking-[0.3em] bg-slate-950 text-white shadow-2xl flex items-center justify-center space-x-4 active:scale-95 transition-all disabled:opacity-50 border border-white/20">
-               {isProcessing ? <Loader2 size={24} className="animate-spin text-[#d4af37]" /> : <span>{t('processSecurePayment')}</span>}
-             </button>
-           </div>
+                <div className="space-y-3">
+                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">{t('guest_proof_required')}</p>
+                   <input 
+                     value={paymentProof}
+                     onChange={e => setPaymentProof(e.target.value)}
+                     className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:bg-white font-bold text-sm"
+                     placeholder={t('proof_placeholder')}
+                   />
+                </div>
+
+                <button 
+                  onClick={handleFinalSubmit}
+                  disabled={isProcessing || !selectedPaymentId}
+                  className="w-full py-6 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-3 active-scale disabled:opacity-50"
+                >
+                   {isProcessing ? <Loader2 className="animate-spin" size={20} /> : <Sparkles size={20} />}
+                   <span>{t('submit')}</span>
+                </button>
+             </div>
+           )}
         </div>
       )}
     </div>

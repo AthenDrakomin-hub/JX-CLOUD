@@ -1,647 +1,352 @@
 
-import { Order, Dish, HotelRoom, Expense, User, OrderStatus, RoomStatus, MaterialImage, SecurityLog, UserRole, PaymentMethod, PaymentMethodConfig, PermissionKey } from '../types';
 import { supabase, isDemoMode } from './supabaseClient';
-import { notificationService } from './notification';
-
-import { validateOrderData, validateDishData, validateUserData } from './security';
-import { validateOrderForKitchen } from './business';
-import { safeApiCall, handleSupabaseError, NetworkError, requestTracker, NetworkErrorType } from './network';
+import { 
+  Partner, Order, Dish, OrderStatus, SystemConfig, UserRole, 
+  Category, Ingredient, PaymentMethodConfig, HotelRoom, User, Expense
+} from '../types';
+import { INITIAL_DISHES, INITIAL_CATEGORIES } from '../constants';
 
 /**
- * 江西云厨 - 生产级 API 网关
- * 所有的操作都会自动触发审计日志
+ * 江西云厨 - 生产级数据网关 (Cloud Engine v10.5)
+ * 核心逻辑：彻底打通全业务线的物理层持久化。
  */
 
-const logAction = async (action: string, details?: string, risk: 'Low' | 'Medium' | 'High' = 'Low', metadata?: Record<string, any>) => {
-  if (isDemoMode) return;
-  
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    const response = await safeApiCall(async () => {
-      const { data, error } = await supabase.from('security_logs').insert({
-        user_id: user?.email || 'Anonymous/System',
-        action,
-        details,
-        risk_level: risk,
-        ip_address: 'Edge-Client',
-        metadata: metadata || null
-      });
-      return { data, error };
-    });
-    
-    if (!response.success) {
-      console.error('安全日志记录失败:', response.error);
-    }
-  } catch (error) {
-    console.error('记录安全日志时发生错误:', error);
-  }
-};
-
 export const api = {
-  // 员工资料管理 (核心安全优化)
-  users: {
-    getAll: async () => {
-      if (isDemoMode) return [];
-      
-      try {
-        const response = await safeApiCall(async () => {
-          const { data, error } = await supabase.from('profiles').select('*');
-          return { data, error };
-        });
-        if (response.success && response.data) {
-          requestTracker.recordRequest(true);
-          return response.data || [];
-        } else {
-          requestTracker.recordRequest(false, response.error);
-          console.error('获取用户列表失败:', response.error);
-          return [];
-        }
-      } catch (error) {
-        requestTracker.recordRequest(false, handleSupabaseError(error));
-        console.error('获取用户列表时发生错误:', error);
-        return [];
-      }
+  config: {
+    get: async (): Promise<SystemConfig> => {
+      if (isDemoMode || !supabase) return { hotelName: '江西云厨(演示)', theme: 'light', autoPrintOrder: true, ticketStyle: 'standard', fontFamily: 'Plus Jakarta Sans' } as any;
+      const { data, error } = await supabase.from('system_config').select('*').eq('id', 'global').maybeSingle();
+      if (error || !data) return { hotelName: '江西云厨', theme: 'light', autoPrintOrder: true, ticketStyle: 'standard', fontFamily: 'Plus Jakarta Sans' } as any;
+      return {
+        hotelName: data.hotel_name,
+        version: data.version,
+        theme: data.theme || 'light',
+        autoPrintOrder: data.auto_print ?? true,
+        ticketStyle: data.ticket_style || 'standard',
+        fontFamily: data.font_family || 'Plus Jakarta Sans'
+      } as any;
     },
-    update: async (user: User) => {
-      // 验证用户数据
-      const validation = validateUserData(user);
-      if (!validation.isValid) {
-        throw new Error(`用户数据验证失败: ${validation.errors.join(', ')}`);
-      }
-      
-      if (!isDemoMode) {
-        try {
-          const response = await safeApiCall(async () => {
-            const { error } = await supabase.from('profiles').update({
-              name: user.name,
-              role: user.role,
-              permissions: user.permissions,
-              is_locked: user.isLocked
-            }).eq('id', user.id);
-            return { data: null, error };
-          });
-          
-          if (response.success) {
-            requestTracker.recordRequest(true);
-            
-            // 记录高风险审计日志
-            await logAction(
-              'Staff Profile Modified', 
-              `Target: ${user.username}, Role: ${user.role}, Perms: ${user.permissions.join('|')}`, 
-              'High',
-              { userId: user.id, updatedFields: ['name', 'role', 'permissions', 'isLocked'] }
-            );
-          } else {
-            requestTracker.recordRequest(false, response.error);
-            throw new Error(`更新用户失败: ${response.error?.message || '未知错误'}`);
-          }
-        } catch (error: any) {
-          requestTracker.recordRequest(false, handleSupabaseError(error));
-          throw new Error(`更新用户时发生错误: ${error.message || '未知错误'}`);
-        }
-      }
-      return user;
-    },
-    // Fix: Added missing create method for users with validation
-    create: async (user: User) => {
-      // 验证用户数据
-      const validation = validateUserData(user);
-      if (!validation.isValid) {
-        throw new Error(`用户数据验证失败: ${validation.errors.join(', ')}`);
-      }
-      
-      if (!isDemoMode) {
-        try {
-          const response = await safeApiCall(async () => {
-            const { data, error } = await supabase.from('profiles').insert({
-              id: user.id,
-              username: user.username,
-              name: user.name,
-              role: user.role,
-              permissions: user.permissions,
-              is_locked: user.isLocked
-            });
-            if (error) throw error;
-            return data;
-          });
-          
-          if (response.success) {
-            requestTracker.recordRequest(true);
-            await logAction('Staff Registered', `User: ${user.username}`, 'High', { userId: user.id, role: user.role });
-          } else {
-            requestTracker.recordRequest(false, response.error);
-            throw new Error(`创建用户失败: ${response.error?.message || '未知错误'}`);
-          }
-        } catch (error: any) {
-          requestTracker.recordRequest(false, handleSupabaseError(error));
-          throw new Error(`创建用户时发生错误: ${error.message || '未知错误'}`);
-        }
-      }
-      return user;
-    },
-    // Fix: Added missing delete method for users
-    delete: async (id: string) => {
-      if (!isDemoMode) {
-        try {
-          const response = await safeApiCall(async () => {
-            const { error } = await supabase.from('profiles').delete().eq('id', id);
-            if (error) throw error;
-            return { success: true };
-          });
-          
-          if (response.success) {
-            requestTracker.recordRequest(true);
-            await logAction('Staff Deleted', `ID: ${id}`, 'High', { deletedUserId: id });
-          } else {
-            requestTracker.recordRequest(false, response.error);
-            throw new Error(`删除用户失败: ${response.error?.message || '未知错误'}`);
-          }
-        } catch (error: any) {
-          requestTracker.recordRequest(false, handleSupabaseError(error));
-          throw new Error(`删除用户时发生错误: ${error.message || '未知错误'}`);
-        }
-      }
-    },
-    // 如果需要修改密码，需要通过 Supabase Auth Admin API，这里模拟调用
-    resetPassword: async (userId: string, newPass: string) => {
-      await logAction('Password Reset Issued', `Target UID: ${userId}`, 'High');
-      // 实际生产环境应调用 supabase.auth.admin.updateUserById
-    }
-  },
-
-  // 订单操作
-  orders: {
-    getAll: async () => {
-      try {
-        const response = await safeApiCall(async () => {
-          const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
-          return { data, error };
-        });
-        
-        if (response.success && response.data) {
-          requestTracker.recordRequest(true);
-          return response.data || [];
-        } else {
-          requestTracker.recordRequest(false, response.error);
-          console.error('获取订单列表失败:', response.error);
-          return [];
-        }
-      } catch (error) {
-        requestTracker.recordRequest(false, handleSupabaseError(error));
-        console.error('获取订单列表时发生错误:', error);
-        return [];
-      }
-    },
-    // Fix: Added missing create method for orders with validation
-    create: async (order: Order | Partial<Order>) => {
-      // 验证订单数据
-      const validation = validateOrderData(order);
-      if (!validation.isValid) {
-        throw new Error(`订单数据验证失败: ${validation.errors.join(', ')}`);
-      }
-      
-      try {
-        const response = await safeApiCall(async () => {
-          const { error } = await supabase.from('orders').insert(order);
-          return { data: null, error };
-        });
-        
-        if (response.success) {
-          requestTracker.recordRequest(true);
-          
-          // Update room status to ordering
-          if (order.roomId) {
-            try {
-              await supabase.from('rooms').update({ status: 'ordering' }).eq('id', order.roomId);
-            } catch (roomError) {
-              console.error('更新房间状态失败:', roomError);
-            }
-          }
-          
-          // 记录订单创建日志
-          await logAction('Order Created', `OrderID: ${order.id}, Room: ${order.roomId}`, 'Low', { 
-            orderId: order.id, 
-            roomId: order.roomId, 
-            totalAmount: (order as Order).totalAmount,
-            itemsCount: (order as Order).items?.length || 0
-          });
-        } else {
-          requestTracker.recordRequest(false, response.error);
-          throw new Error(`创建订单失败: ${response.error?.message || '未知错误'}`);
-        }
-      } catch (error: any) {
-        requestTracker.recordRequest(false, handleSupabaseError(error));
-        throw new Error(`创建订单时发生错误: ${error.message || '未知错误'}`);
-      }
-    },
-    updateStatus: async (orderId: string, status: OrderStatus) => {
-      try {
-        const response = await safeApiCall(async () => {
-          const { error } = await supabase.from('orders').update({ status, updated_at: new Date() }).eq('id', orderId);
-          if (error) throw error;
-          return { success: true };
-        });
-        
-        if (response.success) {
-          requestTracker.recordRequest(true);
-          
-          // 关联审计：取消订单属于敏感操作
-          if (status === 'cancelled') {
-            await logAction('Order Revoked', `OrderID: ${orderId}`, 'Medium', { orderId, previousStatus: 'pre-cancelled' });
-          } else {
-            // 记录其他状态变更
-            await logAction('Order Status Updated', `OrderID: ${orderId}, Status: ${status}`, 'Low', { orderId, status });
-          }
-          
-          // 更新房间状态
-          if (['completed', 'cancelled'].includes(status)) {
-            try {
-              const orderResponse = await safeApiCall(async () => {
-                const { data, error } = await supabase.from('orders').select('room_id').eq('id', orderId).single();
-                if (error) throw error;
-                return data;
-              });
-              
-              if (orderResponse && orderResponse.success && orderResponse.data) {
-                const roomData = orderResponse.data as { room_id: string };
-                await supabase.from('rooms').update({ status: 'ready' }).eq('id', roomData.room_id);
-              }
-            } catch (roomError) {
-              console.error('更新房间状态失败:', roomError);
-            }
-          }
-        } else {
-          requestTracker.recordRequest(false, response.error);
-          throw new Error(`更新订单状态失败: ${response.error?.message || '未知错误'}`);
-        }
-      } catch (error: any) {
-        requestTracker.recordRequest(false, handleSupabaseError(error));
-        throw new Error(`更新订单状态时发生错误: ${error.message || '未知错误'}`);
-      }
-    }
-  },
-
-  // 菜单管理
-  dishes: {
-    getAll: async () => {
-      try {
-        const response = await safeApiCall(async () => {
-          const { data, error } = await supabase.from('dishes').select('*');
-          return { data, error };
-        });
-        
-        if (response.success && response.data) {
-          requestTracker.recordRequest(true);
-          return response.data || [];
-        } else {
-          requestTracker.recordRequest(false, response.error);
-          console.error('获取菜品列表失败:', response.error);
-          return [];
-        }
-      } catch (error) {
-        requestTracker.recordRequest(false, handleSupabaseError(error));
-        console.error('获取菜品列表时发生错误:', error);
-        return [];
-      }
-    },
-    // Fix: Added missing create method for dishes with validation
-    create: async (dish: Dish) => {
-      // 验证菜品数据
-      const validation = validateDishData(dish);
-      if (!validation.isValid) {
-        throw new Error(`菜品数据验证失败: ${validation.errors.join(', ')}`);
-      }
-      
-      try {
-        const response = await safeApiCall(async () => {
-          const { error } = await supabase.from('dishes').insert(dish);
-          if (error) throw error;
-          return { success: true };
-        });
-        
-        if (response.success) {
-          requestTracker.recordRequest(true);
-          await logAction('Menu Item Added', `Dish: ${dish.name}`, 'Low', { dishId: dish.id, dishName: dish.name, price: dish.price });
-        } else {
-          requestTracker.recordRequest(false, response.error);
-          throw new Error(`创建菜品失败: ${response.error?.message || '未知错误'}`);
-        }
-      } catch (error: any) {
-        requestTracker.recordRequest(false, handleSupabaseError(error));
-        throw new Error(`创建菜品时发生错误: ${error.message || '未知错误'}`);
-      }
-    },
-    // Fix: Updated to include validation
-    update: async (dish: Dish) => {
-      // 验证菜品数据
-      const validation = validateDishData(dish);
-      if (!validation.isValid) {
-        throw new Error(`菜品数据验证失败: ${validation.errors.join(', ')}`);
-      }
-      
-      try {
-        const response = await safeApiCall(async () => {
-          const { error } = await supabase.from('dishes').update(dish).eq('id', dish.id);
-          if (error) throw error;
-          return { success: true };
-        });
-        
-        if (response.success) {
-          requestTracker.recordRequest(true);
-          await logAction('Menu Item Updated', `Dish: ${dish.name}, Price: ${dish.price}`, 'Low', { dishId: dish.id, dishName: dish.name, price: dish.price, updatedFields: Object.keys(dish) });
-        } else {
-          requestTracker.recordRequest(false, response.error);
-          throw new Error(`更新菜品失败: ${response.error?.message || '未知错误'}`);
-        }
-      } catch (error: any) {
-        requestTracker.recordRequest(false, handleSupabaseError(error));
-        throw new Error(`更新菜品时发生错误: ${error.message || '未知错误'}`);
-      }
-    },
-    // Fix: Added missing delete method for dishes
-    delete: async (id: string) => {
-      try {
-        const response = await safeApiCall(async () => {
-          const { error } = await supabase.from('dishes').delete().eq('id', id);
-          if (error) throw error;
-          return { success: true };
-        });
-        
-        if (response.success) {
-          requestTracker.recordRequest(true);
-          await logAction('Menu Item Deleted', `ID: ${id}`, 'Medium', { deletedDishId: id });
-        } else {
-          requestTracker.recordRequest(false, response.error);
-          throw new Error(`删除菜品失败: ${response.error?.message || '未知错误'}`);
-        }
-      } catch (error: any) {
-        requestTracker.recordRequest(false, handleSupabaseError(error));
-        throw new Error(`删除菜品时发生错误: ${error.message || '未知错误'}`);
-      }
-    }
-  },
-
-  // Fix: Added missing rooms module
-  rooms: {
-    getAll: async () => {
-      const { data } = await supabase.from('rooms').select('*');
-      return data || [];
-    },
-    update: async (room: HotelRoom) => {
-      await supabase.from('rooms').update(room).eq('id', room.id);
-    }
-  },
-
-  // Fix: Added missing expenses module
-  expenses: {
-    getAll: async () => {
-      if (isDemoMode) return [];
-      try {
-        const response = await safeApiCall(async () => {
-          const { data, error } = await supabase.from('expenses').select('*');
-          return { data, error };
-        });
-        if (response.success && response.data) {
-          requestTracker.recordRequest(true);
-          return response.data || [];
-        } else {
-          requestTracker.recordRequest(false, response.error);
-          console.error('获取支出列表失败:', response.error);
-          return [];
-        }
-      } catch (error) {
-        requestTracker.recordRequest(false, handleSupabaseError(error));
-        console.error('获取支出列表时发生错误:', error);
-        return [];
-      }
-    },
-    create: async (expense: Expense) => {
-      const { error } = await supabase.from('expenses').insert(expense);
-      if (error) throw error;
-    },
-    delete: async (id: string) => {
-      const { error } = await supabase.from('expenses').delete().eq('id', id);
-      if (error) throw error;
-    }
-  },
-
-  // Fix: Added missing materials module
-  materials: {
-    getAll: async () => {
-      if (isDemoMode) return [];
-      try {
-        const response = await safeApiCall(async () => {
-          const { data, error } = await supabase.from('materials').select('*');
-          return { data, error };
-        });
-        if (response.success && response.data) {
-          requestTracker.recordRequest(true);
-          return response.data || [];
-        } else {
-          requestTracker.recordRequest(false, response.error);
-          console.error('获取素材列表失败:', response.error);
-          return [];
-        }
-      } catch (error) {
-        requestTracker.recordRequest(false, handleSupabaseError(error));
-        console.error('获取素材列表时发生错误:', error);
-        return [];
-      }
-    },
-    create: async (material: MaterialImage) => {
-      const { error } = await supabase.from('materials').insert(material);
-      if (error) throw error;
-    },
-    delete: async (id: string) => {
-      const { error } = await supabase.from('materials').delete().eq('id', id);
-      if (error) throw error;
-    }
-  },
-
-  // Fix: Added missing payments module
-  payments: {
-    getAll: async () => {
-      const { data, error } = await supabase.from('payment_configs').select('*');
-      if (error) {
-        console.error('Error fetching payment configs:', error);
-        if (isDemoMode) {
-          return [
-            { id: '1', name: 'GCash', type: PaymentMethod.GCASH, isActive: true, iconType: 'smartphone' },
-            { id: '2', name: 'Maya', type: PaymentMethod.MAYA, isActive: true, iconType: 'wallet' },
-            { id: '3', name: 'GrabPay', type: PaymentMethod.GRABPAY, isActive: true, iconType: 'smartphone' },
-            { id: '4', name: 'Cash', type: PaymentMethod.CASH, isActive: true, iconType: 'banknote' },
-          ];
-        }
-        return [];
-      }
-      return data || [];
-    },
-    update: async (payment: PaymentMethodConfig) => {
-      if (payment.id) {
-        const { error } = await supabase.from('payment_configs').update(payment).eq('id', payment.id);
-        if (error) {
-          console.error('Failed to update payment config:', error);
-          throw error;
-        }
-        // 记录支付配置更新日志
-        await logAction('Payment Config Updated', `Payment ID: ${payment.id}, Name: ${payment.name}`, 'Low', { 
-          paymentId: payment.id, 
-          paymentName: payment.name, 
-          paymentType: payment.type,
-          updatedFields: Object.keys(payment)
-        });
-      } else {
-        // 如果没有ID，说明是新创建的支付方式
-        const newPayment = {
-          ...payment,
-          id: `payment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        };
-        const { error } = await supabase.from('payment_configs').insert([newPayment]);
-        if (error) {
-          console.error('Failed to create payment config:', error);
-          throw error;
-        }
-        // 记录支付配置创建日志
-        await logAction('Payment Config Created', `Payment Name: ${newPayment.name}`, 'Low', { 
-          paymentId: newPayment.id, 
-          paymentName: newPayment.name, 
-          paymentType: newPayment.type
-        });
-      }
-    },
-    create: async (payment: Omit<PaymentMethodConfig, 'id'>) => {
-      const newPayment = {
-        ...payment,
-        id: `payment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      };
-      const { error } = await supabase.from('payment_configs').insert([newPayment]);
-      if (error) {
-        console.error('Failed to create payment config:', error);
-        throw error;
-      }
-      // 记录支付配置创建日志
-      await logAction('Payment Config Created', `Payment Name: ${newPayment.name}`, 'Low', { 
-        paymentId: newPayment.id, 
-        paymentName: newPayment.name, 
-        paymentType: newPayment.type
+    update: async (config: SystemConfig) => {
+      if (isDemoMode || !supabase) return;
+      await supabase.from('system_config').upsert({
+        id: 'global',
+        hotel_name: config.hotelName,
+        theme: config.theme,
+        auto_print: config.autoPrintOrder,
+        ticket_style: config.ticketStyle,
+        font_family: config.fontFamily,
+        updated_at: new Date().toISOString()
       });
-      return newPayment;
+    }
+  },
+
+  rooms: {
+    getAll: async (): Promise<HotelRoom[]> => {
+      if (isDemoMode || !supabase) return Array.from({length: 20}, (_, i) => ({ id: (8201 + i).toString(), status: 'ready' }));
+      const { data, error } = await supabase.from('rooms').select('*').order('id');
+      if (error) throw error;
+      return data.map(r => ({ id: r.id, status: r.status }));
+    },
+    updateStatus: async (id: string, status: string) => {
+      if (isDemoMode || !supabase) return;
+      await supabase.from('rooms').update({ status, updated_at: new Date().toISOString() }).eq('id', id);
+    }
+  },
+
+  dishes: {
+    getAll: async (sessionUser?: any): Promise<Dish[]> => {
+      if (isDemoMode || !supabase) return INITIAL_DISHES;
+      let query = supabase.from('menu_dishes').select('*');
+      if (sessionUser?.role === UserRole.PARTNER && sessionUser.partnerId) {
+        query = query.eq('partner_id', sessionUser.partnerId);
+      }
+      const { data, error } = await query.order('id');
+      if (error) return INITIAL_DISHES;
+      return data.map(d => ({
+        id: d.id, name: d.name, name_en: d.name_en, description: d.description,
+        tags: d.tags || [], price: Number(d.price), category: d.category,
+        stock: d.stock, image_url: d.image_url, is_available: d.is_available,
+        is_recommended: d.is_recommended, partnerId: d.partner_id
+      }));
+    },
+    create: async (data: Dish, sessionUser: any) => {
+      if (isDemoMode || !supabase) return;
+      const partnerId = sessionUser?.role === UserRole.PARTNER ? sessionUser.partnerId : data.partnerId;
+      await supabase.from('menu_dishes').insert({
+        id: data.id, name: data.name, name_en: data.name_en, description: data.description,
+        tags: data.tags, price: data.price, category: data.category, stock: data.stock,
+        image_url: data.image_url, is_available: data.is_available,
+        is_recommended: data.is_recommended, partner_id: partnerId
+      });
+    },
+    update: async (data: Dish, sessionUser: any) => {
+      if (isDemoMode || !supabase) return;
+      const query = supabase.from('menu_dishes').update({
+        name: data.name, name_en: data.name_en, description: data.description,
+        tags: data.tags, price: data.price, category: data.category, stock: data.stock,
+        image_url: data.image_url, is_available: data.is_available, is_recommended: data.is_recommended
+      }).eq('id', data.id);
+      if (sessionUser.role !== UserRole.ADMIN) query.eq('partner_id', sessionUser.partnerId);
+      await query;
+    },
+    delete: async (id: string, sessionUser: any) => {
+      if (isDemoMode || !supabase) return;
+      const query = supabase.from('menu_dishes').delete().eq('id', id);
+      if (sessionUser.role !== UserRole.ADMIN) query.eq('partner_id', sessionUser.partnerId);
+      await query;
+    }
+  },
+
+  orders: {
+    getAll: async (sessionUser?: any): Promise<Order[]> => {
+      if (isDemoMode || !supabase) return [];
+      let query = supabase.from('orders').select('*');
+      if (sessionUser?.role === UserRole.PARTNER && sessionUser.partnerId) {
+        query = query.filter('items', 'cs', JSON.stringify([{ partnerId: sessionUser.partnerId }]));
+      }
+      const { data, error } = await query.order('created_at', { ascending: false });
+      if (error) return [];
+      return data.map(o => ({
+        id: o.id, roomId: o.room_id, customerId: o.customer_id, items: o.items,
+        totalAmount: Number(o.total_amount), status: o.status as OrderStatus,
+        paymentMethod: o.payment_method, paymentProof: o.payment_proof,
+        cash_received: Number(o.cash_received || 0), cash_change: Number(o.cash_change || 0),
+        createdAt: o.created_at, updatedAt: o.updated_at
+      }));
+    },
+    create: async (data: Order) => {
+      if (isDemoMode || !supabase) return;
+      await supabase.from('orders').insert({
+        id: data.id, room_id: data.roomId, customer_id: data.customerId,
+        items: data.items, total_amount: data.totalAmount, status: data.status,
+        payment_method: data.paymentMethod, payment_proof: data.paymentProof,
+        cash_received: data.cash_received, cash_change: data.cash_change
+      });
+    },
+    updateStatus: async (id: string, status: OrderStatus) => {
+      if (isDemoMode || !supabase) return;
+      await supabase.from('orders').update({ status, updated_at: new Date().toISOString() }).eq('id', id);
+    }
+  },
+
+  categories: {
+    getAll: async (): Promise<Category[]> => {
+      if (isDemoMode || !supabase) return INITIAL_CATEGORIES;
+      const { data, error } = await supabase.from('menu_categories').select('*').order('display_order');
+      if (error || !data) return INITIAL_CATEGORIES;
+      return data.map(c => ({
+        id: c.id, name: c.name, name_en: c.name_en, code: c.code, level: c.level,
+        display_order: c.display_order, is_active: c.is_active, parent_id: c.parent_id, partnerId: c.partner_id
+      }));
+    },
+    saveAll: async (cats: Category[]) => {
+      if (isDemoMode || !supabase) return;
+      const payload = cats.map(c => ({
+        id: c.id, name: c.name, name_en: c.name_en, code: c.code, level: c.level,
+        display_order: c.display_order, is_active: c.is_active, parent_id: c.parent_id, partner_id: c.partnerId
+      }));
+      await supabase.from('menu_categories').upsert(payload);
+    }
+  },
+
+  partners: {
+    getAll: async (): Promise<Partner[]> => {
+      if (isDemoMode || !supabase) return [];
+      const { data } = await supabase.from('partners').select('*').order('name');
+      return (data || []).map(p => ({
+        id: p.id, name: p.name, ownerName: p.owner_name, status: p.status,
+        commissionRate: Number(p.commission_rate), balance: Number(p.balance),
+        contact: p.contact, email: p.email, authorizedCategories: p.authorized_categories || [],
+        totalSales: Number(p.total_sales || 0), joinedAt: p.joined_at
+      } as any));
+    },
+    getProfile: async (userId: string): Promise<Partner | null> => {
+      if (isDemoMode || !supabase) return null;
+      const { data: userData } = await supabase.from('users').select('partner_id').eq('id', userId).maybeSingle();
+      if (!userData?.partner_id) return null;
+      const { data: partnerData } = await supabase.from('partners').select('*').eq('id', userData.partner_id).maybeSingle();
+      if (!partnerData) return null;
+      return {
+        id: partnerData.id, name: partnerData.name, ownerName: partnerData.owner_name,
+        status: partnerData.status, commissionRate: Number(partnerData.commission_rate),
+        balance: Number(partnerData.balance), contact: partnerData.contact, email: partnerData.email,
+        authorizedCategories: partnerData.authorized_categories || [], totalSales: Number(partnerData.total_sales || 0),
+        joinedAt: partnerData.joined_at
+      } as any;
+    },
+    create: async (data: Partner) => {
+      if (isDemoMode || !supabase) return;
+      await supabase.from('partners').insert({
+        id: data.id, name: data.name, owner_name: data.ownerName, status: data.status,
+        commission_rate: data.commissionRate, balance: data.balance,
+        contact: data.contact, email: data.email, authorized_categories: data.authorizedCategories,
+        total_sales: data.totalSales
+      });
+    },
+    update: async (data: Partner) => {
+      if (isDemoMode || !supabase) return;
+      await supabase.from('partners').update({
+        name: data.name, owner_name: data.ownerName, status: data.status,
+        commission_rate: data.commissionRate, contact: data.contact, email: data.email,
+        authorized_categories: data.authorizedCategories
+      }).eq('id', data.id);
+    },
+    delete: async (id: string) => {
+      if (isDemoMode || !supabase) return;
+      await supabase.from('partners').delete().eq('id', id);
+    }
+  },
+
+  expenses: {
+    getAll: async (): Promise<Expense[]> => {
+      if (isDemoMode || !supabase) return [];
+      const { data } = await supabase.from('expenses').select('*').order('date', { ascending: false });
+      return (data || []).map(e => ({
+        id: e.id, amount: Number(e.amount), category: e.category, date: e.date
+      }));
+    },
+    create: async (data: Expense) => {
+      if (isDemoMode || !supabase) return;
+      await supabase.from('expenses').insert({
+        id: data.id, amount: data.amount, category: data.category, date: data.date
+      });
+    },
+    delete: async (id: string) => {
+      if (isDemoMode || !supabase) return;
+      await supabase.from('expenses').delete().eq('id', id);
+    }
+  },
+
+  users: {
+    getAll: async (): Promise<User[]> => {
+      if (isDemoMode || !supabase) return [];
+      const { data } = await supabase.from('users').select('*').order('role');
+      return (data || []).map(u => ({
+        id: u.id, username: u.username, email: u.email, role: u.role as UserRole,
+        name: u.name, partnerId: u.partner_id, modulePermissions: u.module_permissions
+      }));
+    },
+    upsert: async (data: User) => {
+      if (isDemoMode || !supabase) return;
+      // 根管理员硬保护逻辑
+      if (data.email === 'athendrakomin@proton.me') {
+         data.role = UserRole.ADMIN;
+      }
+      await supabase.from('users').upsert({
+        id: data.id, username: data.username, email: data.email, name: data.name,
+        role: data.role, partner_id: data.partnerId, module_permissions: data.modulePermissions,
+        updated_at: new Date().toISOString()
+      });
+    },
+    delete: async (id: string, requesterEmail?: string) => {
+      if (isDemoMode || !supabase) return;
+      const { data: target } = await supabase.from('users').select('email').eq('id', id).single();
+      if (target?.email === 'athendrakomin@proton.me') throw new Error("物理资产锁定：无法删除根管理员。");
+      await supabase.from('users').delete().eq('id', id);
+    }
+  },
+
+  payments: {
+    getAll: async (): Promise<PaymentMethodConfig[]> => {
+      if (isDemoMode || !supabase) return [];
+      const { data, error } = await supabase.from('payment_methods').select('*').order('sort_order');
+      if (error) return [];
+      return data.map(p => ({
+        id: p.id, name: p.name, name_en: p.name_en, currency: p.currency,
+        currency_symbol: p.currency_symbol, exchange_rate: Number(p.exchange_rate),
+        isActive: p.is_active, payment_type: p.payment_type, sort_order: p.sort_order,
+        description: p.description, description_en: p.description_en,
+        iconType: p.icon_type, wallet_address: p.wallet_address, qr_url: p.qr_url
+      }));
     },
     toggle: async (id: string) => {
-      const { data, error } = await supabase.from('payment_configs').select('isActive, name').eq('id', id).single();
-      if (error) {
-        console.error('Failed to get payment config status:', error);
-        throw error;
-      }
-      if (data) {
-        const { error: updateError } = await supabase.from('payment_configs').update({ isActive: !data.isActive }).eq('id', id);
-        if (updateError) {
-          console.error('Failed to toggle payment config status:', updateError);
-          throw updateError;
-        }
-        // 记录支付配置状态切换日志
-        await logAction('Payment Config Toggled', `Payment ID: ${id}, Name: ${data.name}, New Status: ${!data.isActive ? 'Active' : 'Inactive'}`, 'Low', { 
-          paymentId: id, 
-          paymentName: data.name,
-          newStatus: !data.isActive
-        });
-      }
-    }
-  },
-
-  // Fix: Added missing translations module
-  translations: {
-    getAll: async () => {
-      const { data } = await supabase.from('translations').select('*');
-      return data || [];
-    }
-  },
-
-  // 日志查询
-  logs: {
-    getAll: async () => {
-      const { data } = await supabase.from('security_logs').select('*').order('timestamp', { ascending: false }).limit(100);
-      return data || [];
+      if (isDemoMode || !supabase) return;
+      const { data } = await supabase.from('payment_methods').select('is_active').eq('id', id).single();
+      if (data) await supabase.from('payment_methods').update({ is_active: !data.is_active }).eq('id', id);
     },
-    getFiltered: async (filters: {
-      userId?: string;
-      action?: string;
-      riskLevel?: 'Low' | 'Medium' | 'High';
-      startDate?: string;
-      endDate?: string;
-      limit?: number;
-      offset?: number;
-    }) => {
-      let query = supabase.from('security_logs').select('*');
-      
-      if (filters.userId) {
-        query = query.eq('user_id', filters.userId);
-      }
-      if (filters.action) {
-        query = query.ilike('action', `%${filters.action}%`);
-      }
-      if (filters.riskLevel) {
-        query = query.eq('risk_level', filters.riskLevel);
-      }
-      if (filters.startDate) {
-        query = query.gte('timestamp', filters.startDate);
-      }
-      if (filters.endDate) {
-        query = query.lte('timestamp', filters.endDate);
-      }
-      
-      query = query.order('timestamp', { ascending: false });
-      
-      if (filters.limit) {
-        if (filters.offset) {
-          query = query.range(filters.offset, filters.offset + filters.limit - 1);
-        } else {
-          query = query.limit(filters.limit);
-        }
-      } else {
-        query = query.limit(100);
-      }
-      
-      const { data, error } = await query;
-      if (error) {
-        console.error('Error fetching filtered security logs:', error);
-        return [];
-      }
-      return data || [];
+    create: async (data: PaymentMethodConfig) => {
+      if (isDemoMode || !supabase) return;
+      await supabase.from('payment_methods').insert({
+        id: data.id, name: data.name, name_en: data.name_en, currency: data.currency,
+        currency_symbol: data.currency_symbol, exchange_rate: data.exchange_rate,
+        is_active: data.isActive, payment_type: data.payment_type, sort_order: data.sort_order,
+        description: data.description, description_en: data.description_en,
+        icon_type: data.iconType, wallet_address: data.wallet_address, qr_url: data.qr_url
+      });
     },
-    getStats: async () => {
-      // 获取安全日志统计信息
-      const { count: totalCount, error: totalError } = await supabase
-        .from('security_logs')
-        .select('*', { count: 'exact', head: true });
-      
-      const { count: todayCount, error: todayError } = await supabase
-        .from('security_logs')
-        .select('*', { count: 'exact', head: true })
-        .gte('timestamp', new Date(new Date().setHours(0, 0, 0, 0)).toISOString());
-      
-      const { count: highRiskCount, error: highRiskError } = await supabase
-        .from('security_logs')
-        .select('*', { count: 'exact', head: true })
-        .eq('risk_level', 'High');
-      
-      if (totalError || todayError || highRiskError) {
-        console.error('Error fetching security log stats:', totalError || todayError || highRiskError);
-        return { totalCount: 0, todayCount: 0, highRiskCount: 0 };
-      }
-      
-      return {
-        totalCount: totalCount || 0,
-        todayCount: todayCount || 0,
-        highRiskCount: highRiskCount || 0
-      };
+    update: async (data: PaymentMethodConfig) => {
+      if (isDemoMode || !supabase) return;
+      await supabase.from('payment_methods').update({
+        name: data.name, name_en: data.name_en, currency: data.currency,
+        currency_symbol: data.currency_symbol, exchange_rate: data.exchange_rate,
+        is_active: data.isActive, payment_type: data.payment_type, sort_order: data.sort_order,
+        description: data.description, description_en: data.description_en,
+        icon_type: data.iconType, wallet_address: data.wallet_address, qr_url: data.qr_url
+      }).eq('id', data.id);
+    },
+    delete: async (id: string) => {
+      if (isDemoMode || !supabase) return;
+      await supabase.from('payment_methods').delete().eq('id', id);
     }
   },
 
-  config: {
-    get: async () => ({ hotelName: '江西大酒店', version: '3.1.0' }),
-    update: async (cfg: any) => {
-       await logAction('System Settings Changed', JSON.stringify(cfg), 'High');
+  ingredients: {
+    getAll: async (): Promise<Ingredient[]> => {
+      if (isDemoMode || !supabase) return [];
+      const { data, error } = await supabase.from('ingredients').select('*').order('name');
+      if (error) return [];
+      return data.map(i => ({
+        id: i.id, name: i.name, unit: i.unit, stock: Number(i.stock),
+        minStock: Number(i.min_stock), category: i.category, last_restocked: i.last_restocked
+      }));
+    },
+    create: async (data: Ingredient) => {
+      if (isDemoMode || !supabase) return;
+      await supabase.from('ingredients').insert({
+        id: data.id, name: data.name, unit: data.unit, stock: data.stock,
+        min_stock: data.minStock, category: data.category, last_restocked: data.last_restocked
+      });
+    },
+    update: async (data: Ingredient) => {
+      if (isDemoMode || !supabase) return;
+      await supabase.from('ingredients').update({
+        name: data.name, unit: data.unit, stock: data.stock, min_stock: data.minStock,
+        category: data.category, last_restocked: data.last_restocked
+      }).eq('id', data.id);
+    },
+    delete: async (id: string) => {
+      if (isDemoMode || !supabase) return;
+      await supabase.from('ingredients').delete().eq('id', id);
+    }
+  },
+
+  db: {
+    getRows: async (table: string) => {
+      if (isDemoMode || !supabase) return [];
+      const { data } = await supabase.from(table).select('*').limit(100);
+      return data || [];
+    }
+  },
+
+  archive: {
+    exportData: async () => {
+      const dishes = await api.dishes.getAll({ role: UserRole.ADMIN });
+      const categories = await api.categories.getAll();
+      const data = { dishes, categories, exportDate: new Date().toISOString() };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `jx-cloud-backup-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+    },
+    importData: async (file: File) => {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      if (data.dishes) {
+        for (const d of data.dishes) await api.dishes.create(d, { role: UserRole.ADMIN });
+      }
+      if (data.categories) await api.categories.saveAll(data.categories);
     }
   }
 };

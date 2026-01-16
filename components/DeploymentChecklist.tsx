@@ -11,7 +11,9 @@ interface DeploymentChecklistProps {
 }
 
 const DeploymentChecklist: React.FC<DeploymentChecklistProps> = ({ lang }) => {
-  const t = (key: keyof typeof translations.zh) => translations[lang][key] || key;
+  // Fix: Relax the type parameter to 'string' to allow using dynamic keys and fix TS errors
+  const t = (key: string) => 
+    (translations[lang] as any)[key] || (translations.zh as any)[key] || key;
 
   const categories = [
     {
@@ -35,8 +37,7 @@ const DeploymentChecklist: React.FC<DeploymentChecklistProps> = ({ lang }) => {
       title: t('businessIntegration'),
       items: [
         { label: t('paymentSdkLabel'), status: "pending", desc: t('paymentSdkDesc') },
-        { label: t('cloudPrintLabel'), status: "pending", desc: t('cloudPrintDesc') },
-        { label: t('pointsAlgoLabel'), status: "success", desc: t('pointsAlgoDesc') }
+        { label: t('cloudPrintLabel'), status: "pending", desc: t('cloudPrintDesc') }
       ]
     }
   ];

@@ -1,71 +1,34 @@
-# Dependencies
-node_modules/
-.pnp/
-.pnp.js
 
-# Testing
-coverage/
-*.lcov
+# 依赖
+node_modules
+.pnpm-store
 
-# Production
-dist/
-build/
-.output
+# 编译产物
+dist
+dist-ssr
+*.local
 
-# Environment variables
-.env*.local
-.env*.dev
-.env*.test
-.env*.production
+# 环境变量 (极其重要：严禁上传至 GitHub)
+.env
+.env.local
+.env.*.local
 
-# IDE
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-.idea/
+# 系统与编辑器
+.DS_Store
+Thumbs.db
+.vscode
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 
-# Logs
-*.log
+# Vercel 本地缓存
+.vercel
+
+# 日志
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.nyc_output
-coverage/
-
-# OS
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-Thumbs.db:encryptable
-
-# Vite
-vite.config.js.timestamp-*
-*.tsbuildinfo
-
-# Package manager
-package-lock.json
-.yarn
-
-# Build outputs
-.next
-.nuxt
-out/
-
-# Vercel
-.vercel/
-
-# SvelteKit
-.svelte-kit/
-
-# Temporary files
-*.tmp
-*.temp
-*~
-*.swp
-*.swo
+pnpm-debug.log*

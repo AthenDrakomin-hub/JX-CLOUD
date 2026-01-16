@@ -14,6 +14,11 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({ src, alt, className = '
   const [imgSrc, setImgSrc] = useState(src);
 
   useEffect(() => {
+    // 如果 src 为空或无效，直接显示错误
+    if (!src || src.trim() === '') {
+      setStatus('error');
+      return;
+    }
     setStatus('loading');
     setImgSrc(src);
   }, [src]);
@@ -28,21 +33,21 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({ src, alt, className = '
         </div>
       )}
 
-      {/* 错误占位 */}
+      {/* 错误占位 (当您的 URL 失效或格式错误时显示) */}
       {status === 'error' && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 border-2 border-dashed border-slate-200">
           <AlertCircle className="text-slate-300 mb-2" size={20} />
-          <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest text-center px-4">Image Unavailable</span>
+          <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest text-center px-4">链接失效或无法访问</span>
         </div>
       )}
 
-      {/* 实际图片 */}
+      {/* 实际图片渲染 - 支持任意网络 URL */}
       <img
         src={imgSrc}
         alt={alt}
         loading="lazy"
-        className={`w-full h-full object-cover transition-all duration-1000 ease-out
-          ${status === 'loaded' ? 'opacity-100 scale-100 blur-0' : 'opacity-0 scale-105 blur-lg'}`}
+        className={`w-full h-full object-cover transition-all duration-700 ease-out
+          ${status === 'loaded' ? 'opacity-100 scale-100' : 'opacity-0 scale-105'}`}
         onLoad={() => setStatus('loaded')}
         onError={() => setStatus('error')}
       />

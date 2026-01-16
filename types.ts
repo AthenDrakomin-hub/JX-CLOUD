@@ -1,13 +1,51 @@
 
 export enum UserRole {
-  ADMIN = 'admin',
-  MANAGER = 'manager',
-  STAFF = 'staff'
+  ADMIN = 'admin',      
+  STAFF = 'staff',
+  PARTNER = 'partner', 
+  MAINTAINER = 'maintainer' 
 }
 
 export enum RoomStatus {
   READY = 'ready',
   ORDERING = 'ordering'
+}
+
+export interface HotelRoom {
+  id: string;
+  status: RoomStatus | string;
+}
+
+export type AppModule = 
+  | 'dashboard' | 'rooms' | 'orders' | 'supply_chain' | 'financial_hub' 
+  | 'images' | 'users' | 'settings' | 'menu' | 'finance' | 'partners' | 'inventory' | 'payments'
+  | 'merchant_portal';
+
+export interface CRUDPermissions {
+  enabled: boolean; 
+  c: boolean; r: boolean; u: boolean; d: boolean; 
+}
+
+export interface User {
+  id: string;
+  email: string; 
+  username: string;
+  password?: string; 
+  role: UserRole;
+  name: string; 
+  modulePermissions?: Partial<Record<AppModule, CRUDPermissions>>;
+  isOnline?: boolean;         
+  ipWhitelist?: string[];
+  isEnvLocked?: boolean;
+  partnerId?: string;
+}
+
+export interface OrderItem {
+  dishId: string;
+  name: string;
+  quantity: number;
+  price: number;
+  partnerId?: string;
 }
 
 export enum OrderStatus {
@@ -18,57 +56,106 @@ export enum OrderStatus {
   CANCELLED = 'cancelled'
 }
 
+export interface Order {
+  id: string;
+  roomId: string;
+  customerId?: string; // 新增：客户 ID
+  items: OrderItem[];
+  totalAmount: number;
+  status: OrderStatus;
+  paymentMethod: string;
+  paymentProof?: string; 
+  cash_received?: number;
+  cash_change?: number;
+  createdAt: string;
+  updatedAt: string;
+  taxAmount?: number;
+}
+
 export enum PaymentMethod {
-  GCASH = 'GCash',
-  MAYA = 'Maya',
-  GRABPAY = 'GrabPay',
-  CARD = 'Credit/Debit Card',
-  SIGN_BILL = 'Room Charge',
-  CASH = 'Cash'
-}
-
-export interface PaymentMethodConfig {
-  id: string;
-  name: string;
-  type: PaymentMethod;
-  isActive: boolean;
-  instructions?: string;
-  iconType: 'smartphone' | 'wallet' | 'banknote' | 'credit-card';
-}
-
-// 细化权限类型
-export type PermissionKey = 
-  | 'manage_menu'      // 菜单管理
-  | 'view_finance'     // 财务查看
-  | 'process_orders'   // 订单处理
-  | 'manage_staff'     // 人员管理
-  | 'system_config'    // 系统配置
-  | 'material_assets'; // 素材资产
-
-export interface User {
-  id: string;
-  username: string;
-  password?: string; // 生产环境仅用于模拟修改逻辑
-  role: UserRole;
-  name: string;
-  lastLogin?: string;
-  permissions: PermissionKey[];
-  isLocked?: boolean;
+  CASH_PHP = 'cash_php',
+  GCASH = 'gcash',
+  PAYPAL = 'paypal',
+  ALIPAY = 'alipay',
+  WECHAT_PAY = 'wechat_pay',
+  USDT_TRC20 = 'usdt_trc20'
 }
 
 export interface Dish {
   id: string;
   name: string;
-  nameEn?: string;
+  name_en: string;
   description?: string;
+  tags?: string[];
   price: number;
-  category: string;
+  category: string; 
   stock: number;
-  imageUrl: string;
-  isRecommended?: boolean;
-  isAvailable?: boolean;
-  calories?: number;
-  allergens?: string[];
+  image_url: string;
+  is_available: boolean;
+  is_recommended?: boolean;
+  partnerId?: string;
+}
+
+export interface Partner {
+  id: string;
+  name: string;
+  ownerName: string;
+  status: 'active' | 'suspended';
+  commissionRate: number;
+  balance: number;
+  contact: string;
+  email: string;
+  authorizedCategories: string[]; 
+  totalSales: number;
+  joinedAt: string;
+  userId?: string;
+}
+
+export interface Expense {
+  id: string;
+  amount: number;
+  category: string;
+  date: string;
+}
+
+export interface Category {
+  id: string; 
+  name: string;
+  name_en: string;
+  code: string;
+  level: number;
+  display_order: number;
+  is_active: boolean;
+  parent_id?: string | null;
+  // Added missing property partnerId
+  partnerId?: string;
+}
+
+export interface Ingredient {
+  id: string;
+  name: string;
+  unit: string;
+  stock: number;
+  minStock: number;
+  category?: string;
+  last_restocked?: string;
+}
+
+export interface PaymentMethodConfig {
+  id: string;
+  name: string;
+  name_en: string;
+  currency: string;
+  currency_symbol: string;
+  exchange_rate: number;
+  isActive: boolean;
+  payment_type: string;
+  sort_order: number;
+  description: string;
+  description_en: string;
+  iconType: string;
+  wallet_address?: string;
+  qr_url?: string;
 }
 
 export interface MaterialImage {
@@ -76,53 +163,18 @@ export interface MaterialImage {
   url: string;
   name: string;
   category: string;
-  fileSize?: string;
-  dimensions?: string;
-  mimeType?: string;
-}
-
-export interface HotelRoom {
-  id: string;
-  status?: RoomStatus;
-  activeSessionId?: string;
-}
-
-export interface OrderItem {
-  dishId: string;
-  name: string;
-  quantity: number;
-  price: number;
-}
-
-export interface Order {
-  id: string;
-  roomId: string;
-  items: OrderItem[];
-  totalAmount: number;
-  pointsEarned: number;
-  status: OrderStatus;
-  paymentMethod?: PaymentMethod;
   createdAt: string;
-  updatedAt: string;
-  estimatedTime?: number;
-  taxAmount: number;
 }
 
-export interface Expense {
-  id: string;
-  category: string;
-  amount: number;
-  description: string;
-  date: string;
-}
-
-export interface SecurityLog {
-  id: string;
-  userId: string;
-  action: string;
-  details?: string;
-  timestamp: string;
-  ip: string;
-  location?: string;
-  riskLevel?: 'Low' | 'Medium' | 'High';
+// Added missing SystemConfig interface for global application state
+export interface SystemConfig {
+  hotelName: string;
+  version: string;
+  theme: 'light' | 'dark';
+  autoPrintOrder: boolean;
+  ticketStyle: 'standard' | 'minimal' | 'elegant';
+  ticketHeader: string;
+  ticketFooter: string;
+  showTicketQR: boolean;
+  fontFamily: string;
 }
