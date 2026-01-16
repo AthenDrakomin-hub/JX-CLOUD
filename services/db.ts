@@ -1,7 +1,18 @@
 
+import { resolve } from 'path';
+import { config } from 'dotenv';
+config({ path: resolve(process.cwd(), '.env') });
+
+console.log("DATABASE_URL Loaded:", !!process.env.DATABASE_URL); 
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import * as schema from '../schema.js';
+
+// 打印自检，不准再报模糊错误
+console.log("🛠 [架构审计] 正在加载环境变量...");
+console.log("DATABASE_URL 状态:", !!process.env.DATABASE_URL);
+console.log("POSTGRES_URL 状态:", !!process.env.POSTGRES_URL);
+console.log("当前读取到的 ENV 键名:", Object.keys(process.env));
 
 /**
  * 江西云厨 - 物理连接中枢 (Vercel Serverless 优化 - 连接池模式)
@@ -17,7 +28,7 @@ const connectionString =
   process.env.DIRECT_URL; // Supabase CLI 使用的变量
 
 if (!connectionString) {
-  throw new Error("❌ 严重错误：生产环境未检测到任何有效的数据库连接字符串！");
+  throw new Error("❌ 严重错误：.env 文件存在但未被正确加载，请检查路径或 dotenv 配置！");
 }
 
 // 强制检查数据库连接字符串

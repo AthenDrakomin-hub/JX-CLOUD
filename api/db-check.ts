@@ -1,13 +1,11 @@
 
-import { createClient } from '@supabase/supabase-js';
+import { db } from '../services/db';
+import { users } from '../schema';
+import { sql } from 'drizzle-orm';
 
 export const config = {
   runtime: 'edge',
 };
-
-// 从环境变量读取配置
-const supabaseUrl = process.env.SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 export default async function handler(req: Request) {
   if (req.method === 'OPTIONS') {
@@ -24,27 +22,14 @@ export default async function handler(req: Request) {
   const start = Date.now();
   
   try {
-    if (!supabaseUrl || !supabaseServiceKey) {
-      throw new Error("Missing environment variables: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // 1. 测试基础连接与延迟 (PostgreSQL 系统表)
-    const { data: connTest, error: connError } = await supabase
-      .from('pg_stat_activity')
-      .select('state')
-      .limit(1);
-
-    const connectTime = Date.now() - start;
-    if (connError) throw connError;
+    // 1. 测试基础连接与延迟 (使用简单查询)
+    const connectStart = Date.now();
+    const connTest = await db.execute(sql`SELECT 1 as test`);
+    const connectTime = Date.now() - connectStart;
 
     // 2. 测试业务表读取正确性 (users 表)
-    const { count, error: tableError } = await supabase
-      .from('users')
-      .select('*', { count: 'exact', head: true });
-
-    if (tableError) throw tableError;
+    const countResult = await db.select({ count: sql`COUNT(*)` }).from(users);
+    const userCount = parseInt(countResult[0]?.count || '0');
 
     const totalTime = Date.now() - start;
 
@@ -58,8 +43,8 @@ export default async function handler(req: Request) {
           total_ms: totalTime,
         },
         diagnostics: {
-          database_state: connTest?.[0]?.state || 'active',
-          user_registry_count: count,
+          database_state: 'active',
+          user_registry_count: userCount,
           edge_node: process.env.VERCEL_REGION || 'unknown',
         }
       }),

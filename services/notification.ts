@@ -26,9 +26,17 @@ export const notificationService = {
     // 2. 语音播报
     if (!('speechSynthesis' in window)) return;
     
-    const text = lang === 'zh' 
-      ? `江西云厨提醒，您有一条来自 ${order.roomId} 的新订单，请及时接单。`
-      : `New order from Room ${order.roomId}. Total amount is ${Math.round(order.totalAmount)} pesos.`;
+    // 构建更详细的语音播报内容，包含订单详情
+    let text = '';
+    if (lang === 'zh') {
+      // 获取订单中的菜品名称
+      const itemNames = order.items?.map(item => item.name || item.dishId).join('、') || '若干菜品';
+      text = `江西云厨提醒，房间 ${order.roomId} 有新订单，包含 ${itemNames}，请及时处理。`;
+    } else {
+      // 英文版本
+      const itemCount = order.items?.length || 0;
+      text = `New order from Room ${order.roomId}. Contains ${itemCount} item(s), total amount is ${Math.round(order.totalAmount || 0)} pesos. Please process promptly.`;
+    }
 
     window.speechSynthesis.cancel();
     

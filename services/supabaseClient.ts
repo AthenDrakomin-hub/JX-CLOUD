@@ -1,6 +1,4 @@
 
-import { createClient } from '@supabase/supabase-js';
-
 /**
  * 江西云厨 - 核心接入引擎 (Vercel 部署优化版)
  * 兼容性：支持 Vercel 自动注入的环境变量
@@ -33,14 +31,24 @@ if (isProductionDB) {
   console.warn("⚠️ 未检测到 POSTGRES_URL，系统进入演示模式。");
 }
 
-export const supabase = isDemoMode 
-  ? null as any 
-  : createClient(supabaseUrl, supabaseAnonKey, {
+// Supabase 客户端现在仅用于实时功能和认证
+// 数据库操作已完全迁移到 Drizzle ORM (services/db.ts)
+let supabaseInstance: any = null;
+if (!isDemoMode) {
+  // 动态导入以避免在无 Supabase 环境下的错误
+  import('@supabase/supabase-js').then(({ createClient }) => {
+    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
       }
     });
+  }).catch(err => {
+    console.warn('Supabase client initialization failed:', err.message);
+  });
+}
+
+export const supabase = supabaseInstance;
 
 export const ADMIN_CREDENTIALS = { email: 'athendrakomin@proton.me' };
 export const STAFF_CREDENTIALS = { id: 'staff_user' };
@@ -49,11 +57,16 @@ export const STAFF_CREDENTIALS = { id: 'staff_user' };
  * 诊断工具 - 仅用于实时功能
  */
 export const getConnectionStatus = async () => {
-  if (isDemoMode) return { ok: false, msg: '环境检测失败：未探测到 SUPABASE_URL 或 VITE_SUPABASE_ANON_KEY。本地开发请确保 .env 文件已正确配置。' };
+  if (isDemoMode || !supabaseInstance) {
+    return { 
+      ok: false, 
+      msg: '环境检测失败：未探测到 SUPABASE_URL 或 VITE_SUPABASE_ANON_KEY。本地开发请确保 .env 文件已正确配置。' 
+    };
+  }
   try {
     // 尝试连接到 Supabase 进行实时功能测试
     // 注意：数据库查询已迁移到 Drizzle，这里只测试连接性
-    const { data, error } = await supabase.rpc('version'); // 使用一个简单的RPC调用来测试连接
+    const { data, error } = await supabaseInstance.rpc('version'); // 使用一个简单的RPC调用来测试连接
     if (error) return { ok: false, msg: error.message, code: error.code };
     return { ok: true, msg: '云端链路已激活 (Connected to Supabase)', hasData: true };
   } catch (e: any) {

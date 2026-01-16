@@ -11,7 +11,10 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:init": "tsx scripts/init-db.ts",
-    "users:init": "tsx scripts/init-users.ts"
+    "users:init": "tsx scripts/init-users.ts",
+    "categories:init": "tsx scripts/init-categories.ts",
+    "schema:check": "tsx scripts/check-schema.ts",
+    "schema:update": "tsx scripts/update-schema.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",

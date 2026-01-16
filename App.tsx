@@ -13,6 +13,7 @@ import CommandCenter from './components/CommandCenter';
 import NotificationCenter from './components/NotificationCenter';
 import ImageManagement from './components/ImageManagement';
 import AuthPage from './components/AuthPage';
+import DeliveryDashboard from './components/DeliveryDashboard';
 import GuestEntry from './GuestEntry';
 import Toast, { ToastType } from './components/Toast';
 import { useSession, signOut } from './services/auth-client';
@@ -178,6 +179,7 @@ const App: React.FC = () => {
             {currentTab === 'users' && <StaffManagement users={users} partners={partners} currentUser={session.user} onRefresh={refreshData} onAddUser={async(u)=>{ await api.users.upsert(u); refreshData(); }} onUpdateUser={async(u)=>{ await api.users.upsert(u); refreshData(); }} onDeleteUser={async(id)=>{ await api.users.delete(id); refreshData(); }} onAddPartner={async(p)=>{ await api.partners.create(p); refreshData(); }} onUpdatePartner={async(p)=>{ await api.partners.update(p); refreshData(); }} onDeletePartner={async(id)=>{ await api.partners.delete(id); refreshData(); }} lang={lang} />}
             {currentTab === 'settings' && <SystemSettings lang={lang} onChangeLang={setLang} onUpdateConfig={async(c)=>{ await api.config.update(c); refreshData(); }} />}
             {currentTab === 'menu' && <DatabaseManagement lang={lang} />}
+            {currentTab === 'delivery' && <DeliveryDashboard lang={lang} currentUser={session.user} />}
           </div>
         </main>
         <CommandCenter isOpen={isCommandOpen} onClose={() => setIsCommandOpen(false)} rooms={rooms} orders={orders} dishes={dishes} lang={lang} onNavigate={setCurrentTab} onToggleTheme={() => {}} onLogout={handleLogout} />

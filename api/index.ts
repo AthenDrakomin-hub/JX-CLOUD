@@ -1,18 +1,16 @@
 
-import { createClient } from '@supabase/supabase-js';
+import { db } from '../services/db';
+import { systemConfig, orders } from '../schema';
+import { eq } from 'drizzle-orm';
 
 /**
  * 江西云厨 - 云端 API 网关 (Vercel Edge Runtime)
- * 安全隔离层：用于处理需要 Service Role 权限的敏感操作
+ * 安全隔离层：使用 Drizzle ORM 统一数据库操作
  */
 
 export const config = {
   runtime: 'edge',
 };
-
-// 从环境变量获取核心凭证
-const SUPABASE_URL = process.env.SUPABASE_URL || '';
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 // 生产级响应头
 const corsHeaders = {
@@ -32,9 +30,6 @@ export default async function handler(req: Request) {
   const path = url.pathname.replace(/^\/api/, '');
 
   try {
-    // 1. 初始化 Supabase 客户端 (使用 Service Role 绕过 RLS)
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
     // 2. 路由分发
     // 健康检查
     if (path === '/health') {
@@ -43,12 +38,12 @@ export default async function handler(req: Request) {
 
     // 获取系统状态快照 (仅限内网或管理端调用)
     if (path === '/system/status') {
-      const { data: config } = await supabase.from('system_config').select('*').single();
-      const { count: orderCount } = await supabase.from('orders').select('*', { count: 'exact', head: true });
+      const config = await db.select().from(systemConfig).where(eq(systemConfig.id, 'global')).limit(1);
+      const orderCountResult = await db.select({ count: sql`COUNT(*)` }).from(orders);
       
       return new Response(JSON.stringify({
-        hotel: config?.hotel_name,
-        activeOrders: orderCount,
+        hotel: config[0]?.hotelName,
+        activeOrders: parseInt(orderCountResult[0]?.count || '0'),
         timestamp: new Date().toISOString()
       }), { status: 200, headers: corsHeaders });
     }

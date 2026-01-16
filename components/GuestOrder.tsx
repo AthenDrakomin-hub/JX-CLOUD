@@ -12,6 +12,27 @@ import {
 } from 'lucide-react';
 import OptimizedImage from './OptimizedImage';
 
+// 复制按钮组件
+const CopyToClipboardButton: React.FC<{ text: string }> = ({ text }) => {
+  const [copied, setCopied] = useState(false);
+  
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+  
+  return (
+    <button
+      onClick={copyToClipboard}
+      className={`p-2 rounded-lg ${copied ? 'bg-green-500 text-white' : 'bg-slate-200 text-slate-700'} transition-colors`}
+    >
+      {copied ? <Check size={14} /> : <Copy size={14} />}
+    </button>
+  );
+};
+
 interface GuestOrderProps {
   roomId: string;
   dishes: Dish[];
@@ -91,6 +112,14 @@ const GuestOrder: React.FC<GuestOrderProps> = ({
     if (!selectedPaymentId) return;
     setIsProcessing(true);
     try {
+      // 根据支付方式设置订单状态
+      let orderStatus: OrderStatus = OrderStatus.PENDING;
+      
+      // 如果是现金支付，设置为已确认未付款状态
+      if (selectedPaymentId === 'cash_php') {
+        orderStatus = 'confirmed_unpaid' as OrderStatus;
+      }
+      
       await onSubmitOrder({ 
         roomId, 
         items: Object.entries(cart).filter(([_, q]) => (q as number) > 0).map(([id, q]) => {
@@ -98,7 +127,7 @@ const GuestOrder: React.FC<GuestOrderProps> = ({
           return { dishId: id, name: lang === 'zh' ? d.name : (d.name_en || d.name), quantity: q as number, price: d.price, partnerId: d.partnerId };
         }), 
         totalAmount: totalAmount, 
-        status: OrderStatus.PENDING, 
+        status: orderStatus, 
         paymentMethod: selectedPaymentId, 
         paymentProof: paymentProof,
         createdAt: new Date().toISOString(),
@@ -168,7 +197,7 @@ const GuestOrder: React.FC<GuestOrderProps> = ({
                         {dish.description && <p className="text-[9px] text-slate-400 mt-1 line-clamp-1">{dish.description}</p>}
                       </div>
                       <div className="flex justify-between items-center mt-2">
-                        <span className="text-blue-600 font-black text-lg">₱{dish.price}</span>
+                        <span className="text-blue-600 font-black text-lg">₱{dish.price.toFixed(2)}</span>
                         <div className="flex items-center bg-white rounded-xl border border-slate-200 p-1">
                            {cart[dish.id] > 0 && (
                              <>
@@ -211,7 +240,7 @@ const GuestOrder: React.FC<GuestOrderProps> = ({
                          {Object.values(cart).reduce((a, b) => (a as number) + (b as number), 0)}
                       </div>
                    </div>
-                   <div className="text-left"><span className="text-[8px] uppercase text-slate-400">{t('bill_total')}</span><br/><span className="text-lg font-serif italic">₱{totalAmount}</span></div>
+                   <div className="text-left"><span className="text-[8px] uppercase text-slate-400">{t('bill_total')}</span><br/><span className="text-lg font-serif italic">₱{totalAmount.toFixed(2)}</span></div>
                  </div>
                  <div className="flex items-center gap-1.5 text-blue-400"><span className="text-[9px] tracking-widest uppercase">{t('checkout')}</span><ChevronRight size={18} /></div>
                </button>
@@ -228,7 +257,7 @@ const GuestOrder: React.FC<GuestOrderProps> = ({
                  {Object.entries(cart).filter(([_, q]) => (q as number) > 0).map(([id, q]) => (
                    <div key={id} className="flex justify-between text-sm font-bold text-slate-600">
                       <span>{lang === 'zh' ? dishes.find(d => d.id === id)?.name : dishes.find(d => d.id === id)?.name_en} x {q}</span>
-                      <span>₱{(dishes.find(d => d.id === id)?.price || 0) * (q as number)}</span>
+                      <span>₱{((dishes.find(d => d.id === id)?.price || 0) * (q as number)).toFixed(2)}</span>
                    </div>
                  ))}
               </div>
@@ -240,22 +269,70 @@ const GuestOrder: React.FC<GuestOrderProps> = ({
              <div className="space-y-6">
                 <div className="grid grid-cols-1 gap-3">
                    {availablePayments.map(p => (
-                     <button 
-                        key={p.id}
-                        onClick={() => setSelectedPaymentId(p.id)}
-                        className={`p-5 rounded-2xl border-2 flex items-center justify-between transition-all ${selectedPaymentId === p.id ? 'border-blue-600 bg-blue-50' : 'border-slate-100'}`}
-                     >
-                        <div className="flex items-center gap-4">
-                           <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${selectedPaymentId === p.id ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
-                              <CreditCard size={18} />
+                     <div key={p.id} className="space-y-2">
+                       <button 
+                          onClick={() => setSelectedPaymentId(p.id)}
+                          className={`w-full p-5 rounded-2xl border-2 flex items-center justify-between transition-all ${selectedPaymentId === p.id ? 'border-blue-600 bg-blue-50' : 'border-slate-100'}`}
+                       >
+                          <div className="flex items-center gap-4">
+                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${selectedPaymentId === p.id ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                                <CreditCard size={18} />
+                             </div>
+                             <div className="text-left">
+                                <p className="font-black text-sm">{lang === 'zh' ? p.name : p.name_en}</p>
+                                <p className="text-[10px] text-slate-400 uppercase font-bold">{p.currency}</p>
+                             </div>
+                          </div>
+                          {selectedPaymentId === p.id && <CheckCircle2 size={18} className="text-blue-600" />}
+                       </button>
+                       
+                       {/* GCash 二维码显示 */}
+                       {selectedPaymentId === p.id && p.paymentType === 'digital' && p.walletAddress && (
+                         <div className="bg-white p-4 rounded-xl border border-slate-200">
+                           <div className="flex items-center justify-between mb-2">
+                             <p className="text-sm font-bold text-slate-700">扫描支付</p>
+                             <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">QR Code</span>
                            </div>
-                           <div className="text-left">
-                              <p className="font-black text-sm">{lang === 'zh' ? p.name : p.name_en}</p>
-                              <p className="text-[10px] text-slate-400 uppercase font-bold">{p.currency}</p>
+                           
+                           {p.qr_url && (
+                             <div className="flex flex-col items-center mb-3">
+                               <div className="bg-white p-2 rounded-lg border border-slate-200 mb-2">
+                                 <img 
+                                   src={p.qr_url} 
+                                   alt={`${p.name} QR Code`} 
+                                   className="w-40 h-40 object-contain"
+                                   onError={(e) => {
+                                     const target = e.target as HTMLImageElement;
+                                     target.src = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160"><rect width="160" height="160" fill="%23f1f5f9"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="12" fill="%2364748b">QR Code</text></svg>`;
+                                   }}
+                                 />
+                               </div>
+                               <p className="text-xs text-slate-500 text-center">打开 {p.name} 扫描上方二维码</p>
+                             </div>
+                           )}
+                           
+                           {/* 钱包地址显示和复制功能 */}
+                           <div className="flex items-center justify-between bg-slate-50 p-3 rounded-lg">
+                             <div>
+                               <p className="text-xs text-slate-500">钱包地址</p>
+                               <p className="font-mono font-bold break-all">{p.walletAddress}</p>
+                             </div>
+                             <CopyToClipboardButton text={p.walletAddress} />
                            </div>
-                        </div>
-                        {selectedPaymentId === p.id && <CheckCircle2 size={18} className="text-blue-600" />}
-                     </button>
+                         </div>
+                       )}
+                       
+                       {/* USDT 汇率显示 */}
+                       {selectedPaymentId === p.id && p.id === 'usdt_trc20' && (
+                         <div className="bg-amber-50 p-3 rounded-lg border border-amber-200">
+                           <p className="text-xs text-amber-800 font-bold mb-1">汇率参考</p>
+                           <p className="text-sm">
+                             ₱{totalAmount.toFixed(2)} ≈ {(totalAmount / (p.exchangeRate || 54.5)).toFixed(2)} USDT
+                           </p>
+                           <p className="text-xs text-amber-600">汇率: 1 USDT = ₱{p.exchangeRate || 54.5}</p>
+                         </div>
+                       )}
+                     </div>
                    ))}
                 </div>
 

@@ -67,11 +67,18 @@ npm run db:init
 # 初始化用户数据
 npm run users:init
 
+# 初始化分类数据
+npm run categories:init
+
 # 生成新的迁移文件
 npx drizzle-kit generate --out ./drizzle --schema ./schema.ts
 
 # 运行迁移
 npx drizzle-kit migrate --config=drizzle.config.ts
+
+# Schema 检查和更新
+npm run schema:check
+npm run schema:update
 ```
 
 ## 🗄️ 数据库配置
@@ -305,3 +312,50 @@ All UI elements are now fully translated between Chinese and English:
 - All interface text is now properly localized using translation keys
 - Components use the t('key') function for dynamic translations
 - Both zh and en language variants are maintained in translations.ts
+
+## 🛠 工具与调试
+
+### 本地开发工具
+- `npm run schema:check`: 检查数据库schema是否与代码一致
+- `npm run schema:update`: 更新数据库schema到最新状态
+- `npx tsx scripts/test-connection.ts`: 测试数据库连接
+- `npx tsx scripts/check-schema.ts`: 检查数据库表结构
+
+### 调试命令
+- `npx tsx scripts/debug-env.ts`: 调试环境变量配置
+- `npx tsx scripts/test-db-connection.ts`: 测试数据库连接
+- `npx tsx scripts/analyze-db-url.ts`: 分析数据库URL配置
+
+### 数据库管理脚本
+- `npm run db:init`: 初始化数据库表结构
+- `npm run users:init`: 初始化用户数据
+- `npm run categories:init`: 初始化分类数据
+- `npx tsx scripts/init-db.ts`: 手动运行数据库初始化
+- `npx tsx scripts/init-users.ts`: 手动运行用户初始化
+- `npx tsx scripts/init-categories.ts`: 手动运行分类初始化
+
+### 本地开发启动顺序
+1. 确保环境变量配置正确
+2. 运行数据库初始化: `npm run db:init`
+3. 初始化分类数据: `npm run categories:init`
+4. 启动开发服务器: `npm run dev`
+
+## 🚀 部署配置
+
+### Vercel部署要点
+- 需要设置的环境变量：
+  - `SUPABASE_URL`
+  - `SUPABASE_ANON_KEY`
+  - `DATABASE_URL`
+  - `BETTER_AUTH_SECRET`
+  - `BETTER_AUTH_URL`
+  - `VITE_BETTER_AUTH_URL`
+- Build command: `npm run build`
+- Output directory: `dist`
+- Install command: `npm install`
+
+### 本地开发vs生产环境差异
+- 本地开发：使用Drizzle ORM直接连接数据库
+- 生产环境：使用Vercel Edge Runtime + Supabase + Drizzle ORM
+- 认证：本地和生产都使用Better-Auth
+- 实时功能：都使用Supabase Realtime

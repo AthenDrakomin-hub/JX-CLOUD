@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, Fragment } from 'react';
 import { Dish, User, UserRole, Partner, Category } from '../types';
 import { Language, getTranslation } from '../translations';
 import { 
@@ -7,7 +7,7 @@ import {
   Trash2, Edit3, Box, Layers, 
   ChevronDown, ChevronRight, Loader2,
   Filter, Tag, ExternalLink, ChevronLeft,
-  Image as ImageIcon
+  Image as ImageIcon, Home, ChevronRight as ChevronRightIcon
 } from 'lucide-react';
 import { api } from '../services/api';
 import OptimizedImage from './OptimizedImage';
@@ -33,12 +33,30 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
   const [editingDish, setEditingDish] = useState<Dish | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
+  const [selectedLevel1, setSelectedLevel1] = useState<string | null>(null);
+  const [selectedLevel2, setSelectedLevel2] = useState<string | null>(null);
+  const [selectedLevel3, setSelectedLevel3] = useState<string | null>(null);
   
   const [currentPage, setCurrentPage] = useState(1);
   const [showImageUploadModal, setShowImageUploadModal] = useState(false);
   const pageSize = 12;
   
   const t = useCallback((key: string) => getTranslation(lang, key), [lang]);
+
+  // 构建面包屑路径
+  const getCategoryPath = useCallback((categoryId: string | null, categories: Category[]): Category[] => {
+    if (!categoryId) return [];
+    
+    const category = categories.find(c => c.id === categoryId);
+    if (!category) return [];
+
+    if (!category.parent_id) {
+      return [category];
+    }
+
+    const parentPath = getCategoryPath(category.parent_id, categories);
+    return [...parentPath, category];
+  }, []);
 
   useEffect(() => {
     api.categories.getAll().then(cats => {
@@ -50,6 +68,44 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, activeCategoryId]);
+  
+  // 当 activeCategoryId 变化时，更新联动选择器的状态
+  useEffect(() => {
+    if (activeCategoryId === 'All') {
+      setSelectedLevel1(null);
+      setSelectedLevel2(null);
+      setSelectedLevel3(null);
+      return;
+    }
+    
+    const selectedCat = allCategories.find(c => c.id === activeCategoryId);
+    if (selectedCat) {
+      if (selectedCat.level === 1) {
+        setSelectedLevel1(selectedCat.id);
+        setSelectedLevel2(null);
+        setSelectedLevel3(null);
+      } else if (selectedCat.level === 2) {
+        setSelectedLevel2(selectedCat.id);
+        // 查找父分类
+        const parentCat = allCategories.find(c => c.id === selectedCat.parent_id);
+        if (parentCat) {
+          setSelectedLevel1(parentCat.id);
+        }
+        setSelectedLevel3(null);
+      } else if (selectedCat.level === 3) {
+        setSelectedLevel3(selectedCat.id);
+        // 查找父分类
+        const parentCat = allCategories.find(c => c.id === selectedCat.parent_id);
+        if (parentCat) {
+          setSelectedLevel2(parentCat.id);
+          const grandParentCat = allCategories.find(c => c.id === parentCat.parent_id);
+          if (grandParentCat) {
+            setSelectedLevel1(grandParentCat.id);
+          }
+        }
+      }
+    }
+  }, [activeCategoryId, allCategories]);
 
   const filteredDishes = useMemo(() => {
     return (dishes || []).filter(d => {
@@ -128,28 +184,127 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
                 <span className="text-[10px] opacity-40">{dishes.length}</span>
               </button>
               <div className="h-[1px] bg-slate-100 my-4" />
-              {allCategories.filter(c => c.level === 1).map(group => (
-                <div key={group.id} className="space-y-1">
-                   <div className="flex items-center justify-between">
-                      <button onClick={() => setActiveCategoryId(group.id)} className={`flex-1 text-left px-4 py-3 rounded-xl transition-all flex items-center space-x-3 ${activeCategoryId === group.id ? 'bg-blue-50 text-blue-700' : 'text-slate-400 hover:text-slate-600'}`}>
-                         <span className="text-[11px] font-black uppercase">{lang === 'zh' ? group.name : group.name_en}</span>
-                      </button>
-                      <button onClick={() => setExpandedGroups(p => p.includes(group.id) ? p.filter(i => i !== group.id) : [...p, group.id])} className="p-2 text-slate-300">
-                        <ChevronDown size={14} className={`transition-transform ${expandedGroups.includes(group.id) ? '' : '-rotate-90'}`} />
-                      </button>
-                   </div>
-                   {expandedGroups.includes(group.id) && allCategories.filter(c => c.parent_id === group.id).map(child => (
-                     <button key={child.id} onClick={() => setActiveCategoryId(child.id)} className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-between ml-6 ${activeCategoryId === child.id ? 'text-blue-600 bg-blue-50/30' : 'text-slate-400 hover:text-slate-900'}`}>
-                       <span>{lang === 'zh' ? child.name : child.name_en}</span>
-                     </button>
-                   ))}
-                </div>
-              ))}
+              
+              {/* 三级联动筛选器 */}
+              <div className="space-y-3 p-2">
+                <div className="text-xs font-bold text-slate-500 mb-2">{t('cascading_filter')}</div>
+                
+                {/* 一级分类选择器 */}
+                <select 
+                  value={selectedLevel1 || ''} 
+                  onChange={(e) => {
+                    setSelectedLevel1(e.target.value);
+                    setSelectedLevel2('');
+                    setSelectedLevel3('');
+                    if (e.target.value) {
+                      setActiveCategoryId(e.target.value);
+                    }
+                  }}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:border-blue-600 outline-none shadow-sm"
+                >
+                  <option value="">{t('select_level1')}</option>
+                  {allCategories.filter(c => c.level === 1).map(cat => (
+                    <option key={cat.id} value={cat.id}>{lang === 'zh' ? cat.name : cat.name_en}</option>
+                  ))}
+                </select>
+                
+                {/* 二级分类选择器 */}
+                {selectedLevel1 && (
+                  <select 
+                    value={selectedLevel2 || ''} 
+                    onChange={(e) => {
+                      setSelectedLevel2(e.target.value);
+                      setSelectedLevel3('');
+                      if (e.target.value) {
+                        setActiveCategoryId(e.target.value);
+                      }
+                    }}
+                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:border-blue-600 outline-none shadow-sm"
+                  >
+                    <option value="">{t('select_level2')}</option>
+                    {allCategories.filter(c => c.parent_id === selectedLevel1).map(cat => (
+                      <option key={cat.id} value={cat.id}>{lang === 'zh' ? cat.name : cat.name_en}</option>
+                    ))}
+                  </select>
+                )}
+                
+                {/* 三级分类选择器 */}
+                {selectedLevel2 && (
+                  <select 
+                    value={selectedLevel3 || ''} 
+                    onChange={(e) => {
+                      setSelectedLevel3(e.target.value);
+                      if (e.target.value) {
+                        setActiveCategoryId(e.target.value);
+                      }
+                    }}
+                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:border-blue-600 outline-none shadow-sm"
+                  >
+                    <option value="">{t('select_level3')}</option>
+                    {allCategories.filter(c => c.parent_id === selectedLevel2).map(cat => (
+                      <option key={cat.id} value={cat.id}>{lang === 'zh' ? cat.name : cat.name_en}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+              
+              {/* 传统分类导航作为备选 */}
+              <div className="pt-4 border-t border-slate-100 mt-4">
+                <div className="text-xs font-bold text-slate-500 mb-2">{t('category_tree')}</div>
+                {allCategories.filter(c => c.level === 1).map(group => (
+                  <div key={group.id} className="space-y-1">
+                     <div className="flex items-center justify-between">
+                        <button onClick={() => setActiveCategoryId(group.id)} className={`flex-1 text-left px-4 py-3 rounded-xl transition-all flex items-center space-x-3 ${activeCategoryId === group.id ? 'bg-blue-50 text-blue-700' : 'text-slate-400 hover:text-slate-600'}`}>
+                           <span className="text-[11px] font-black uppercase">{lang === 'zh' ? group.name : group.name_en}</span>
+                        </button>
+                        <button onClick={() => setExpandedGroups(p => p.includes(group.id) ? p.filter(i => i !== group.id) : [...p, group.id])} className="p-2 text-slate-300">
+                          <ChevronDown size={14} className={`transition-transform ${expandedGroups.includes(group.id) ? '' : '-rotate-90'}`} />
+                        </button>
+                     </div>
+                     {expandedGroups.includes(group.id) && allCategories.filter(c => c.parent_id === group.id).map(child => (
+                       <button key={child.id} onClick={() => setActiveCategoryId(child.id)} className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-between ml-6 ${activeCategoryId === child.id ? 'text-blue-600 bg-blue-50/30' : 'text-slate-400 hover:text-slate-900'}`}>
+                         <span>{lang === 'zh' ? child.name : child.name_en}</span>
+                       </button>
+                     ))}
+                  </div>
+                ))}
+              </div>
            </nav>
         </div>
       </aside>
 
       <div className="flex-1 space-y-10">
+        {/* 面包屑导航 */}
+        {activeCategoryId !== 'All' && allCategories.length > 0 && (() => {
+          const path = getCategoryPath(activeCategoryId, allCategories);
+          return (
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm sticky top-20 z-20 bg-white/80 backdrop-blur-xl">
+              <div className="flex items-center text-sm">
+                <button 
+                  onClick={() => setActiveCategoryId('All')}
+                  className="flex items-center text-slate-500 hover:text-blue-600 transition-colors"
+                >
+                  <Home size={16} className="mr-2" />
+                  {t('dish_archives')}
+                </button>
+                {path.map((cat, index) => (
+                  <Fragment key={cat.id}>
+                    <ChevronRightIcon size={16} className="mx-2 text-slate-300" />
+                    <button
+                      onClick={() => setActiveCategoryId(cat.id)}
+                      className={`hover:text-blue-600 transition-colors ${
+                        index === path.length - 1 ? 'text-blue-600 font-bold' : 'text-slate-500'
+                      }`}
+                    >
+                      {lang === 'zh' ? cat.name : cat.name_en || cat.name}
+                    </button>
+                  </Fragment>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+        
         <div className="bg-white p-8 rounded-[3rem] border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6 sticky top-28 z-30 bg-white/80 backdrop-blur-xl">
            <div className="flex items-center space-x-5">
               <div className="w-14 h-14 bg-slate-950 text-blue-500 rounded-2xl flex items-center justify-center shadow-lg"><Box size={24} /></div>
@@ -222,6 +377,7 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
                     <div className="space-y-2">
                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] ml-2">{t('category_dir')}</label>
                        <select name="category" defaultValue={editingDish?.category} required className="w-full px-8 py-5 bg-white border-2 border-slate-100 rounded-[1.75rem] font-bold text-sm focus:border-blue-600 outline-none shadow-sm appearance-none">
+                          <option value="">{t('select_category')}</option>
                           {allCategories.filter(c => c.level === 2).map(cat => (
                             <option key={cat.id} value={cat.id}>{lang === 'zh' ? cat.name : cat.name_en}</option>
                           ))}

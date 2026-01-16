@@ -3,6 +3,7 @@ import { pgTable, text, numeric, timestamp, integer, boolean, jsonb, pgEnum } fr
 
 // 角色枚举
 export const roleEnum = pgEnum('user_role', ['admin', 'staff', 'partner', 'user']);
+export const orderStatusEnum = pgEnum('order_status', ['pending', 'confirmed', 'preparing', 'ready_for_delivery', 'delivered', 'completed', 'cancelled']);
 
 // 1. Better-auth 核心表 (与 Better Auth 标准字段对齐)
 // Internal tables for Better Auth (遵循 Better Auth 标准字段)
@@ -96,7 +97,7 @@ export const menuDishes = pgTable('menu_dishes', {
   description: text('description'),
   tags: text('tags').array(),
   price: numeric('price').notNull(),
-  category: text('category'),
+  categoryId: text('category_id').references(() => menuCategories.id, { onDelete: 'set null' }),
   stock: integer('stock').default(99),
   imageUrl: text('image_url'),
   isAvailable: boolean('is_available').default(true),
@@ -111,11 +112,12 @@ export const orders = pgTable('orders', {
   customerId: text('customer_id'), 
   items: jsonb('items').default('[]'),
   totalAmount: numeric('total_amount').default('0'),
-  status: text('status').default('pending'),
+  status: text('status').default('pending').$type<'pending' | 'confirmed' | 'preparing' | 'ready_for_delivery' | 'delivered' | 'completed' | 'cancelled'>(),
   paymentMethod: text('payment_method'),
   paymentProof: text('payment_proof'),
   cashReceived: numeric('cash_received'),
   cashChange: numeric('cash_change'),
+  isPrinted: boolean('is_printed').default(false),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
