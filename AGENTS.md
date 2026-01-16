@@ -119,6 +119,8 @@ npm run schema:update
 - 认证与数据库完全解耦：Better Auth负责认证，Drizzle ORM负责数据库操作
 - 实时功能仍使用Supabase (仅用于监听)，数据库操作已完全迁移到Drizzle
 - 用户数据双重架构：`user` 表用于认证系统，`users` 表用于业务逻辑
+- API网关支持完整的CRUD操作，包含错误处理和日志记录
+- 数据库连接通过 `services/db.ts` 配置，支持多种PostgreSQL连接字符串格式
 
 ### 2. 权限体系
 - 四种用户角色: ADMIN, PARTNER, STAFF, MAINTAINER
@@ -126,6 +128,8 @@ npm run schema:update
 - 根管理员特殊权限 (`athendrakomin@proton.me`) - 可通过本地存储绕过认证
 - 模块级权限控制
 - 细粒度CRUD权限管理
+- 权限验证在服务层进行，防止越权访问
+- 用户权限存储在 `modulePermissions` 字段中，支持JSONB格式的详细权限配置
 
 ### 3. 实时通信
 - 基于Supabase Realtime实现订单实时推送
@@ -167,8 +171,11 @@ npm run schema:update
 - 合伙人相关查询需添加 `partner_id` 过滤条件
 - 删除操作前需检查根管理员保护逻辑
 - 使用Drizzle ORM进行类型安全的数据库操作
-- 环境变量检查：优先查找 POSTGRES_URL、DATABASE_URL、POSTGRES_PRISMA_URL 或 POSTGRES_URL_NON_POOLING
+- 环境变量检查：优先查找 POSTGRES_URL、DATABASE_URL、POSTGRES_PRISMA_URL、POSTGRES_URL_NON_POOLING 或 DIRECT_URL
 - 生产环境强制使用Drizzle直连，废弃Supabase客户端的数据库操作功能
+- 数据库连接通过 `services/db.ts` 配置，使用连接池优化以适应 Vercel Serverless 环境
+- 自动切换至 Supabase 连接池端口 6543 以提高并发性能
+- 连接池配置：最大连接数5，空闲超时30秒，连接超时10秒
 
 ### 组件开发原则
 - 组件间通过props传递数据和回调函数
@@ -276,6 +283,14 @@ npm run schema:update
 - 为组件编写单元测试
 - 添加端到端测试使用Playwright
 
+### 调试和故障排除
+- 使用 `npm run schema:check` 检查数据库schema是否与代码一致
+- 使用 `npx tsx scripts/test-connection.ts` 测试数据库连接
+- 查看 `services/api.ts` 中的日志输出了解API调用详情
+- 使用浏览器开发者工具检查网络请求和实时连接状态
+- 检查 Supabase dashboard 的 Realtime 日志以调试实时功能
+- 使用 `console.log` 语句在开发环境中调试组件状态和数据流
+
 ## 📊 性能优化
 
 - 代码分割：Vite自动分割vendor包，自定义chunk策略优化加载
@@ -340,19 +355,26 @@ All UI elements are now fully translated between Chinese and English:
 3. 初始化分类数据: `npm run categories:init`
 4. 启动开发服务器: `npm run dev`
 
+### 常见开发工作流
+- **添加新功能**: 在 `components/` 创建组件 → 在 `services/api.ts` 添加API方法 → 在 `types.ts` 定义类型 → 更新 `App.tsx` 路由
+- **修改数据库结构**: 更新 `schema.ts` → 运行 `npm run db:generate` → 运行 `npm run db:migrate` → 更新相关API方法
+- **修复Bug**: 查找相关组件和服务 → 复现问题 → 编写修复代码 → 测试验证
+- **更新依赖**: 检查 `package.json` → 运行 `npm install package-name` → 测试功能完整性
+
 ## 🚀 部署配置
 
 ### Vercel部署要点
 - 需要设置的环境变量：
   - `SUPABASE_URL`
   - `SUPABASE_ANON_KEY`
-  - `DATABASE_URL`
+  - `DATABASE_URL` (用于Drizzle ORM直连，推荐使用Supabase连接池端口6543)
   - `BETTER_AUTH_SECRET`
   - `BETTER_AUTH_URL`
   - `VITE_BETTER_AUTH_URL`
 - Build command: `npm run build`
 - Output directory: `dist`
 - Install command: `npm install`
+- 数据库连接优化：系统自动使用连接池配置以适应Vercel Serverless环境
 
 ### 本地开发vs生产环境差异
 - 本地开发：使用Drizzle ORM直接连接数据库

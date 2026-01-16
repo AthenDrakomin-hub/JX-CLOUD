@@ -205,7 +205,6 @@ export const translations = {
     // 新增未翻译的术语 - 中文版本
     auth_protocol: '认证协议',
     link_stability: '链路稳定性',
-    stable_status: '链路稳定',
     mode: '模式',
     standard_station: '标准工位',
     space_registry_node: '空间注册节点',
@@ -558,7 +557,6 @@ export const translations = {
     // 新增未翻译的术语 - 英文版本
     auth_protocol: 'Auth Protocol',
     link_stability: 'Link Stability',
-    stable_status: 'Stable Status',
     mode: 'Mode',
     standard_station: 'Standard Station',
     space_registry_node: 'Space Registry Node',
@@ -726,7 +724,7 @@ export const translations = {
     end_current_shift_generate_report: 'Confirm end current shift and generate report?',
     shift_settled_generate_report: 'Shift settled. Report generated.',
     revenue_audit_cashier_center: 'Revenue audit and cashier terminal management center',
-    system_currently_supports_three_levels_only: 'System currently only supports up to two levels.',
+    system_currently_supports_three_levels_only: 'System currently supports three-level classification architecture.',
     new_category_default: 'New Category',
     taxonomy_deployment_successful: 'Taxonomy deployment successful',
     unsaved_changes_detected_alt: 'Unsaved changes detected',
@@ -734,23 +732,7 @@ export const translations = {
     enter_room_control: 'Jump to room',
     enter_inventory_check: 'Check inventory',
     
-    // Additional translations for other components
-    deploying_progress: '正在部署...',
-    recovery_successful_reloading: '数据恢复成功！正在重新加载...',
-    import_failed_invalid_format: '导入失败：档案格式不正确。',
-    generate_and_download_backup: '生成并下载备份文件 (.json)',
-    exit_preview: '退出预览',
-    end_current_shift_generate_report: '确定结束当前班次并生成交班报告吗？',
-    shift_settled_generate_report: '本班次已结算。交班报告已生成。',
-    revenue_audit_cashier_center: '营收流水审计与前台收银交班管理中心',
-    system_currently_supports_three_levels_only: '系统目前仅支持两级分类架构。',
-    new_category_default: '新分类',
-    taxonomy_deployment_successful: '分类架构部署成功',
-    unsaved_changes_detected_alt: '检测到未保存变更',
-    syncing_progress_alt: '同步中...',
-    enter_room_control: '跳转房间',
-    enter_inventory_check: '查物料'
-  }
+  },
 };
 
 export const getTranslation = (lang: Language, key: string, params?: Record<string, string | number>): string => {

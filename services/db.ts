@@ -1,18 +1,21 @@
 
-import { resolve } from 'path';
-import { config } from 'dotenv';
-config({ path: resolve(process.cwd(), '.env') });
-
-console.log("DATABASE_URL Loaded:", !!process.env.DATABASE_URL); 
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import * as schema from '../schema.js';
+
+// Environment variables will be loaded by the runtime in serverless functions
+// Vercel automatically loads environment variables in serverless functions
+console.log("DATABASE_URL Loaded:", !!process.env.DATABASE_URL); 
 
 // 打印自检，不准再报模糊错误
 console.log("🛠 [架构审计] 正在加载环境变量...");
 console.log("DATABASE_URL 状态:", !!process.env.DATABASE_URL);
 console.log("POSTGRES_URL 状态:", !!process.env.POSTGRES_URL);
-console.log("当前读取到的 ENV 键名:", Object.keys(process.env));
+try {
+  console.log("当前读取到的 ENV 键名:", Object.keys(process.env || {}));
+} catch(e) {
+  // Ignore during build
+}
 
 /**
  * 江西云厨 - 物理连接中枢 (Vercel Serverless 优化 - 连接池模式)
@@ -27,8 +30,8 @@ const connectionString =
   process.env.POSTGRES_URL_NON_POOLING ||  // Vercel 自动关联 Supabase 时生成的变量名
   process.env.DIRECT_URL; // Supabase CLI 使用的变量
 
-if (!connectionString) {
-  throw new Error("❌ 严重错误：.env 文件存在但未被正确加载，请检查路径或 dotenv 配置！");
+if (!connectionString && typeof window === 'undefined') {  // Only check in server environment
+  console.warn("⚠️ 警告：未找到数据库连接字符串。这在构建时是正常的，但在运行时需要配置。");
 }
 
 // 强制检查数据库连接字符串
