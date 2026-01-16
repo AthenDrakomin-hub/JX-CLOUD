@@ -5,8 +5,7 @@
   "functions": {
     "api/**/*": {
       "memory": 1024,
-      "maxDuration": 30,
-      "runtime": "nodejs20.x"
+      "maxDuration": 30
     }
   },
   "rewrites": [
@@ -30,10 +29,5 @@
         { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
     }
-  ],
-  "env": {
-    "NODE_VERSION": "20.x",
-    "NEXT_PUBLIC_SUPABASE_URL": "$SUPABASE_URL",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "$SUPABASE_ANON_KEY"
-  }
+  ]
 }
