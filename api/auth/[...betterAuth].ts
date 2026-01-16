@@ -1,7 +1,7 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { db } from '../../services/db';
-import { user as authUser, session as authSession } from '../../schema';
+import { db } from '../../services/db.js';
+import { user as authUser, session as authSession } from '../../schema.js';
 
 /**
  * Better Auth 服务器端配置
