@@ -3,10 +3,12 @@
     "target": "ES2022",
     "useDefineForClassFields": true,
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
-    /* 彻底解决 --checkJs 问题 */
+    
+    /* 核心修复：彻底关闭 JS 检查 */
     "allowJs": false,
     "checkJs": false,
     "skipLibCheck": true,
+    "maxNodeModuleJsDepth": 0,
     
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
@@ -25,6 +27,8 @@
     "node_modules", 
     "dist", 
     ".vercel",
-    "**/*.js"
+    "**/*.js",
+    "**/*.cjs",
+    "**/*.mjs"
   ]
 }
