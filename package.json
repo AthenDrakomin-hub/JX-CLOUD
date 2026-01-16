@@ -6,11 +6,16 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:init": "tsx scripts/init-db.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
     "better-auth": "^0.8.1",
+    "dotenv": "^17.2.3",
     "drizzle-orm": "^0.36.4",
     "lucide-react": "^0.475.0",
     "postgres": "^3.4.5",

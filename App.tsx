@@ -13,6 +13,7 @@ import CommandCenter from './components/CommandCenter';
 import NotificationCenter from './components/NotificationCenter';
 import ImageManagement from './components/ImageManagement';
 import AuthPage from './components/AuthPage';
+import GuestEntry from './GuestEntry';
 import Toast, { ToastType } from './components/Toast';
 import { useSession, signOut } from './services/auth-client';
 import { api } from './services/api';
@@ -33,6 +34,10 @@ const App: React.FC = () => {
   const [currentTab, setCurrentTab] = useState<string>('dashboard');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   
+  // 检查 URL 参数以确定是否为访客模式
+  const [isGuestMode, setIsGuestMode] = useState(false);
+  const [guestRoomId, setGuestRoomId] = useState<string | null>(null);
+  
   const session = useMemo(() => {
     const bypass = localStorage.getItem('jx_root_authority_bypass');
     if (bypass === 'true') {
@@ -48,6 +53,17 @@ const App: React.FC = () => {
     }
     return remoteSession;
   }, [remoteSession]);
+
+  // 检查 URL 参数以确定是否为访客模式
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomParam = urlParams.get('room');
+    
+    if (roomParam) {
+      setIsGuestMode(true);
+      setGuestRoomId(roomParam);
+    }
+  }, []);
 
   const t = useCallback((key: string, params?: any) => getTranslation(lang, key, params), [lang]);
 
@@ -115,6 +131,11 @@ const App: React.FC = () => {
     }).subscribe((s: any) => setIsRealtimeActive(s === 'SUBSCRIBED'));
     return () => { supabase.removeChannel(channel); };
   }, [session, lang, t, refreshData]);
+
+  if (isGuestMode) {
+    // 如果是访客模式，直接渲染访客点餐界面
+    return <GuestEntry />;
+  }
 
   if (isAuthLoading && !localStorage.getItem('jx_root_authority_bypass')) {
     return <div className="h-screen bg-[#020617] flex flex-col items-center justify-center space-y-6"><div className="w-16 h-16 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" /><p className="text-[10px] font-black text-blue-500 uppercase tracking-widest">JX CLOUD SECURE LINK...</p></div>;

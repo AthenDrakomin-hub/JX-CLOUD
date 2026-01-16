@@ -6,10 +6,12 @@ import {
   Plus, Search, X, Star, Save, 
   Trash2, Edit3, Box, Layers, 
   ChevronDown, ChevronRight, Loader2,
-  Filter, Tag, ExternalLink, ChevronLeft
+  Filter, Tag, ExternalLink, ChevronLeft,
+  Image as ImageIcon
 } from 'lucide-react';
 import { api } from '../services/api';
 import OptimizedImage from './OptimizedImage';
+import ImageUploadModal from './ImageUploadModal';
 
 interface MenuManagementProps {
   dishes: Dish[];
@@ -33,6 +35,7 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
   const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
   
   const [currentPage, setCurrentPage] = useState(1);
+  const [showImageUploadModal, setShowImageUploadModal] = useState(false);
   const pageSize = 12;
   
   const t = useCallback((key: string) => getTranslation(lang, key), [lang]);
@@ -104,6 +107,14 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleSelectImage = (imageUrl: string) => {
+    const imageInput = document.getElementById('image_url_input') as HTMLInputElement;
+    if (imageInput) {
+      imageInput.value = imageUrl;
+    }
+    setShowImageUploadModal(false);
   };
 
   return (
@@ -250,7 +261,14 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
                  <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] ml-2">{lang === 'zh' ? '视觉资源' : 'Image Resources'} (URL / S3)</label>
                     <div className="flex gap-4">
-                       <input name="image_url" defaultValue={editingDish?.image_url} required className="flex-1 px-8 py-5 bg-white border-2 border-slate-100 rounded-[1.75rem] font-mono text-[10px] outline-none shadow-sm" />
+                       <input name="image_url" id="image_url_input" defaultValue={editingDish?.image_url} required className="flex-1 px-8 py-5 bg-white border-2 border-slate-100 rounded-[1.75rem] font-mono text-[10px] outline-none shadow-sm" />
+                       <button 
+                         type="button" 
+                         onClick={() => setShowImageUploadModal(true)}
+                         className="w-16 h-16 bg-blue-50 border-2 border-blue-200 rounded-2xl flex items-center justify-center shadow-inner hover:bg-blue-100 transition-colors"
+                       >
+                         <ImageIcon size={20} className="text-blue-600" />
+                       </button>
                        <div className="w-16 h-16 bg-white rounded-2xl overflow-hidden border-2 border-slate-100 shadow-inner p-1">
                           {editingDish?.image_url && <img src={editingDish.image_url} className="w-full h-full object-cover rounded-xl" />}
                        </div>
@@ -288,6 +306,14 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
            </form>
         </div>
       )}
+
+      {/* Image Upload Modal */}
+      <ImageUploadModal 
+        isOpen={showImageUploadModal}
+        onClose={() => setShowImageUploadModal(false)}
+        onSelectImage={handleSelectImage}
+        lang={lang}
+      />
     </div>
   );
 };

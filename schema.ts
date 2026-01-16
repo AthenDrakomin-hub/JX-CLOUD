@@ -4,29 +4,44 @@ import { pgTable, text, numeric, timestamp, integer, boolean, jsonb, pgEnum } fr
 // 角色枚举
 export const roleEnum = pgEnum('user_role', ['admin', 'staff', 'partner', 'user']);
 
-// 1. Better-auth 核心表
+// 1. Better-auth 核心表 (与 Better Auth 标准字段对齐)
+// Internal tables for Better Auth (遵循 Better Auth 标准字段)
 export const user = pgTable('user', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   email: text('email').notNull().unique(),
-  emailVerified: boolean('emailVerified').notNull(),
+  emailVerified: boolean('email_verified').default(false), // Better Auth 标准字段名
   image: text('image'),
   role: text('role').default('user'), 
   partnerId: text('partner_id'), 
   modulePermissions: jsonb('module_permissions'), // 存储模块级 CRUD 权限
-  createdAt: timestamp('createdAt').notNull(),
-  updatedAt: timestamp('updatedAt').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(), // Better Auth 标准字段名
+  updatedAt: timestamp('updated_at').notNull().defaultNow(), // Better Auth 标准字段名
 });
 
 export const session = pgTable('session', {
   id: text('id').primaryKey(),
-  expiresAt: timestamp('expiresAt').notNull(),
+  userId: text('user_id').notNull().references(() => user.id), // Better Auth 标准字段名
+  expiresAt: timestamp('expires_at').notNull(), // Better Auth 标准字段名
   token: text('token').notNull().unique(),
-  createdAt: timestamp('createdAt').notNull(),
-  updatedAt: timestamp('updatedAt').notNull(),
-  ipAddress: text('ipAddress'),
-  userAgent: text('userAgent'),
-  userId: text('userId').notNull().references(() => user.id),
+  ipAddress: text('ip_address'), // Better Auth 标准字段名
+  userAgent: text('user_agent'), // Better Auth 标准字段名
+  createdAt: timestamp('created_at').notNull().defaultNow(), // Better Auth 标准字段名
+  updatedAt: timestamp('updated_at').notNull().defaultNow(), // Better Auth 标准字段名
+});
+
+// 2. 业务用户表 (用于应用特定逻辑)
+// 与 api.ts 中使用的 'users' 表对应
+export const users = pgTable('users', {
+  id: text('id').primaryKey(),
+  username: text('username').notNull().unique(), // 业务所需字段
+  email: text('email').notNull().unique(),
+  name: text('name').notNull(),
+  role: text('role').default('user'), 
+  partnerId: text('partner_id'), 
+  modulePermissions: jsonb('module_permissions'), // 存储模块级 CRUD 权限
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
 // 2. 酒店业务表

@@ -38,7 +38,7 @@ export const STAFF_CREDENTIALS = { id: 'staff_user' };
  * 诊断工具
  */
 export const getConnectionStatus = async () => {
-  if (isDemoMode) return { ok: false, msg: '环境检测失败：未探测到 SUPABASE_URL。请确保 Vercel 关联已完成。' };
+  if (isDemoMode) return { ok: false, msg: '环境检测失败：未探测到 SUPABASE_URL 或 VITE_SUPABASE_ANON_KEY。本地开发请确保 .env 文件已正确配置。' };
   try {
     const { data, error } = await supabase.from('system_config').select('id').limit(1);
     if (error) return { ok: false, msg: error.message, code: error.code };

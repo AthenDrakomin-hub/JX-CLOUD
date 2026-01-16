@@ -12,8 +12,8 @@
 ## 🛠 核心技术架构 (Tech Stack)
 
 -   **Frontend**: React 19 + TypeScript + Vite + Tailwind CSS
--   **Backend-as-a-Service**: Supabase (PostgreSQL / Realtime / Storage)
--   **Auth**: Better-Auth (支持 Passkey 生物识别与根权限旁路)
+-   **Database**: Supabase (纯 PostgreSQL 数据库，不含认证)
+-   **Auth**: Better-Auth (完全解耦，供应商无关)
 -   **Infrastructure**: Vercel Edge Runtime (边缘中间件与 API 网关)
 -   **ORM**: Drizzle ORM (物理层架构映射)
 
@@ -33,21 +33,23 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.orders;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.rooms;
 ```
 
-### 2. Vercel 自动化关联
+### 2. Vercel 部署配置
 1.  在 Vercel Dashboard 导入本项目。
-2.  进入 **Integrations** 选项卡，搜索并安装 **Supabase** 插件。
-3.  关联您的 Supabase Project。Vercel 将自动注入：
+2.  Vercel 将自动注入 Supabase 环境变量：
     -   `SUPABASE_URL`
     -   `SUPABASE_ANON_KEY`
 
 ### 3. 手动配置环境变量 (Critical)
-在 Vercel 设置中额外添加以下变量以激活生产链路：
+在 Vercel 设置中添加以下变量以激活认证和生产链路：
 
 | 变量名 | 推荐值 | 说明 |
 | :--- | :--- | :--- |
-| `DATABASE_URL` | `postgresql://...` | 必须使用 Transaction Mode (端口 6543) |
-| `BETTER_AUTH_SECRET` | 随机生成的 32 位字符串 | 用于 Session 签名加密 |
-| `VITE_BETTER_AUTH_URL` | `https://your-domain.vercel.app` | 生产环境完整域名 |
+| `DATABASE_URL` | `postgresql://...` | 直接数据库连接（用于 Drizzle ORM） |
+| `BETTER_AUTH_SECRET` | 随机生成的安全密钥 | Better Auth 会话签名加密 |
+| `BETTER_AUTH_URL` | `https://your-domain.vercel.app` | 生产环境完整域名 |
+| `VITE_BETTER_AUTH_URL` | `https://your-domain.vercel.app` | 前端认证 URL |
+
+**注意**: 本项目采用认证与数据库解耦架构，Better Auth 负责认证，Supabase 仅提供数据库服务。
 
 ---
 

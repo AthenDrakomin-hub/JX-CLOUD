@@ -136,5 +136,18 @@
   </div>
   <script type="module" src="index.tsx"></script>
 <script type="module" src="/index.tsx"></script>
+<script>
+  // 检测 URL 参数并在必要时重定向到合适的页面
+  window.addEventListener('load', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomParam = urlParams.get('room');
+    
+    // 如果有 room 参数，保持在当前页面（App.tsx 会处理）
+    if (roomParam) {
+      // 让 App.tsx 处理访客模式
+      console.log('Guest mode detected, room:', roomParam);
+    }
+  });
+</script>
 </body>
 </html>
