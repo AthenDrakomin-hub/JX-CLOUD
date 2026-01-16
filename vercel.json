@@ -2,6 +2,13 @@
 {
   "version": 2,
   "framework": "vite",
+  "functions": {
+    "api/**/*": {
+      "memory": 1024,
+      "maxDuration": 30,
+      "runtime": "nodejs20.x"
+    }
+  },
   "rewrites": [
     {
       "source": "/api/(.*)",
@@ -19,8 +26,14 @@
         { "key": "X-Content-Type-Options", "value": "nosniff" },
         { "key": "X-Frame-Options", "value": "DENY" },
         { "key": "X-XSS-Protection", "value": "1; mode=block" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
     }
-  ]
+  ],
+  "env": {
+    "NODE_VERSION": "20.x",
+    "NEXT_PUBLIC_SUPABASE_URL": "$SUPABASE_URL",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "$SUPABASE_ANON_KEY"
+  }
 }

@@ -42,7 +42,11 @@ export const api = {
 
   rooms: {
     getAll: async (): Promise<HotelRoom[]> => {
-      if (isDemoMode || !supabase) return Array.from({length: 20}, (_, i) => ({ id: (8201 + i).toString(), status: 'ready' }));
+      if (isDemoMode || !supabase) {
+        // 使用与 constants.ts 中一致的房间号
+        const { ROOM_NUMBERS } = await import('../constants');
+        return ROOM_NUMBERS.map(id => ({ id, status: 'ready' }));
+      }
       const { data, error } = await supabase.from('rooms').select('*').order('id');
       if (error) throw error;
       return data.map((r: any) => ({ id: r.id, status: r.status }));

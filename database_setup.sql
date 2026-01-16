@@ -12,7 +12,14 @@ CREATE TABLE IF NOT EXISTS public.menu_dishes (id TEXT PRIMARY KEY, name TEXT NO
 CREATE TABLE IF NOT EXISTS public.orders (id TEXT PRIMARY KEY DEFAULT 'ORD-' || floor(random() * 1000000)::text, room_id TEXT NOT NULL, items JSONB DEFAULT '[]'::jsonb, total_amount NUMERIC DEFAULT 0, status TEXT DEFAULT 'pending', payment_method TEXT, payment_proof TEXT, cash_received NUMERIC, cash_change NUMERIC, created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW());
 CREATE TABLE IF NOT EXISTS public.ingredients (id TEXT PRIMARY KEY, name TEXT NOT NULL, unit TEXT, stock NUMERIC DEFAULT 0, min_stock NUMERIC DEFAULT 10, category TEXT, last_restocked TIMESTAMPTZ DEFAULT NOW());
 CREATE TABLE IF NOT EXISTS public.partners (id TEXT PRIMARY KEY, name TEXT NOT NULL, owner_name TEXT, status TEXT DEFAULT 'active', commission_rate NUMERIC DEFAULT 0.15, balance NUMERIC DEFAULT 0, authorized_categories TEXT[], total_sales NUMERIC DEFAULT 0, joined_at TIMESTAMPTZ DEFAULT NOW());
-CREATE TABLE IF NOT EXISTS public.users (id TEXT PRIMARY KEY, username TEXT UNIQUE NOT NULL, email TEXT, name TEXT, role TEXT DEFAULT 'staff', partner_id TEXT, created_at TIMESTAMPTZ DEFAULT NOW());
+CREATE TABLE IF NOT EXISTS public.users (id TEXT PRIMARY KEY, username TEXT UNIQUE NOT NULL, email TEXT, name TEXT, role TEXT DEFAULT 'staff', partner_id TEXT, module_permissions JSONB, created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW());
+
+-- 添加触发器以自动更新 updated_at 字段
+CREATE OR REPLACE TRIGGER users_updated_at_trigger
+    BEFORE UPDATE ON public.users
+    FOR EACH ROW
+    EXECUTE FUNCTION handle_updated_at();
+
 CREATE TABLE IF NOT EXISTS public.expenses (id TEXT PRIMARY KEY, amount NUMERIC NOT NULL DEFAULT 0, category TEXT, description TEXT, date TIMESTAMPTZ DEFAULT NOW(), created_at TIMESTAMPTZ DEFAULT NOW());
 
 -- 3. RLS 策略 (彻底打通匿名链路)
@@ -45,3 +52,9 @@ ON CONFLICT (id) DO NOTHING;
 
 -- 6. 初始化系统全局配置
 INSERT INTO public.system_config (id, hotel_name) VALUES ('global', '江西云厨酒店') ON CONFLICT DO NOTHING;
+
+-- 7. 初始化用户 (根管理员和员工)
+INSERT INTO public.users (id, username, email, name, role) VALUES 
+('admin-root', 'AthenDrakomin', 'athendrakomin@proton.me', '系统总监', 'admin'),
+('staff-user', 'staff', 'staff@jxcloud.com', '普通员工', 'staff')
+ON CONFLICT (email) DO NOTHING;

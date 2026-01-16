@@ -96,10 +96,15 @@ const Sidebar: React.FC<SidebarProps> = ({
            {!isCollapsed && (
              <div className="flex-1 truncate animate-in fade-in duration-300">
                <p className="text-[10px] font-black text-slate-900 truncate leading-none">{currentUser?.name}</p>
-               <p className="text-[8px] font-bold text-blue-500 uppercase mt-1">ROOT_NODE</p>
+               <p className="text-[8px] font-bold text-blue-500 uppercase mt-1">{t('root_node')}</p>
              </div>
            )}
         </div>
+
+        <button onClick={onToggleLang} className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-xl text-slate-400 font-black text-[9px] uppercase hover:text-blue-600 hover:bg-blue-50/50 transition-all active-scale ${isCollapsed ? 'justify-center px-0' : ''}`}>
+          <Globe size={14} />
+          {!isCollapsed && <span>{lang === 'zh' ? t('enMode') : t('zhMode')}</span>}
+        </button>
 
         <button onClick={onLogout} className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-xl text-slate-400 font-black text-[9px] uppercase hover:text-red-500 hover:bg-red-50/50 transition-all active-scale ${isCollapsed ? 'justify-center px-0' : ''}`}>
           <LogOut size={14} />

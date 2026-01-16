@@ -5,12 +5,12 @@ import { user as authUser, session as authSession } from '../../schema.js';
 
 /**
  * Better Auth 服务器端配置
- * 使用 Drizzle 适配器连接到 Supabase PostgreSQL 数据库
+ * 使用 Drizzle 适配器连接到 Supabase PostgreSQL 数据库 (连接池模式)
  * 所有用户数据存储在 Supabase 的 public 模式下
  */
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
-    provider: 'pg',
+    provider: 'pg', // 明确指定使用 Postgres
     // 映射 Better Auth 默认表到我们定义的表结构（使用标准字段名）
     schema: {
       user: {
