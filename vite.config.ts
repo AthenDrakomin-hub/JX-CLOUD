@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   build: {
     outDir: 'dist',
-    chunkSizeWarningLimit: 1500,
+    chunkSizeWarningLimit: 3500, // 增加到3500KB以适应大型库
     cssCodeSplit: true,
     rollupOptions: {
       input: {
@@ -15,6 +15,7 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
+            // 分离大型库以减小块大小
             if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
               return 'vendor-react-core';
             }
@@ -24,7 +25,7 @@ export default defineConfig({
             if (id.includes('lucide-react')) {
               return 'vendor-ui-icons';
             }
-            if (id.includes('@supabase')) {
+            if (id.includes('@supabase/supabase-js')) {
               return 'vendor-supabase';
             }
             if (id.includes('better-auth')) {
@@ -42,13 +43,46 @@ export default defineConfig({
             if (id.includes('qrcode.react')) {
               return 'vendor-qrcode';
             }
+            if (id.includes('zod')) {
+              return 'vendor-zod';
+            }
+            if (id.includes('@simplewebauthn')) {
+              return 'vendor-simplewebauthn';
+            }
+            if (id.includes('@better-fetch')) {
+              return 'vendor-better-fetch';
+            }
             
-            // 创建一个更大的通用第三方库包，避免循环依赖
-            const vendorPackages = ['react', 'react-dom', 'scheduler', 'recharts', 'd3', 
-                                   '@supabase', 'better-auth', 'drizzle-orm', 'postgres',
-                                   'react-hook-form', 'qrcode.react', 'lucide-react'];
-            if (!vendorPackages.some(pkg => id.includes(pkg))) {
-              return 'vendor-common';
+            // 检查具体包路径以避免错误
+            const pkgName = id.split('node_modules/')[1]?.split('/')[0];
+            if (pkgName) {
+              if (pkgName.includes('@babel')) {
+                return 'vendor-babel';
+              }
+              if (pkgName === 'immer' || pkgName.includes('use-sync-external-store')) {
+                return 'vendor-state';
+              }
+            }
+            
+            // 为剩余的通用包创建更细粒度的分组
+            if (id.includes('node_modules/')) {
+              // 按首字母分组以分散负载
+              const parts = id.split('node_modules/');
+              const remainingPath = parts[parts.length - 1];
+              const packageName = remainingPath.split('/')[0];
+              
+              if (packageName.startsWith('@')) {
+                // 作用域包按第一个字母分组
+                const scopeParts = packageName.substring(1).split('/');
+                const scopePrefix = scopeParts[0];
+                if (scopePrefix) {
+                  return `vendor-scoped-${scopePrefix.substring(0, 3)}`;
+                }
+              } else {
+                // 普通包按首字母分组
+                const firstChar = packageName.charAt(0).toLowerCase();
+                return `vendor-common-${firstChar}`;
+              }
             }
           }
         },

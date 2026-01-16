@@ -92,7 +92,7 @@ const Dashboard: React.FC<DashboardProps> = ({ orders = [], rooms = [], expenses
              {isPartner ? `商户终端: ${currentPartner?.name || 'Loading...'}` : t('dashboard')}
            </h2>
            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
-             {isPartner ? 'Live Merchant Settlement Portal' : 'Enterprise Intelligence Node'}
+             {isPartner ? t('live_merchant_portal') : t('enterprise_intel_node')}
            </p>
         </div>
         <div className="flex items-center space-x-4">
@@ -110,17 +110,17 @@ const Dashboard: React.FC<DashboardProps> = ({ orders = [], rooms = [], expenses
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
-          title={isPartner ? "联营总营业额" : t('revenue')} 
+          title={isPartner ? t('joint_total_revenue') : t('revenue')} 
           value={`₱${stats.revenue.toLocaleString()}`} 
           icon={DollarSign} color="text-blue-600" bgColor="bg-blue-50" 
         />
         <StatCard 
-          title={isPartner ? "待分账余额" : t('profit_estimate')} 
+          title={isPartner ? t('pending_settlement_balance') : t('profit_estimate')} 
           value={`₱${stats.profit.toLocaleString()}`} 
           icon={isPartner ? Wallet : TrendingUp} color="text-emerald-600" bgColor="bg-emerald-50" 
         />
         <StatCard 
-          title={isPartner ? "本月履约单数" : t('pending_orders')} 
+          title={isPartner ? t('monthly_fulfillment_orders') : t('pending_orders')} 
           value={isPartner ? stats.orderCount : stats.pendingCount} 
           icon={isPartner ? History : Flame} color="text-orange-600" bgColor="bg-orange-50" 
         />
@@ -131,13 +131,13 @@ const Dashboard: React.FC<DashboardProps> = ({ orders = [], rooms = [], expenses
         <div className="lg:col-span-2 bg-white p-10 rounded-[3rem] border border-slate-200 shadow-sm min-h-[400px]">
            <div className="mb-10 flex items-center justify-between">
               <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">
-                {isPartner ? '商户流水增长趋势' : t('trend_analysis')}
+                {isPartner ? t('merchant_trend_analysis') : t('trend_analysis')}
               </h3>
               <div className="flex items-center space-x-3">
                  <div className="flex -space-x-2">
                     {[1,2,3].map(i => <div key={i} className="w-6 h-6 rounded-full border-2 border-white bg-slate-200" />)}
                  </div>
-                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Active Audit</span>
+                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t('active_audit')}</span>
               </div>
            </div>
            <div className="h-[250px]">
@@ -167,25 +167,25 @@ const Dashboard: React.FC<DashboardProps> = ({ orders = [], rooms = [], expenses
                 {isPartner ? <Users size={36} /> : <ShieldCheck size={36} />}
              </div>
              <h4 className="text-xl font-black text-slate-900">{isPartner ? '商户准入协议' : t('node_security')}</h4>
-             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Merchant Operational Status</p>
+             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{t('merchant_operational_status')}</p>
            </div>
            
            <div className="space-y-4">
               <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between">
-                 <span className="text-[10px] font-black text-slate-500 uppercase">佣金方案</span>
+                 <span className="text-[10px] font-black text-slate-500 uppercase">{t('commission_scheme')}</span>
                  <span className="text-xs font-black text-blue-600">{(currentPartner?.commissionRate || 0.15) * 100}% Standard</span>
               </div>
               <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between">
-                 <span className="text-[10px] font-black text-slate-500 uppercase">结算周期</span>
-                 <span className="text-xs font-black text-slate-900">T+1 (Daily)</span>
+                 <span className="text-[10px] font-black text-slate-500 uppercase">{t('settlement_period')}</span>
+                 <span className="text-xs font-black text-slate-900">{t('t_plus_daily')}</span>
               </div>
               <div className="p-6 bg-emerald-50 border border-emerald-100 rounded-[2rem]">
                  <div className="flex items-center gap-3 text-emerald-600 mb-2">
                     <ShieldCheck size={16} />
-                    <span className="text-[10px] font-black uppercase tracking-widest">物理隔离生效中</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest">{t('physical_isolation_active')}</span>
                  </div>
                  <p className="text-[9px] text-emerald-700 leading-relaxed font-bold">
-                   当前终端已锁定为合伙人工作流。所有订单推送、财务流水均已根据您的 PartnerID 进行物理脱敏处理。
+                   {t('partner_workflow_locked')}
                  </p>
               </div>
            </div>

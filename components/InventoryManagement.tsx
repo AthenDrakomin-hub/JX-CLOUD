@@ -134,7 +134,7 @@ const InventoryManagement: React.FC<{ lang: Language }> = ({ lang }) => {
                    <div className="flex items-center space-x-2">
                       <History size={14} className="text-slate-300" />
                       {/* Fix: Use last_restocked instead of lastRestocked */}
-                      <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">最近入库: {ing.last_restocked ? new Date(ing.last_restocked).toLocaleDateString() : '—'}</span>
+                      <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">{t('last_restocked')}: {ing.last_restocked ? new Date(ing.last_restocked).toLocaleDateString() : '—'}</span>
                    </div>
                 </div>
              </div>
@@ -148,15 +148,15 @@ const InventoryManagement: React.FC<{ lang: Language }> = ({ lang }) => {
           <form onSubmit={handleIngSubmit} className="relative w-full max-w-xl bg-white rounded-[4rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500">
              <div className="p-12 lg:p-16 space-y-10">
                 <div className="flex items-center justify-between">
-                   <h3 className="text-3xl font-bold text-slate-900 tracking-tight">{editingIng ? '编辑物料信息' : '新物料档案登记'}</h3>
+                   <h3 className="text-3xl font-bold text-slate-900 tracking-tight">{editingIng ? t('edit_inventory_info') : t('new_inventory_registration')}</h3>
                    <button type="button" onClick={() => setIsModalOpen(false)} className="w-12 h-12 flex items-center justify-center rounded-2xl bg-slate-50 text-slate-400 hover:bg-slate-900 transition-all"><X size={24} /></button>
                 </div>
                 <div className="space-y-6">
-                   <div className="space-y-3"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">物料名称</label><input name="name" defaultValue={editingIng?.name} required className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white transition-all font-bold" /></div>
+                   <div className="space-y-3"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('material_name')}</label><input name="name" defaultValue={editingIng?.name} required className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white transition-all font-bold" /></div>
                    <div className="grid grid-cols-2 gap-6">
-                      <div className="space-y-3"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">计量单位</label><input name="unit" defaultValue={editingIng?.unit} required placeholder="kg / L" className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-bold" /></div>
+                      <div className="space-y-3"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('measurement_unit')}</label><input name="unit" defaultValue={editingIng?.unit} required placeholder="kg / L" className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-bold" /></div>
                       <div className="space-y-3">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">分类</label>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('category')}</label>
                         <select name="category" defaultValue={editingIng?.category || '主食类'} className="w-full px-8 py-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-bold">
                            <option value="主食类">主食类</option><option value="油脂类">油脂类</option><option value="水产类">水产类</option><option value="调味类">调味类</option><option value="蔬果类">蔬果类</option>
                         </select>

@@ -241,10 +241,10 @@ const ImageLibrary: React.FC<ImageLibraryProps> = ({ lang }) => {
                      <div className="flex items-center space-x-2">
                         <History size={14} className="text-slate-300" />
                         {/* Fix: Use last_restocked instead of lastRestocked */}
-                        <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">最近入库: {ing.last_restocked ? new Date(ing.last_restocked).toLocaleDateString() : '—'}</span>
+                        <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">{t('last_restocked')}: {ing.last_restocked ? new Date(ing.last_restocked).toLocaleDateString() : '—'}</span>
                      </div>
                      <div className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${isLowStock ? 'bg-red-600 text-white border-transparent shadow-[0_0_15px_rgba(239,68,68,0.3)]' : 'bg-emerald-50 border-emerald-100 text-emerald-600'}`}>
-                        {isLowStock ? '库存危急' : '量足安全'}
+                        {isLowStock ? t('low_stock_alert') : t('stock_sufficient_safe')}
                      </div>
                   </div>
                </div>
