@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Order } from '../types';
 import { Language, getTranslation } from '../translations';
-import { api } from '../services/api-client';
+import { api } from '../services/api';
 import { notificationService } from '../services/notification';
-import { createClient } from '@supabase/supabase-js';
+import { createSupabaseClient } from '../services/supabaseClient';
 import { Clock, Package, CheckCircle, MapPin, Phone, ChefHat, CalendarCheck } from 'lucide-react';
 
 interface DeliveryDashboardProps {
@@ -17,10 +17,8 @@ const DeliveryDashboard: React.FC<DeliveryDashboardProps> = ({ lang, currentUser
   const [realtimeOrders, setRealtimeOrders] = useState<Order[]>([]);
   const t = useCallback((key: string) => getTranslation(lang, key), [lang]);
 
-  // 初始化 Supabase 客户端
-  const supabaseUrl = process.env.VITE_SUPABASE_URL;
-  const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
-  const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
+  // 使用全局 Supabase 客户端
+  const supabase = createSupabaseClient();
 
   // 加载待送餐订单
   const loadReadyOrders = useCallback(async () => {

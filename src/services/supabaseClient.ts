@@ -1,4 +1,3 @@
-
 /**
  * 江西云厨 - 核心接入引擎 (Vercel 部署优化版)
  * 兼容性：支持 Vercel 自动注入的环境变量
@@ -31,23 +30,27 @@ if (isProductionDB) {
   console.warn("⚠️ 未检测到 POSTGRES_URL，系统进入演示模式。");
 }
 
-// Supabase 客户端现在仅用于实时功能和认证
-// 数据库操作已完全迁移到 Drizzle ORM (services/db.ts)
+// 创建 Supabase 客户端单例
 let supabaseInstance: any = null;
-if (!isDemoMode) {
-  // 动态导入以避免在无 Supabase 环境下的错误
-  import('@supabase/supabase-js').then(({ createClient }) => {
-    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-      }
-    });
-  }).catch(err => {
-    console.warn('Supabase client initialization failed:', err.message);
-  });
-}
 
+// 修复：提供一个工厂函数来创建 Supabase 客户端，避免重复初始化
+export const createSupabaseClient = () => {
+  if (!supabaseInstance && typeof window !== 'undefined' && !isDemoMode) {
+    import('@supabase/supabase-js').then(({ createClient }) => {
+      supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+        }
+      });
+    }).catch(err => {
+      console.warn('Supabase client initialization failed:', err.message);
+    });
+  }
+  return supabaseInstance;
+};
+
+// 导出 Supabase 实例（可能为 null，直到初始化完成）
 export const supabase = supabaseInstance;
 
 export const ADMIN_CREDENTIALS = { email: 'athendrakomin@proton.me' };

@@ -1,7 +1,7 @@
 
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
-import * as schema from '../schema.js';
+import * as schema from '../../drizzle/schema.js';
 
 // Environment variables will be loaded by the runtime in serverless functions
 // Vercel automatically loads environment variables in serverless functions
@@ -13,7 +13,7 @@ console.log("DATABASE_URL 状态:", !!process.env.DATABASE_URL);
 console.log("POSTGRES_URL 状态:", !!process.env.POSTGRES_URL);
 try {
   console.log("当前读取到的 ENV 键名:", Object.keys(process.env || {}));
-} catch(e) {
+} catch (error) {
   // Ignore during build
 }
 
@@ -57,8 +57,9 @@ const getPooledUrl = (url: string) => {
         parsed.port = "6543"; // 使用连接池端口以提高并发性能
     }
     return parsed.toString();
-  } catch (e) {
-    console.error("❌ 数据库连接字符串解析失败:", e);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("❌ 数据库连接字符串解析失败:", errorMessage);
     return url;
   }
 };

@@ -31,14 +31,19 @@ This file provides guidance to Qoder (qoder.com) when working with code in this 
 │   ├── supabaseClient.ts  # 数据库客户端
 │   ├── notification.ts    # 通知服务
 │   ├── s3Service.ts       # 文件存储服务
-│   └── db.ts              # 数据库连接
+│   ├── printService.ts    # 打印服务
+│   └── db.server.ts       # 数据库连接 (服务端专用)
 ├── api/                # API路由 (服务器端)
 ├── scripts/            # 数据库初始化脚本
-├── constants.ts       # 初始数据常量
+├── tools/              # 项目架构验证工具
 ├── types.ts          # TypeScript类型定义
 ├── translations.ts   # 国际化翻译
-├── App.tsx          # 主应用入口
-├── GuestEntry.tsx   # 客户端点餐入口
+├── schema.ts         # 数据库表结构定义
+├── src/              # Source directory
+│   ├── App.tsx      # 主应用入口
+│   ├── GuestEntry.tsx # 客户端点餐入口
+│   ├── constants.ts # 初始数据常量
+│   └── index.tsx    # 入口点
 └── index.html       # HTML模板
 ```
 
@@ -79,6 +84,18 @@ npx drizzle-kit migrate --config=drizzle.config.ts
 # Schema 检查和更新
 npm run schema:check
 npm run schema:update
+
+# 调试和诊断命令
+npx tsx scripts/test-connection.ts        # 测试数据库连接
+npx tsx scripts/test-db-connection.ts     # 详细数据库连接测试
+npx tsx scripts/debug-env.ts             # 调试环境变量配置
+npx tsx scripts/analyze-db-url.ts        # 分析数据库URL配置
+npx tsx scripts/check-schema.ts          # 检查数据库schema一致性
+npx tsx scripts/check-supabase-schema.ts # 检查Supabase表结构
+npx tsx scripts/update-schema.ts         # 更新数据库schema
+npx tsx scripts/init-db.ts               # 手动运行数据库初始化
+npx tsx scripts/init-users.ts            # 手动运行用户初始化
+npx tsx scripts/init-categories.ts       # 手动运行分类初始化
 ```
 
 ## 🗄️ 数据库配置
@@ -120,7 +137,7 @@ npm run schema:update
 - 实时功能仍使用Supabase (仅用于监听)，数据库操作已完全迁移到Drizzle
 - 用户数据双重架构：`user` 表用于认证系统，`users` 表用于业务逻辑
 - API网关支持完整的CRUD操作，包含错误处理和日志记录
-- 数据库连接通过 `services/db.ts` 配置，支持多种PostgreSQL连接字符串格式
+- 数据库连接通过 `services/db.server.ts` 配置，支持多种PostgreSQL连接字符串格式
 
 ### 2. 权限体系
 - 四种用户角色: ADMIN, PARTNER, STAFF, MAINTAINER
@@ -151,7 +168,7 @@ npm run schema:update
 - DatabaseManagement (数据库管理)
 
 ### 5. 国际化支持
-- 支持中文(zh)和英文(en)双语
+- 支持中文(zh)、英文(en)和他加禄语(fil)三语
 - 动态语言切换功能
 - 集中式翻译管理
 - 翻译文件位于 `translations.ts`，包含完整的中英文对照
@@ -173,7 +190,7 @@ npm run schema:update
 - 使用Drizzle ORM进行类型安全的数据库操作
 - 环境变量检查：优先查找 POSTGRES_URL、DATABASE_URL、POSTGRES_PRISMA_URL、POSTGRES_URL_NON_POOLING 或 DIRECT_URL
 - 生产环境强制使用Drizzle直连，废弃Supabase客户端的数据库操作功能
-- 数据库连接通过 `services/db.ts` 配置，使用连接池优化以适应 Vercel Serverless 环境
+- 数据库连接通过 `services/db.server.ts` 配置，使用连接池优化以适应 Vercel Serverless 环境
 - 自动切换至 Supabase 连接池端口 6543 以提高并发性能
 - 连接池配置：最大连接数5，空闲超时30秒，连接超时10秒
 
@@ -255,7 +272,7 @@ npm run schema:update
 ### 添加国际化文本
 1. 在 `translations.ts` 中添加键值对
 2. 在组件中使用 `t('key')` 调用翻译
-3. 支持中文(zh)和英文(en)两种语言
+3. 支持中文(zh)、英文(en)和他加禄语(fil)三种语言
 
 ### 部署问题解决
 1. 修复导入路径错误：`../translations` → `./translations`
@@ -312,21 +329,21 @@ npm run schema:update
 
 ### Translation Management
 - All UI text is managed in `translations.ts`
-- Two languages supported: Chinese (zh) and English (en)
-- New translations should be added to both language objects
+- Three languages supported: Chinese (zh), English (en), and Filipino (fil)
+- New translations should be added to all language objects
 - Use `t('key')` function in components to access translations
 - Parameter substitution uses `{paramName}` syntax
 
 ### Adding New Translations
-1. Add the translation key-value pair to both zh and en objects in `translations.ts`
+1. Add the translation key-value pair to zh, en, and fil objects in `translations.ts`
 2. Use the `getTranslation(lang, key, params?)` function or `t('key')` helper in components
 3. For parameterized translations, use format: `t('key', { paramName: value })`
 
 ### Internationalization Notes
-All UI elements are now fully translated between Chinese and English:
+All UI elements are now fully translated between Chinese, English, and Filipino:
 - All interface text is now properly localized using translation keys
 - Components use the t('key') function for dynamic translations
-- Both zh and en language variants are maintained in translations.ts
+- All three language variants are maintained in translations.ts
 
 ## 🛠 工具与调试
 
@@ -335,11 +352,19 @@ All UI elements are now fully translated between Chinese and English:
 - `npm run schema:update`: 更新数据库schema到最新状态
 - `npx tsx scripts/test-connection.ts`: 测试数据库连接
 - `npx tsx scripts/check-schema.ts`: 检查数据库表结构
+- `npx tsx scripts/check-supabase-schema.ts`: 检查Supabase表结构
+- `npx tsx scripts/test-db-connection.ts`: 详细数据库连接测试
 
 ### 调试命令
 - `npx tsx scripts/debug-env.ts`: 调试环境变量配置
-- `npx tsx scripts/test-db-connection.ts`: 测试数据库连接
 - `npx tsx scripts/analyze-db-url.ts`: 分析数据库URL配置
+- `npx tsx scripts/update-schema.ts`: 更新数据库schema
+
+### 架构验证工具
+- `node tools/quick-vite-check.js`: 快速检查非法数据库导入
+- `node tools/smart-db-checker.js`: 智能分析前后端导入规则
+- `node tools/check-project-db-imports.js`: 项目级扫描非法导入
+- `node tools/vite-db-fix-helper.js`: 综合修复助手
 
 ### 数据库管理脚本
 - `npm run db:init`: 初始化数据库表结构
@@ -381,3 +406,27 @@ All UI elements are now fully translated between Chinese and English:
 - 生产环境：使用Vercel Edge Runtime + Supabase + Drizzle ORM
 - 认证：本地和生产都使用Better-Auth
 - 实时功能：都使用Supabase Realtime
+
+## 🏗 架构守则 (Architecture Rules)
+
+### 前后端严格分离原则
+
+**🚫 禁止行为**:
+- 在任何前端组件中直接导入数据库驱动或连接 (`import { db } from '../services/db'`)
+- 前端文件中使用 `pg`, `mysql`, `sqlite` 等数据库包
+- 前端组件直接调用数据库查询语句
+
+**✅ 正确模式**:
+- 前端组件只能导入 API 客户端: `import { api } from '../services/api'`
+- 通过标准 API 接口进行数据交互
+- 使用 `fetch()` 或封装的 API 方法访问后端服务
+
+**自动化检查**:
+项目包含 `/tools` 目录下的扫描工具，可自动检测违反架构守则的导入行为：
+```bash
+# 快速检查非法导入
+node tools/quick-vite-check.js
+
+# 详细分析报告
+node tools/smart-db-checker.js
+```

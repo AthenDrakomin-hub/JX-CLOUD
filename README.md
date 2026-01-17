@@ -1,4 +1,3 @@
-
 # 🏨 江西云厨终端系统 (JX CLOUD Terminal)
 
 [![Vercel Deployment](https://img.shields.io/badge/Deployment-Vercel-black?style=flat-square&logo=vercel)](https://vercel.com)
@@ -6,6 +5,33 @@
 [![Engine](https://img.shields.io/badge/Engine-React_19_|_Vite-blue?style=flat-square&logo=react)](https://react.dev)
 
 > **江西云厨** 是一款专为现代化酒店设计的全栈管理生态系统。集成了客房实时点餐（QR Ordering）、订单调度矩阵（KDS）、多维财务清算、合伙人联营逻辑以及基于物理层 RLS 安全审计的视觉资产管理。
+
+---
+
+## 🏗 项目架构 (Project Architecture)
+
+```
+根目录/
+├── /src/                    # 前端核心（React + Vite + Tailwind）
+│   ├── components/         # UI 组件
+│   ├── services/           # Supabase 与 API 客户端（单例模式）
+│   ├── types.ts            # TypeScript 类型定义
+│   └── translations.ts     # 国际化翻译
+├── /api/                   # 后端 Serverless 函数 (Vercel Runtime)
+│   ├── index.ts           # 主 API 网关
+│   └── auth/[...betterAuth].ts  # 认证路由
+├── /drizzle/              # 数据库 Schema 与迁移定义
+│   └── schema.ts          # 数据库表结构定义
+├── /scripts/              # 数据库维护与校验工具
+│   ├── init-db.ts         # 数据库初始化
+│   ├── check-schema.ts    # Schema 一致性检查
+│   └── ...
+├── /components/           # 可复用 UI 组件
+├── /services/             # 前端服务层
+├── index.html             # HTML 模板
+├── vite.config.ts         # 构建配置
+└── package.json           # 依赖管理
+```
 
 ---
 
@@ -49,74 +75,51 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.rooms;
 | `BETTER_AUTH_URL` | `https://your-domain.vercel.app` | 生产环境完整域名 |
 | `VITE_BETTER_AUTH_URL` | `https://your-domain.vercel.app` | 前端认证 URL |
 
-**注意**: 本项目采用认证与数据库解耦架构，Better Auth 负责认证，Supabase 仅提供数据库服务。
-
 ---
 
-## 🔐 准入与权限说明 (Security)
+## 📦 构建与开发 (Build & Development)
 
-### 根管理员 (Master Mode)
-系统预留了由 **Athen Drakomin** 定义的上帝模式访问路径：
--   **授权邮箱**: `athendrakomin@proton.me`
--   **特性**: 触发此邮箱后，系统会自动激活“物理会话注入”，绕过常规登录流程进入最高权限终端。
-
-### 合伙人隔离 (Partner Isolation)
--   **物理隔离**: 合伙人登录后，系统会自动根据其 `PartnerID` 对菜单、订单和流水进行物理层级过滤。
--   **清算逻辑**: 自动计算 T+1 佣金扣除后的待结余额。
-
----
-
-## 💻 运营模块导览 (Operational Modules)
-
-1.  **经营大盘 (Dashboard)**: 实时监控全网流水、待履约单数及商户健康度。
-2.  **调度矩阵 (Order Matrix)**: 提供 KDS（厨房显示系统）模式，支持热敏打印自动分单。
-3.  **资产档案 (Supply Chain)**: 管理全球化菜单，支持中英文双语对照与库存水位预警。
-4.  **视觉中心 (Visual Assets)**: 直接连接 Supabase S3 存储网关，管理商品高清素材。
-5.  **物理实验室 (Diagnostics)**: 系统内置链路检测工具，可一键修复 RLS 策略或重置缓存。
-
----
-
-## 📦 备份与迁移
-
--   **导出**: 在“供应链资产 -> 备份”中可导出全量 JSON 档案。
--   **导入**: 支持跨环境的数据迁移，上传 `.json` 档案即可瞬间克隆菜单架构。
-
----
-
-## 🏗 架构守则 (Architecture Rules)
-
-### 前后端严格分离原则
-
-**🚫 禁止行为**:
-- 在任何前端组件中直接导入数据库驱动或连接 (`import { db } from '../services/db'`)
-- 前端文件中使用 `pg`, `mysql`, `sqlite` 等数据库包
-- 前端组件直接调用数据库查询语句
-
-**✅ 正确模式**:
-- 前端组件只能导入 API 客户端: `import { api } from '../services/api'`
-- 通过标准 API 接口进行数据交互
-- 使用 `fetch()` 或封装的 API 方法访问后端服务
-
-**自动化检查**:
-项目包含 `/tools` 目录下的扫描工具，可自动检测违反架构守则的导入行为：
+### 安装依赖
 ```bash
-# 快速检查非法导入
-node tools/quick-vite-check.js
-
-# 详细分析报告
-node tools/smart-db-checker.js
+npm install
 ```
 
-### 技术边界定义
+### 本地开发
+```bash
+npm run dev
+```
 
-- **前端领域**: React 组件、UI 逻辑、状态管理、用户交互
-- **后端领域**: 数据库连接、业务逻辑、API 路由、认证服务
-- **通信桥梁**: 通过标准化 RESTful API 或 GraphQL 接口连接
+### 构建生产版本
+```bash
+npm run build
+```
+
+### 预览构建结果
+```bash
+npm run preview
+```
 
 ---
 
-## 📜 免责声明与版权
+## 🚨 关键安全措施 (Security Measures)
 
-江西云厨终端系统由**系统研发部 (R&D Division)** 维护。所有代码经过多重 IP 协议保护，严禁用于非授权的物理商业环境。
+-   根管理员保护：对特定邮箱地址的删除操作有硬编码保护
+-   权限验证：所有 API 操作都会验证用户权限
+-   SQL 注入防护：使用参数化查询和 ORM 层保护
+-   XSS 防护：输入验证和输出转义
+-   认证与业务分离：认证数据与业务数据存储分离
 
-© 2025 江西云厨系统研发部. All Rights Reserved.
+---
+
+## 🌐 国际化支持 (Internationalization)
+
+系统支持中文 (zh)、英文 (en) 和他加禄语 (fil) 三语切换，所有界面元素均支持动态语言切换。
+
+---
+
+## 🛠 维护与扩展 (Maintenance & Extensibility)
+
+-   **数据库迁移**: 使用 Drizzle Kit 进行 Schema 管理
+-   **实时功能**: 基于 Supabase Realtime 实现订单推送
+-   **性能优化**: 代码分割、图片优化、数据缓存
+-   **权限体系**: 四级用户角色 (ADMIN, PARTNER, STAFF, MAINTAINER)

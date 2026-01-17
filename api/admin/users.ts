@@ -1,0 +1,202 @@
+import { db } from '../src/services/db.server.js';
+import { user, users as businessUsers } from '../drizzle/schema.js';
+import { eq, and } from 'drizzle-orm';
+import { auth } from './auth/[...betterAuth].ts';
+
+export const config = {
+  runtime: 'nodejs',
+};
+
+// 生产级响应头
+const corsHeaders = {
+  'Content-Type': 'application/json',
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-client-info',
+  'X-JX-Cloud-Node': 'Edge-V5'
+};
+
+export default async function handler(req: Request) {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: corsHeaders });
+  }
+
+  const url = new URL(req.url);
+  const path = url.pathname.replace(/^\/api\/admin/, '');
+  const { data: session } = await auth.api.getSession({
+    request: req,
+  });
+
+  // 验证管理员权限
+  if (!session || session.user.role !== 'admin') {
+    return new Response(
+      JSON.stringify({ error: 'Unauthorized: Admin access required' }), 
+      { status: 403, headers: corsHeaders }
+    );
+  }
+
+  try {
+    // 创建新用户 (Admin only)
+    if (path === '/users' && req.method === 'POST') {
+      const { email, name, role = 'staff', partnerId } = await req.json();
+
+      // 验证输入
+      if (!email || !name) {
+        return new Response(
+          JSON.stringify({ error: 'Email and name are required' }), 
+          { status: 400, headers: corsHeaders }
+        );
+      }
+
+      // 检查邮箱是否已存在
+      const existingUser = await db
+        .select()
+        .from(user)
+        .where(eq(user.email, email))
+        .limit(1);
+
+      if (existingUser.length > 0) {
+        return new Response(
+          JSON.stringify({ error: 'User with this email already exists' }), 
+          { status: 409, headers: corsHeaders }
+        );
+      }
+
+      // 在 Better Auth 的 user 表中创建用户（仅用于认证）
+      const newUser = await db
+        .insert(user)
+        .values({
+          email,
+          name,
+          role: role,
+          partnerId: partnerId || session.user.partnerId, // 继承创建者的 partnerId
+          emailVerified: true, // 管理员创建的用户默认已验证
+        })
+        .returning();
+
+      // 同时在业务 users 表中创建记录
+      await db
+        .insert(businessUsers)
+        .values({
+          id: newUser[0].id,
+          email,
+          username: email.split('@')[0], // 使用邮箱用户名部分作为默认用户名
+          name,
+          role: role,
+          partnerId: partnerId || session.user.partnerId,
+        });
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          user: { id: newUser[0].id, email, name, role } 
+        }), 
+        { status: 201, headers: corsHeaders }
+      );
+    }
+
+    // 获取用户列表 (Admin only)
+    if (path === '/users' && req.method === 'GET') {
+      const users = await db
+        .select({
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          partnerId: user.partnerId,
+          createdAt: user.createdAt,
+        })
+        .from(user)
+        .where(eq(user.partnerId, session.user.partnerId));
+
+      return new Response(
+        JSON.stringify({ users }), 
+        { status: 200, headers: corsHeaders }
+      );
+    }
+
+    // 更新用户 (Admin only)
+    if (path.startsWith('/users/') && req.method === 'PUT') {
+      const userId = path.split('/')[2];
+      const { role, partnerId } = await req.json();
+
+      // 验证目标用户是否属于当前管理员的合伙人群组
+      const targetUser = await db
+        .select()
+        .from(user)
+        .where(and(eq(user.id, userId), eq(user.partnerId, session.user.partnerId)))
+        .limit(1);
+
+      if (targetUser.length === 0) {
+        return new Response(
+          JSON.stringify({ error: 'User not found or unauthorized' }), 
+          { status: 404, headers: corsHeaders }
+        );
+      }
+
+      await db
+        .update(user)
+        .set({ role, partnerId: partnerId || session.user.partnerId })
+        .where(eq(user.id, userId));
+
+      return new Response(
+        JSON.stringify({ success: true }), 
+        { status: 200, headers: corsHeaders }
+      );
+    }
+
+    // 删除用户 (Admin only)
+    if (path.startsWith('/users/') && req.method === 'DELETE') {
+      const userId = path.split('/')[2];
+
+      // 保护根管理员账户
+      if (userId === 'root_admin_athendrakomin') {
+        return new Response(
+          JSON.stringify({ error: 'Cannot delete root administrator account' }), 
+          { status: 403, headers: corsHeaders }
+        );
+      }
+
+      // 验证目标用户是否属于当前管理员的合伙人群组
+      const targetUser = await db
+        .select()
+        .from(user)
+        .where(and(eq(user.id, userId), eq(user.partnerId, session.user.partnerId)))
+        .limit(1);
+
+      if (targetUser.length === 0) {
+        return new Response(
+          JSON.stringify({ error: 'User not found or unauthorized' }), 
+          { status: 404, headers: corsHeaders }
+        );
+      }
+
+      await db
+        .delete(user)
+        .where(eq(user.id, userId));
+
+      return new Response(
+        JSON.stringify({ success: true }), 
+        { status: 200, headers: corsHeaders }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({ error: 'Endpoint not found' }), 
+      { status: 404, headers: corsHeaders }
+    );
+
+  } catch (error: any) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorCode = (error as any)?.code || 'UNKNOWN_ERROR';
+    
+    return new Response(
+      JSON.stringify({ 
+        error: 'Server Error', 
+        details: errorMessage,
+        code: errorCode
+      }), 
+      { status: 500, headers: corsHeaders }
+    );
+  }
+}

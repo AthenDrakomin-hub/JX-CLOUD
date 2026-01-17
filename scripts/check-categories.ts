@@ -1,5 +1,5 @@
 import { db } from './services/db.server';
-import { menuCategories } from './schema';
+import { menuCategories } from '../drizzle/schema';
 import { sql } from 'drizzle-orm';
 
 async function checkCategories() {

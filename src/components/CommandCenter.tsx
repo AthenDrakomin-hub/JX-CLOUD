@@ -5,7 +5,7 @@ import {
   Utensils, Zap, X, ArrowRight, Sun, 
   Moon, LogOut, Printer, LayoutDashboard
 } from 'lucide-react';
-import { HotelRoom, Order, Dish } from '../types';
+import { HotelRoom, Order, Dish } from './types';
 import { Language, getTranslation } from '../translations';
 
 interface CommandCenterProps {

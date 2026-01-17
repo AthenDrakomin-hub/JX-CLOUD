@@ -21,7 +21,7 @@ export const notificationService = {
     // 提示音来源：企业级通知声
     const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
     audio.volume = 0.6;
-    audio.play().catch(e => console.warn("Audio playback blocked by browser policy. Interaction required."));
+    audio.play().catch(error => console.warn("Audio playback blocked by browser policy. Interaction required."));
 
     // 2. 语音播报
     if (!('speechSynthesis' in window)) return;

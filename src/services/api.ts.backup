@@ -4,7 +4,7 @@ import { eq, ilike, asc, desc, and, or } from 'drizzle-orm';
 import { 
   systemConfig, menuDishes, orders, menuCategories, partners, 
   users, paymentMethods, ingredients, expenses, rooms 
-} from '../schema';
+} from '../../drizzle/schema';
 
 // 演示模式仍然保留，但在生产环境中优先使用drizzle
 const isDemoMode = !process.env.POSTGRES_URL;

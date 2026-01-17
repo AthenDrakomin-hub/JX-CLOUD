@@ -1,6 +1,6 @@
 
-import { db } from '../services/db.server.js';
-import { systemConfig, orders } from '../schema.js';
+import { db } from '../src/services/db.server.js';
+import { systemConfig, orders } from '../drizzle/schema.js';
 import { eq, sql } from 'drizzle-orm';
 
 /**

@@ -108,7 +108,7 @@ export const menuDishes = pgTable('menu_dishes', {
 
 export const orders = pgTable('orders', {
   id: text('id').primaryKey(),
-  roomId: text('room_id').notNull(),
+  tableId: text('table_id').notNull(), // 修改为 tableId 用于扫码点餐
   customerId: text('customer_id'), 
   items: jsonb('items').default('[]'),
   totalAmount: numeric('total_amount').default('0'),

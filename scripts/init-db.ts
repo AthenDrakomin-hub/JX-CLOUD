@@ -4,7 +4,7 @@
  */
 
 import { db } from '../services/db.server';
-import { systemConfig, rooms, users } from '../schema';
+import { systemConfig, rooms, users } from '../drizzle/schema';
 import { eq, sql } from 'drizzle-orm';
 import * as dotenv from 'dotenv';
 dotenv.config();

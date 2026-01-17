@@ -6,7 +6,7 @@ import {
   Loader2, Cpu, Globe, CheckCircle2, AlertCircle, 
   Fingerprint, Zap, ShieldCheck, Activity
 } from 'lucide-react';
-import { authClient } from '../services/auth-client';
+import { authClient, getEnhancedAuthClient } from '../services/auth-client';
 import LegalFooter from './LegalFooter';
 
 const AuthPage: React.FC = () => {
@@ -78,10 +78,16 @@ const AuthPage: React.FC = () => {
     setIsPasskeyLoading(true);
     setError(null);
     try {
-      await authClient.signIn.passkey();
+      // 异步加载增强的认证客户端（包含 WebAuthn 插件）
+      const enhancedClient = await getEnhancedAuthClient();
+      await enhancedClient.signIn.passkey();
       window.location.href = "/";
     } catch (err: any) {
-      if (err.message !== 'User canceled') {
+      // 检查是否是跨设备场景（没有指纹硬件）
+      if (err.name === 'NotAllowedError' || err.message?.includes('cross-device')) {
+        // 显示跨设备验证提示
+        setError('请使用手机扫描二维码完成跨设备验证');
+      } else if (err.message !== 'User canceled') {
         setError(t('auth_passkey_error'));
       }
     } finally {
@@ -198,11 +204,11 @@ const AuthPage: React.FC = () => {
             {/* 分割线 */}
             <div className="flex items-center gap-6">
                <div className="h-[1px] flex-1 bg-white/5" />
-               <span className="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em]">{t('auth_root_access')}</span>
+               <span className="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em]">或使用邮箱登录</span>
                <div className="h-[1px] flex-1 bg-white/5" />
             </div>
 
-            {/* 2. 根权限认证表单 (无密码) */}
+            {/* 2. 邮箱+验证码登录 */}
             <form onSubmit={handleMasterLogin} className="space-y-6">
               <div className="space-y-4">
                  <div className={`relative group border-2 rounded-[1.5rem] transition-all duration-500 ${isMasterUser ? 'border-amber-500 bg-amber-500/5 ring-8 ring-amber-500/5' : 'border-white/5 bg-white/[0.01]'}`}>

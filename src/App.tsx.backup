@@ -15,7 +15,7 @@ import NotificationCenter from './components/NotificationCenter';
 import ImageManagement from './components/ImageManagement';
 import AuthPage from './components/AuthPage';
 import DeliveryDashboard from './components/DeliveryDashboard';
-import GuestEntry from './GuestEntry';
+import GuestEntry from './GuestEntry';  // This is correct since both are in src/
 import Toast, { ToastType } from './components/Toast';
 import { useSession, signOut } from './services/auth-client';
 import { api } from './services/api';
