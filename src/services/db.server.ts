@@ -66,15 +66,21 @@ const getPooledUrl = (url: string) => {
 
 const pooledUrl = getPooledUrl(connectionString);
 
-// Vercel Serverless 优化的连接池配置
+// Vercel Serverless 优化的连接池配置 (极端无状态)
 const pool = new Pool({ 
   connectionString: pooledUrl,
-  max: 5,           // 在 Serverless 环境中使用较小的连接池
-  min: 0,
-  idleTimeoutMillis: 30000,    // 30秒空闲超时
-  connectionTimeoutMillis: 10000, // 10秒连接超时
-  maxUses: 7500,    // 连接最大使用次数，防止内存泄漏
-  keepAlive: true,  // 启用 TCP keep-alive
+  max: 8,           // 控制在8个以内
+  min: 0,           // 最小连接数为0，按需创建
+  idleTimeoutMillis: 10000,     // 10秒空闲超时（非常积极回收）
+  connectionTimeoutMillis: 3000, // 3秒连接超时
+  maxUses: 200,     // 连接最多使用200次就强制回收
+  keepAlive: false, // 禁用keep-alive，让连接更快断开
+  allowExitOnIdle: true, // 允许空闲时立即退出
+  log: (msg) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔌 PG Pool:', msg);
+    }
+  }
 });
 
 // 监听连接池事件以进行调试

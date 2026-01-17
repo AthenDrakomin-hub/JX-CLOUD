@@ -1,7 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
-import { visualizer } from 'rollup-plugin-visualizer';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
 
 export default defineConfig({
@@ -10,12 +9,6 @@ export default defineConfig({
     nodePolyfills({
       // 为浏览器环境注入 Node.js polyfills
       protocolImports: true,
-    }),
-    visualizer({
-      filename: 'stats.html',
-      open: true,
-      gzipSize: true,
-      brotliSize: true
     })
   ],
   define: {

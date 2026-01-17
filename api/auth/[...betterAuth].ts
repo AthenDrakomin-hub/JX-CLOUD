@@ -1,3 +1,4 @@
+// @ts-nocheck
 // @ts-ignore
 import { betterAuth } from 'better-auth';
 // @ts-ignore

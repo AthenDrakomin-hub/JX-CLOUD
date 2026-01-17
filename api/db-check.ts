@@ -1,3 +1,5 @@
+// 江西云厨 - 无状态数据库检查API (v4.0.0-STATELESS)
+// 完全无状态，使用共享连接池
 
 import { db } from '../src/services/db.server.js';
 import { users } from '../drizzle/schema.js';
@@ -22,16 +24,18 @@ export default async function handler(req: Request) {
   const start = Date.now();
   
   try {
-    // 1. 测试基础连接与延迟 (使用简单查询)
+    // 1. 测试基础连接与延迟 (使用共享db实例 - 无状态)
     const connectStart = Date.now();
     const connTest = await db.execute(sql`SELECT 1 as test`);
     const connectTime = Date.now() - connectStart;
 
-    // 2. 测试业务表读取正确性 (users 表)
+    // 2. 测试业务表读取正确性 (users 表 - 使用ORM自动管理连接)
     const countResult = await db.select({ count: sql`COUNT(*)` }).from(users);
     const userCount = parseInt(String(countResult[0]?.count || '0'));
 
     const totalTime = Date.now() - start;
+
+    // 连接自动归还给池，无需手动处理
 
     return new Response(
       JSON.stringify({
@@ -46,6 +50,7 @@ export default async function handler(req: Request) {
           database_state: 'active',
           user_registry_count: userCount,
           edge_node: process.env.VERCEL_REGION || 'unknown',
+          version: '4.0.0-STATELESS' // 版本标识
         }
       }),
       { 
@@ -53,7 +58,8 @@ export default async function handler(req: Request) {
         headers: { 
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
-          'X-JX-Diagnostic': 'Passed'
+          'X-JX-Diagnostic': 'Passed',
+          'X-API-Version': '4.0.0-STATELESS'
         } 
       }
     );
@@ -68,6 +74,7 @@ export default async function handler(req: Request) {
         message: errorMessage,
         code: errorCode,
         timestamp: new Date().toISOString(),
+        version: '4.0.0-STATELESS'
       }),
       { 
         status: 500, 

@@ -212,3 +212,71 @@ npx tsx scripts/debug-env.ts        # Environment variable debugging
 - `printService.ts`: Print service
 - `s3Service.ts`: File storage service (Supabase Storage)
 - `supabaseClient.ts`: Supabase client (mainly for realtime features)
+
+## 🧪 Testing and Quality Assurance
+
+### Database Scripts for Testing
+Multiple database testing and initialization scripts are available in the `scripts/` directory:
+
+```bash
+# Essential testing scripts
+npx tsx scripts/test-connection.ts     # Basic database connectivity test
+npx tsx scripts/init-db.ts            # Initialize database structure
+npx tsx scripts/create-root-admin.ts   # Create root administrator
+npx tsx scripts/check-schema.ts       # Validate database schema
+npx tsx scripts/check-all-tables.ts   # Verify all table structures
+
+# Advanced testing
+npx tsx scripts/check-tables-direct.ts # Direct table inspection
+npx tsx scripts/verify-users.ts       # User data verification
+npx tsx scripts/find-all-users.ts     # List all system users
+```
+
+### Architecture Validation Tools
+The `tools/` directory contains automated validation tools:
+
+```bash
+# Automated checks
+node tools/quick-vite-check.js        # Detect ESM import issues
+node tools/smart-db-checker.js        # Identify database import violations
+node tools/vite-db-fix-helper.js      # Automated fix suggestions
+node tools/check-project-db-imports.js # Project-specific import analysis
+```
+
+## 🎯 Development Workflow Guidelines
+
+### 1. Before Starting Work
+- Run `node tools/quick-vite-check.js` to validate current architecture compliance
+- Check `npx tsx scripts/test-connection.ts` to ensure database connectivity
+- Review existing components in `components/` directory for similar patterns
+
+### 2. During Development
+- Always use `src/services/api.ts` for frontend-backend communication
+- Import database connections only in server-side files (`*.server.ts`)
+- Include `.js` extension in all relative imports
+- Test database changes with `npm run schema:check`
+
+### 3. Before Deployment
+- Run all architecture validation tools
+- Execute `npm run build` to verify production build
+- Test with `npm run preview` to validate build output
+- Run database integrity checks
+
+## 📚 Key Files Reference
+
+### Core Configuration Files
+- `vite.config.ts`: Build and bundling configuration
+- `drizzle.config.ts`: Database ORM configuration
+- `tsconfig.json`: TypeScript compiler settings
+- `vercel.json`: Deployment configuration
+
+### Critical Service Files
+- `src/services/api.ts`: Frontend API gateway (primary integration point)
+- `src/services/db.server.ts`: Database connection (server-side only)
+- `api/index.ts`: Main backend API router
+- `drizzle/schema.ts`: Database schema definitions
+
+### Utility Scripts
+- `scripts/test-connection.ts`: Database connectivity testing
+- `scripts/init-db.ts`: Database initialization
+- `tools/quick-vite-check.js`: Architecture compliance checking
