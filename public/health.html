@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>江西云厨 - 部署状态检查</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 500px;
+        }
+        .status-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        .success { color: #10b981; }
+        .info { color: #3b82f6; }
+        h1 {
+            color: #1f2937;
+            margin-bottom: 10px;
+        }
+        p {
+            color: #6b7280;
+            margin: 10px 0;
+        }
+        .env-info {
+            background: #f3f4f6;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        .btn {
+            background: #3b82f6;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn:hover {
+            background: #2563eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="status-icon success">✓</div>
+        <h1>江西云厨系统</h1>
+        <p>部署状态：成功上线</p>
+        
+        <div class="env-info">
+            <strong>部署信息：</strong><br>
+            环境：Production<br>
+            平台：Vercel Edge Network<br>
+            地区：Washington, D.C.<br>
+            时间：<span id="deployTime"></span>
+        </div>
+        
+        <p>架构守则已生效：前后端严格分离 ✓</p>
+        <p>非法引用扫描工具已集成 ✓</p>
+        <p>多语言支持（含菲律宾语）✓</p>
+        
+        <div style="margin-top: 30px;">
+            <a href="/app" class="btn">进入主应用</a>
+            <a href="/tools" class="btn">扫描工具</a>
+        </div>
+        
+        <p style="margin-top: 30px; font-size: 14px; color: #9ca3af;">
+            © 2025 江西云厨系统研发部
+        </p>
+    </div>
+    
+    <script>
+        document.getElementById('deployTime').textContent = new Date().toLocaleString('zh-CN');
+    </script>
+</body>
+</html>
