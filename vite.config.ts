@@ -34,31 +34,56 @@ export default defineConfig({
         chunkFileNames: `assets/[name]-[hash].js`,
         assetFileNames: `assets/[name]-[hash].[ext]`,
         
-        // 优化分包策略 - 合并 React 和 Auth 相关包避免循环依赖
+        // 优化分包策略 - 更精细的拆包以减少单个chunk大小
         manualChunks: (id) => {
-          // React 和 Auth 相关 (合并打包避免循环依赖)
-          if (id.includes('node_modules/react') || 
-              id.includes('node_modules/react-dom') ||
-              id.includes('node_modules/scheduler') ||
-              id.includes('node_modules/better-auth')) {
-            return 'vendor-react-auth';
+          // Better Auth 单独拆包 (体积较大)
+          if (id.includes('node_modules/better-auth')) {
+            return 'vendor-auth';
           }
           
-          // Supabase 相关
+          // React 核心库单独拆包
+          if (id.includes('node_modules/react') && 
+              (id.includes('react/jsx-runtime') || id.includes('react/index'))) {
+            return 'vendor-react';
+          }
+          
+          // React DOM 单独拆包
+          if (id.includes('node_modules/react-dom')) {
+            return 'vendor-react-dom';
+          }
+          
+          // UI 图标库单独拆包
+          if (id.includes('node_modules/lucide-react')) {
+            return 'vendor-icons';
+          }
+          
+          // 图表库单独拆包
+          if (id.includes('node_modules/recharts') || 
+              id.includes('node_modules/chart.js')) {
+            return 'vendor-charts';
+          }
+          
+          // Drizzle ORM 单独拆包
+          if (id.includes('node_modules/drizzle-orm')) {
+            return 'vendor-drizzle';
+          }
+          
+          // Supabase 相关单独拆包
           if (id.includes('node_modules/@supabase')) {
             return 'vendor-supabase';
           }
           
-          // UI 库相关
-          if (id.includes('node_modules/lucide-react') || 
-              id.includes('node_modules/recharts') ||
-              id.includes('node_modules/chart.js')) {
-            return 'vendor-ui';
+          // 工具库单独拆包
+          if (id.includes('node_modules/lodash') ||
+              id.includes('node_modules/date-fns')) {
+            return 'vendor-utils';
           }
           
-          // 工具库
-          if (id.includes('node_modules/lodash')) {
-            return 'vendor-utils';
+          // 其他 React 相关库
+          if (id.includes('node_modules/react') &&
+              !id.includes('react/jsx-runtime') && 
+              !id.includes('react/index')) {
+            return 'vendor-react-addons';
           }
         }
       }

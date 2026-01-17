@@ -1,19 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import Sidebar from './components/Sidebar';
-import Dashboard from './components/Dashboard';
-import RoomGrid from './components/RoomGrid';
-import OrderManagement from './components/OrderManagement';
-import SupplyChainManager from './components/SupplyChainManager';
-import FinancialCenter from './components/FinancialCenter';
-import StaffManagement from './components/StaffManagement';
-import SystemSettings from './components/SystemSettings';
-import DatabaseManagement from './components/DatabaseManagement';
-import CommandCenter from './components/CommandCenter';
-import NotificationCenter from './components/NotificationCenter';
-import ImageManagement from './components/ImageManagement';
+import Dashboard from './components/Dashboard'; // Keep this as it's the main dashboard
+import RoomGrid from './components/RoomGrid'; // Keep this as it's likely used frequently
+import OrderManagement from './components/OrderManagement'; // Keep this as it's core functionality
 import AuthPage from './components/AuthPage';
-import DeliveryDashboard from './components/DeliveryDashboard';
 import GuestEntry from './GuestEntry';  // This is correct since both are in src/
 import Toast, { ToastType } from './components/Toast';
 import { useSession, signOut } from './services/auth-client';
@@ -27,10 +18,28 @@ import {
   Partner, Order, Dish, OrderStatus, SystemConfig, UserRole,
   Category, Ingredient, PaymentMethodConfig, HotelRoom, User, Expense 
 } from './types';
-import MenuVerification from './components/MenuVerification';
 import BiometricSetupPage from './components/BiometricSetupPage';
 import { Wifi, WifiOff, Command } from 'lucide-react';
 import i18n from './i18n';
+
+// Lazy load non-critical components for better initial load performance
+const SupplyChainManager = lazy(() => import('./components/SupplyChainManager'));
+const FinancialCenter = lazy(() => import('./components/FinancialCenter'));
+const ImageManagement = lazy(() => import('./components/ImageManagement'));
+const StaffManagement = lazy(() => import('./components/StaffManagement'));
+const SystemSettings = lazy(() => import('./components/SystemSettings'));
+const DatabaseManagement = lazy(() => import('./components/DatabaseManagement'));
+const CommandCenter = lazy(() => import('./components/CommandCenter'));
+const NotificationCenter = lazy(() => import('./components/NotificationCenter'));
+const DeliveryDashboard = lazy(() => import('./components/DeliveryDashboard'));
+
+// Loading component for lazy-loaded components
+const LoadingComponent = ({ message = "Loading..." }) => (
+  <div className="flex items-center justify-center p-8">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mr-3"></div>
+    <span>{message}</span>
+  </div>
+);
 
 export default function App() {
   const { t, i18n } = useTranslation();
@@ -135,15 +144,8 @@ export default function App() {
     window.location.reload();
   };
   
-  // 急救模式：启动检测
-  // if (true) return <div style={{padding: '50px', color: 'red', background: 'white', zIndex: 9999, position: 'fixed', top: 0, left: 0, right: 0, bottom: 0}}>App 核心已启动！看到此行说明挂载成功。</div>;
-
-  // 数据库业务验证：使用专门的验证组件
   // 检查是否为管理员且需要绑定生物识别
   if (session?.user?.role === 'admin') {
-    // 这里可以添加逻辑检查用户是否已绑定生物识别
-    // 暂时假设所有管理员都需要设置生物识别
-    // 在实际实现中，我们会检查用户是否有相关的 passkey 记录
     // Check if user has biometric setup - for now defaulting to false to allow access
     // In production, this would check if the user has existing passkey records
     const needsBiometricSetup = false; // Temporarily set to false to allow dashboard access
@@ -152,8 +154,6 @@ export default function App() {
       return <BiometricSetupPage />;
     }
   }
-  
-
 
   return (
     <ErrorBoundary>
@@ -190,17 +190,49 @@ export default function App() {
             {currentTab === 'dashboard' && <Dashboard orders={orders} rooms={rooms} expenses={expenses} dishes={dishes} ingredients={ingredients} partners={partners} currentUser={session.user as any} />}
             {currentTab === 'rooms' && <RoomGrid rooms={rooms} dishes={dishes} categories={categories} onUpdateRoom={async(r) => { await api.rooms.update(r.id, r); refreshData(); }} onRefresh={refreshData} />}
             {currentTab === 'orders' && <OrderManagement orders={orders} onUpdateStatus={async (id, status) => { await api.orders.updateStatus(id, status); refreshData(); }} currentUser={session.user as any} />}
-            {currentTab === 'supply_chain' && <SupplyChainManager dishes={dishes} categories={categories} currentUser={session.user as any} partners={partners} onAddDish={async(d) => { await api.dishes.create(d, session.user); refreshData(); }} onUpdateDish={async(d) => { await api.dishes.update(d, session.user); refreshData(); }} onDeleteDish={async(id) => { await api.dishes.delete(id, session.user); refreshData(); }} onRefreshData={refreshData} />}
-            {currentTab === 'images' && <ImageManagement />}
-            {currentTab === 'financial_hub' && <FinancialCenter orders={orders} expenses={expenses} partners={partners} currentUser={session.user as any} onAddExpense={async(ex)=>{ await api.expenses.create(ex); refreshData(); }} onDeleteExpense={async(id)=>{ await api.expenses.delete(id); refreshData(); }} onAddPartner={async(p)=>{ await api.partners.create(p); refreshData(); }} onUpdatePartner={async(p)=>{ await api.partners.update(p); refreshData(); }} onDeletePartner={async(id)=>{ await api.partners.delete(id); refreshData(); }} />}
-            {currentTab === 'users' && <StaffManagement users={users} partners={partners} currentUser={session.user} onRefresh={refreshData} onAddUser={async(u)=>{ await api.users.upsert(u); refreshData(); }} onUpdateUser={async(u)=>{ await api.users.upsert(u); refreshData(); }} onDeleteUser={async(id)=>{ await api.users.delete(id); refreshData(); }} onAddPartner={async(p)=>{ await api.partners.create(p); refreshData(); }} onUpdatePartner={async(p)=>{ await api.partners.update(p); refreshData(); }} onDeletePartner={async(id)=>{ await api.partners.delete(id); refreshData(); }} />}
-            {currentTab === 'settings' && <SystemSettings onUpdateConfig={async(c)=>{ await api.config.update(c); refreshData(); }} />}
-            {currentTab === 'menu' && <DatabaseManagement />}
-            {currentTab === 'delivery' && <DeliveryDashboard currentUser={session.user} />}
+            {currentTab === 'supply_chain' && (
+              <Suspense fallback={<LoadingComponent message="Loading supply chain manager..." />}>
+                <SupplyChainManager dishes={dishes} categories={categories} currentUser={session.user as any} partners={partners} onAddDish={async(d) => { await api.dishes.create(d, session.user); refreshData(); }} onUpdateDish={async(d) => { await api.dishes.update(d, session.user); refreshData(); }} onDeleteDish={async(id) => { await api.dishes.delete(id, session.user); refreshData(); }} onRefreshData={refreshData} />
+              </Suspense>
+            )}
+            {currentTab === 'images' && (
+              <Suspense fallback={<LoadingComponent message="Loading image management..." />}>
+                <ImageManagement />
+              </Suspense>
+            )}
+            {currentTab === 'financial_hub' && (
+              <Suspense fallback={<LoadingComponent message="Loading financial center..." />}>
+                <FinancialCenter orders={orders} expenses={expenses} partners={partners} currentUser={session.user as any} onAddExpense={async(ex)=>{ await api.expenses.create(ex); refreshData(); }} onDeleteExpense={async(id)=>{ await api.expenses.delete(id); refreshData(); }} onAddPartner={async(p)=>{ await api.partners.create(p); refreshData(); }} onUpdatePartner={async(p)=>{ await api.partners.update(p); refreshData(); }} onDeletePartner={async(id)=>{ await api.partners.delete(id); refreshData(); }} />
+              </Suspense>
+            )}
+            {currentTab === 'users' && (
+              <Suspense fallback={<LoadingComponent message="Loading staff management..." />}>
+                <StaffManagement users={users} partners={partners} currentUser={session.user} onRefresh={refreshData} onAddUser={async(u)=>{ await api.users.upsert(u); refreshData(); }} onUpdateUser={async(u)=>{ await api.users.upsert(u); refreshData(); }} onDeleteUser={async(id)=>{ await api.users.delete(id); refreshData(); }} onAddPartner={async(p)=>{ await api.partners.create(p); refreshData(); }} onUpdatePartner={async(p)=>{ await api.partners.update(p); refreshData(); }} onDeletePartner={async(id)=>{ await api.partners.delete(id); refreshData(); }} />
+              </Suspense>
+            )}
+            {currentTab === 'settings' && (
+              <Suspense fallback={<LoadingComponent message="Loading system settings..." />}>
+                <SystemSettings onUpdateConfig={async(c)=>{ await api.config.update(c); refreshData(); }} />
+              </Suspense>
+            )}
+            {currentTab === 'menu' && (
+              <Suspense fallback={<LoadingComponent message="Loading database management..." />}>
+                <DatabaseManagement />
+              </Suspense>
+            )}
+            {currentTab === 'delivery' && (
+              <Suspense fallback={<LoadingComponent message="Loading delivery dashboard..." />}>
+                <DeliveryDashboard currentUser={session.user} />
+              </Suspense>
+            )}
           </div>
         </main>
-        <CommandCenter isOpen={isCommandOpen} onClose={() => setIsCommandOpen(false)} rooms={rooms} orders={orders} dishes={dishes} onNavigate={setCurrentTab} onToggleTheme={() => {}} onLogout={handleLogout} />
-        <NotificationCenter isOpen={isNotifOpen} onClose={() => setIsNotifOpen(false)} notifications={notifications} onMarkAsRead={(id) => setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))} onClearAll={() => setNotifications([])} />
+        <Suspense fallback={null}>
+          <CommandCenter isOpen={isCommandOpen} onClose={() => setIsCommandOpen(false)} rooms={rooms} orders={orders} dishes={dishes} onNavigate={setCurrentTab} onToggleTheme={() => {}} onLogout={handleLogout} />
+        </Suspense>
+        <Suspense fallback={null}>
+          <NotificationCenter isOpen={isNotifOpen} onClose={() => setIsNotifOpen(false)} notifications={notifications} onMarkAsRead={(id) => setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))} onClearAll={() => setNotifications([])} />
+        </Suspense>
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       </div>
     </ErrorBoundary>

@@ -55,27 +55,29 @@ const AuthPage: React.FC = () => {
     setError(null);
 
     try {
-      // Attempt regular email sign-in first
-      console.log('Attempting email sign in...');
+      // For now, use a simple approach to verify API connectivity
+      console.log('Attempting sign in with email...', email);
+      
+      // Use email sign in without password for OTP-based flow
       const result = await authClient.signIn.email({
         email,
-        password: '', // We're using email OTP, so password is empty
-        callbackURL: '/' // Redirect to dashboard after login
+        password: '' // Empty password for OTP flow
       });
       
       if (result.error) {
-        console.error('Email sign in failed:', result.error);
+        console.error('Sign in error response:', result.error);
         setError(result.error.message || 'Login failed');
+        setIsLoading(false);
         return;
       }
       
-      console.log('Email sign in successful');
-      // Redirect to dashboard
-      window.location.href = '/';
+      console.log('Sign in initiated successfully, check your email');
+      // Show success message instead of redirecting immediately
+      setError('Verification email sent. Please check your inbox.');
+      setIsLoading(false);
     } catch (err) {
-      console.error('Login failed:', err);
-      setError(t('error'));
-    } finally {
+      console.error('Login network error:', err);
+      setError(t('error') + ': ' + (err instanceof Error ? err.message : 'Network error'));
       setIsLoading(false);
     }
   };

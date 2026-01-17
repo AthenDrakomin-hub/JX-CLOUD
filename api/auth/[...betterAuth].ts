@@ -22,7 +22,7 @@ async function initializeRootAdmin() {
   }
   
   try {
-    const adminEmails = ['2811284084qq.com', 'athendrakomin@proton.me'];
+    const adminEmails = ['2811284084@qq.com', 'athendrakomin@proton.me'];
     
     for (const email of adminEmails) {
       const username = email.split('@')[0];
