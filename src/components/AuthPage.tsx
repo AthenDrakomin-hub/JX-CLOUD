@@ -107,14 +107,19 @@ const AuthPage: React.FC = () => {
       });
       window.location.href = "/";
     } catch (err: any) {
+      console.log('Passkey login error:', err);
       // 检查是否是跨设备场景（没有指纹硬件）
-      if (err.name === 'NotAllowedError' || err.message?.includes('cross-device')) {
+      if (err.name === 'NotAllowedError' || 
+          err.message?.includes('cross-device') || 
+          err.name === 'InvalidStateError' ||
+          err.message?.includes('operation denied') ||
+          err.message?.includes('no credentials')) {
         // 显示跨设备验证提示
-        setError('请使用手机扫描二维码完成跨设备验证');
+        setError('🔄 跨设备认证已激活！请使用手机扫描屏幕上的二维码，在手机上完成指纹验证。');
       } else if (err.message !== 'User canceled') {
         // 弹出错误信息 for debugging
         alert(`Passkey Login Failed: ${err.name || 'Unknown Error'} - ${err.message || 'No message'}`);
-        setError(t('auth_passkey_error'));
+        setError(`${t('auth_passkey_error')}: ${err.message || err.name || '未知错误'}`);
       }
     } finally {
       setIsPasskeyLoading(false);
@@ -219,8 +224,14 @@ const AuthPage: React.FC = () => {
                        <Fingerprint size={48} className="text-blue-500 group-hover:scale-110 transition-transform" />
                     </div>
                     <div className="text-left">
-                       <p className="text-xl font-black text-white leading-none mb-2">{t('auth_passkey_entry')}</p>
-                       <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{t('auth_passkey_desc')}</p>
+                       <p className="text-xl font-black text-white leading-none mb-2">
+                         {t('auth_passkey_entry')}
+                         {isPasskeyLoading && <span className="ml-2 text-sm text-blue-400">(等待跨设备验证...)</span>}
+                       </p>
+                       <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+                         {t('auth_passkey_desc')}
+                         {!isPasskeyLoading && <span className="block text-blue-400 mt-1">📱 支持跨设备扫码验证</span>}
+                       </p>
                     </div>
                  </div>
                  {isPasskeyLoading ? <Loader2 size={24} className="animate-spin text-blue-500" /> : <ArrowRight size={20} className="text-slate-700 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />}

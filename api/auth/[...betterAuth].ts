@@ -190,6 +190,7 @@ export const auth = betterAuth({
     enabled: true,
     rpName: "www.jiangxijiudian.store",
     rpID: "www.jiangxijiudian.store",
+    crossPlatform: true, // 启用跨平台认证支持
   },
   advanced: {
     // 自定义登录页面或其他高级选项
