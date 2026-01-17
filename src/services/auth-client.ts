@@ -39,9 +39,19 @@ const noCacheFetch = (url: string, options: RequestInit = {}) => {
   return fetch(urlWithTimestamp, enhancedOptions);
 };
 
+// 获取基础URL（优先使用环境变量）
+const getBaseURL = () => {
+  if (typeof window !== 'undefined') {
+    // 客户端环境
+    return import.meta.env.VITE_BETTER_AUTH_URL || 'https://www.jiangxijiudian.store';
+  }
+  // 服务端环境
+  return process.env.BETTER_AUTH_URL || 'http://localhost:3003';
+};
+
 // 创建基础认证客户端（不含 WebAuthn）
 export const authClient = createAuthClient({
-    baseURL: 'https://www.jiangxijiudian.store',
+    baseURL: getBaseURL(),
     fetch: noCacheFetch
 });
 
@@ -49,7 +59,7 @@ export const authClient = createAuthClient({
 export const getEnhancedAuthClient = async () => {
   const passkeyPlugin = await loadPasskeyPlugin();
   return createAuthClient({
-    baseURL: 'https://www.jiangxijiudian.store',
+    baseURL: getBaseURL(),
     plugins: [passkeyPlugin],
     fetch: noCacheFetch
   });
