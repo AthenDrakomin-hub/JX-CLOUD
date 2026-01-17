@@ -34,17 +34,11 @@ export default defineConfig({
         chunkFileNames: `assets/[name]-[hash].js`,
         assetFileNames: `assets/[name]-[hash].[ext]`,
         
-        // 优化分包策略 - 更精细的拆包以减少单个chunk大小
+        // 优化分包策略 - 避免循环依赖的拆包策略
         manualChunks: (id) => {
           // Better Auth 单独拆包 (体积较大)
           if (id.includes('node_modules/better-auth')) {
             return 'vendor-auth';
-          }
-          
-          // React 核心库单独拆包
-          if (id.includes('node_modules/react') && 
-              (id.includes('react/jsx-runtime') || id.includes('react/index'))) {
-            return 'vendor-react';
           }
           
           // React DOM 单独拆包
@@ -57,15 +51,9 @@ export default defineConfig({
             return 'vendor-icons';
           }
           
-          // 图表库单独拆包
-          if (id.includes('node_modules/recharts') || 
-              id.includes('node_modules/chart.js')) {
+          // 图表库单独拆包 (最大的库之一)
+          if (id.includes('node_modules/recharts')) {
             return 'vendor-charts';
-          }
-          
-          // Drizzle ORM 单独拆包
-          if (id.includes('node_modules/drizzle-orm')) {
-            return 'vendor-drizzle';
           }
           
           // Supabase 相关单独拆包
@@ -73,17 +61,25 @@ export default defineConfig({
             return 'vendor-supabase';
           }
           
-          // 工具库单独拆包
-          if (id.includes('node_modules/lodash') ||
-              id.includes('node_modules/date-fns')) {
-            return 'vendor-utils';
+          // 国际化库单独拆包
+          if (id.includes('node_modules/i18next') || 
+              id.includes('node_modules/react-i18next')) {
+            return 'vendor-i18n';
           }
           
-          // 其他 React 相关库
-          if (id.includes('node_modules/react') &&
-              !id.includes('react/jsx-runtime') && 
-              !id.includes('react/index')) {
-            return 'vendor-react-addons';
+          // 表单库单独拆包
+          if (id.includes('node_modules/react-hook-form')) {
+            return 'vendor-forms';
+          }
+          
+          // QR码库单独拆包
+          if (id.includes('node_modules/qrcode.react')) {
+            return 'vendor-qrcode';
+          }
+          
+          // Drizzle ORM 单独拆包
+          if (id.includes('node_modules/drizzle-orm')) {
+            return 'vendor-drizzle';
           }
         }
       }

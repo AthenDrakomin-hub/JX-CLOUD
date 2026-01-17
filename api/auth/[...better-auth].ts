@@ -1,7 +1,5 @@
-// @ts-nocheck
-// @ts-ignore
-import { betterAuth } from 'better-auth';
-// @ts-ignore
+// api/auth/[...betterAuth].ts
+import { auth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { db } from '../../src/services/db.server.js';
 import { user as authUser, session as authSession, users as businessUsers } from '../../drizzle/schema.js';
@@ -109,8 +107,7 @@ setTimeout(initializeRootAdmin, 0); // Defer execution to avoid blocking module 
  * 使用 Drizzle 适配器连接到 Supabase PostgreSQL 数据库 (连接池模式)
  * 所有用户数据存储在 Supabase 的 public 模式下
  */
-// @ts-ignore
-export const auth = betterAuth({
+export const { GET, POST, PUT, DELETE } = auth({
   baseURL: process.env.BETTER_AUTH_URL || 
            (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '') ||
            (typeof window !== 'undefined' ? window.location.origin : ''),
@@ -252,6 +249,3 @@ export const auth = betterAuth({
     // 自定义登录页面或其他高级选项
   },
 });
-
-// 导出 API 处理程序
-export { auth as default };
