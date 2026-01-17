@@ -57,9 +57,10 @@ export default async function handler(req: Request) {
         } 
       }
     );
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    const errorCode = error instanceof Error ? error.code || 'CONNECTION_FAILURE' : 'UNKNOWN_ERROR';
+  } catch (error: any) {
+    // 类型收窄/Narrowing - 更优雅的处理方式
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorCode = (error as any)?.code || 'UNKNOWN_ERROR';
     
     return new Response(
       JSON.stringify({

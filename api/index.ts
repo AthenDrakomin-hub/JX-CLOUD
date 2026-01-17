@@ -59,8 +59,18 @@ export default async function handler(req: Request) {
       message: "API Node reached, but specific endpoint not defined." 
     }), { status: 404, headers: corsHeaders });
 
-  } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : 'Unknown gateway error occurred';
-    return new Response(JSON.stringify({ error: 'Gateway Error', details: errorMessage }), { status: 500, headers: corsHeaders });
+  } catch (err: any) {
+    // 类型收窄/Narrowing - 更优雅的处理方式
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    const errorCode = (err as any)?.code || 'UNKNOWN_GATEWAY_ERROR';
+    
+    return new Response(
+      JSON.stringify({ 
+        error: 'Gateway Error', 
+        details: errorMessage,
+        code: errorCode
+      }), 
+      { status: 500, headers: corsHeaders }
+    );
   }
 }
