@@ -30,21 +30,7 @@ declare global {
     }
   }
   
-  // 扩展全局的 Session 类型
-  interface Session {
-    user: {
-      id: string;
-      email: string;
-      emailVerified: boolean;
-      name: string;
-      image?: string | null;
-      createdAt: Date;
-      updatedAt: Date;
-      // 扩展字段 - 江西云厨应用的自定义字段
-      role: string;
-      partnerId: string;
-    };
-  }
+
 }
 
 // 为 better-auth/react 模块提供类型扩展
