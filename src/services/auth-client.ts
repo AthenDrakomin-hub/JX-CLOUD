@@ -21,14 +21,14 @@ const loadPasskeyPlugin = async () => {
 
 // 创建基础认证客户端（不含 WebAuthn）
 export const authClient = createAuthClient({
-    baseURL: typeof window !== 'undefined' ? window.location.origin : ''
+    baseURL: 'https://www.jiangxijiudian.store'
 });
 
 // 导出带 WebAuthn 功能的认证客户端（按需加载）
 export const getEnhancedAuthClient = async () => {
   const passkeyPlugin = await loadPasskeyPlugin();
   return createAuthClient({
-    baseURL: typeof window !== 'undefined' ? window.location.origin : '',
+    baseURL: 'https://www.jiangxijiudian.store',
     plugins: [passkeyPlugin]
   });
 };

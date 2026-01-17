@@ -48,6 +48,7 @@ const AuthPage: React.FC = () => {
   };
 
   const handleMasterLogin = async (e: React.FormEvent) => {
+    alert('Login Clicked!');
     e.preventDefault();
     console.log('Login started...', { email, isMasterUser });
     
@@ -258,7 +259,7 @@ const AuthPage: React.FC = () => {
               >
                 {isLoading ? <Loader2 size={24} className="animate-spin" /> : (
                   <>
-                    <span>{isMasterUser ? t('master_inject_btn') : t('auth_verify')}</span>
+                    <span>{isMasterUser ? `${t('master_inject_btn')} (v4.1-Cloud)` : `${t('auth_verify')} (v4.1-Cloud)`}</span>
                     <ArrowRight size={20} />
                   </>
                 )}
