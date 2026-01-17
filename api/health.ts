@@ -6,7 +6,7 @@ import { systemConfig, orders } from '../drizzle/schema.js';
 import { eq, sql } from 'drizzle-orm';
 
 export const config = {
-  runtime: 'edge',
+  runtime: 'nodejs',
 };
 
 export default async function handler(request: Request) {
