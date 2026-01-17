@@ -6,7 +6,7 @@ import {
   Printer, ChefHat, CheckCircle2, Search, Clock, 
   X, MonitorPlay, ChevronRight, HandCoins
 } from 'lucide-react';
-import { api } from '../services/api';
+import { api } from '../services/api-client';
 import { QRCodeSVG } from 'qrcode.react';
 
 interface OrderManagementProps {

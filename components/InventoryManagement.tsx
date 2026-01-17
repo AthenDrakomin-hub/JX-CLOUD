@@ -7,7 +7,7 @@ import {
   Sparkles, Box, AlertTriangle,
   History, Package, Save, Tag, Edit3
 } from 'lucide-react';
-import { api } from '../services/api';
+import { api } from '../services/api-client';
 
 const InventoryManagement: React.FC<{ lang: Language }> = ({ lang }) => {
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);

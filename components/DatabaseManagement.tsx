@@ -6,7 +6,7 @@ import {
   Zap, ZapOff, AlertCircle, Terminal, Code, ExternalLink, Activity, Wifi,
   FileCode, Key, ServerOff
 } from 'lucide-react';
-import { api } from '../services/api';
+import { api } from '../services/api-client';
 import { isDemoMode } from '../services/supabaseClient';
 import { getConnectionStatus } from '../services/supabaseClient'; // 假设getConnectionStatus仍然可用
 

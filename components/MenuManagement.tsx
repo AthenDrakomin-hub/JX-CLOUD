@@ -9,7 +9,7 @@ import {
   Filter, Tag, ExternalLink, ChevronLeft,
   Image as ImageIcon, Home, ChevronRight as ChevronRightIcon
 } from 'lucide-react';
-import { api } from '../services/api';
+import { api } from '../services/api-client';
 import OptimizedImage from './OptimizedImage';
 import ImageUploadModal from './ImageUploadModal';
 

@@ -6,7 +6,7 @@ import {
   GripVertical, Edit3, Check, X
 } from 'lucide-react';
 import { useForm, useFieldArray, useWatch, Control } from 'react-hook-form';
-import { api } from '../services/api';
+import { api } from '../services/api-client';
 import { Language, getTranslation } from '../translations';
 import { Category } from '../types';
 

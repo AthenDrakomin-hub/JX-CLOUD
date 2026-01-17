@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { Dish, Order, OrderStatus, Category, PaymentMethodConfig } from '../types';
 import { Language, getTranslation } from '../translations';
-import { api } from '../services/api';
+import { api } from '../services/api-client';
 import { 
   Plus, Minus, Globe, Search,
   ChevronRight, ShoppingCart, 

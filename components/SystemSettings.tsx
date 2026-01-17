@@ -7,7 +7,7 @@ import {
   Layout, FileText, Check, QrCode, AlignLeft, Scissors, Fingerprint, ShieldCheck, Key, ArrowRight, Trash2, Smartphone
 } from 'lucide-react';
 import { Language, getTranslation } from '../translations';
-import { api } from '../services/api';
+import { api } from '../services/api-client';
 import { authClient } from '../services/auth-client';
 import { SystemConfig } from '../types';
 

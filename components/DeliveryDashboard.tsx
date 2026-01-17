@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Order } from '../types';
 import { Language, getTranslation } from '../translations';
-import { api } from '../services/api';
+import { api } from '../services/api-client';
 import { notificationService } from '../services/notification';
 import { createClient } from '@supabase/supabase-js';
 import { Clock, Package, CheckCircle, MapPin, Phone, ChefHat, CalendarCheck } from 'lucide-react';

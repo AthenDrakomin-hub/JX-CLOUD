@@ -7,7 +7,7 @@ import GuestOrder from './GuestOrder';
 import { Dish, User, Partner, Order, Category } from '../types';
 import { Language, getTranslation } from '../translations';
 import { Box, Layers, Package, Sparkles, MonitorSmartphone, X, Smartphone, ShieldCheck, Download, Upload, AlertCircle, HardDrive } from 'lucide-react';
-import { api } from '../services/api';
+import { api } from '../services/api-client';
 
 interface SupplyChainManagerProps {
   dishes: Dish[];

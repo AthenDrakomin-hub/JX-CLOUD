@@ -7,7 +7,7 @@ import {
   ChevronRight, X, Save, UserPlus, Loader2, Activity
 } from 'lucide-react';
 import { INITIAL_CATEGORIES } from '../constants';
-import { api } from '../services/api';
+import { api } from '../services/api-client';
 
 interface PartnerManagementProps {
   partners: Partner[];

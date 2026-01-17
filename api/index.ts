@@ -59,10 +59,10 @@ export default async function handler(req: Request) {
       message: "API Node reached, but specific endpoint not defined." 
     }), { status: 404, headers: corsHeaders });
 
-  } catch (err: any) {
-    // 类型收窄/Narrowing - 更优雅的处理方式
-    const errorMessage = err instanceof Error ? err.message : String(err);
-    const errorCode = (err as any)?.code || 'UNKNOWN_GATEWAY_ERROR';
+  } catch (error: any) {
+    // TS2345 修复：明确给 error 添加类型声明
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorCode = (error as any)?.code || 'UNKNOWN_GATEWAY_ERROR';
     
     return new Response(
       JSON.stringify({ 

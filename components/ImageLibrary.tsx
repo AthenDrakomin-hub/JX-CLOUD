@@ -9,7 +9,7 @@ import {
   ArrowUpRight, History, Package, Save, Scale,
   Tag, Edit3, ExternalLink, RefreshCcw
 } from 'lucide-react';
-import { api } from '../services/api';
+import { api } from '../services/api-client';
 import { s3Service, S3File } from '../services/s3Service';
 import OptimizedImage from './OptimizedImage';
 

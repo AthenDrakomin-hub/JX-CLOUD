@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { Language, getTranslation } from '../translations';
 import { QRCodeSVG } from 'qrcode.react';
-import { api } from '../services/api';
+import { api } from '../services/api-client';
 
 interface RoomGridProps {
   rooms: HotelRoom[];

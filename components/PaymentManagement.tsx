@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { PaymentMethodConfig, PaymentMethod } from '../types';
 import { translations, Language } from '../translations';
-import { api } from '../services/api';
+import { api } from '../services/api-client';
 // Added missing Maximize2 import
 import { 
   Sparkles, CreditCard, Smartphone, Banknote, Wallet, 

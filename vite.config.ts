@@ -16,15 +16,35 @@ export default defineConfig({
       },
       output: {
         manualChunks: {
-          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          'vendor-ui': ['lucide-react', 'framer-motion'],
-          'vendor-auth': ['better-auth'],
+          // React核心库
+          'react-core': ['react', 'react-dom', 'react/jsx-runtime'],
+          // 路由
+          'react-router': ['react-router-dom'],
+          // UI组件库
+          'ui-icons': ['lucide-react'],
+          'ui-charts': ['recharts'],
+          'ui-motion': ['framer-motion'],
+          // 表单处理
+          'form-utils': ['react-hook-form'],
+          // 二维码生成
+          'qrcode': ['qrcode.react'],
+          // 国际化
+          'i18n': ['i18next', 'react-i18next'],
+          // 网络请求
+          'http-client': ['@supabase/supabase-js'],
+          // 认证
+          'auth': ['better-auth'],
+          // 工具库
+          'utilities': ['zod', 'immer'],
+          // 项目特定模块
+          'app-core': ['./App', './index'],
+          'api-client': ['./services/api-client'],
         },
         entryFileNames: `assets/[name]-[hash].js`,
         chunkFileNames: `assets/[name]-[hash].js`,
         assetFileNames: `assets/[name]-[hash].[ext]`,
         // 限制单个chunk大小
-        maxChunkSize: 100000, // 100kb
+        maxChunkSize: 250000, // 250kb
       }
     },
   },
