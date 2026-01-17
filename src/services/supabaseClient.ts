@@ -26,8 +26,6 @@ const isProductionDB = !!process.env.POSTGRES_URL;
 if (isProductionDB) {
   console.log("🚀 生产数据库已就绪，正在关闭 Demo 模式...");
   // 注意：数据库操作已迁移到 Drizzle，此标记仅用于实时功能
-} else {
-  console.warn("⚠️ 未检测到 POSTGRES_URL，系统进入演示模式。");
 }
 
 // 创建 Supabase 客户端单例
