@@ -41,9 +41,9 @@ export default defineConfig({
             return 'vendor-auth';
           }
           
-          // React DOM 单独拆包
-          if (id.includes('node_modules/react-dom')) {
-            return 'vendor-react-dom';
+          // React 相关库合并
+          if (id.includes('node_modules/react') || id.includes('node_modules/scheduler')) {
+            return 'vendor-react';
           }
           
           // UI 图标库单独拆包
@@ -80,6 +80,11 @@ export default defineConfig({
           // Drizzle ORM 单独拆包
           if (id.includes('node_modules/drizzle-orm')) {
             return 'vendor-drizzle';
+          }
+          
+          // 工具库单独拆包
+          if (id.includes('node_modules/nanoid')) {
+            return 'vendor-utils';
           }
         }
       }
