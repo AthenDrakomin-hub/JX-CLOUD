@@ -1,7 +1,8 @@
 import { db } from '../../src/services/db.server.js';
 import { user, users as businessUsers } from '../../drizzle/schema.js';
 import { eq, and } from 'drizzle-orm';
-import { auth } from '../auth/[...betterAuth]';
+// @ts-ignore
+import { auth } from '../auth/[...betterAuth].js';
 
 export const config = {
   runtime: 'nodejs',
@@ -26,7 +27,7 @@ export default async function handler(req: Request) {
   
   let session: any = null;
   try {
-    const sessionResponse = await auth.api.getSession({
+    const sessionResponse: any = await auth.api.getSession({
       headers: req.headers,
       request: req,
     });
@@ -75,28 +76,30 @@ export default async function handler(req: Request) {
       }
 
       // 在 Better Auth 的 user 表中创建用户（仅用于认证）
+      const userData: any = {
+        email,
+        name,
+        role: role,
+        partnerId: partnerId || session.user.partnerId, // 继承创建者的 partnerId
+        emailVerified: true, // 管理员创建的用户默认已验证
+      };
       const newUser = await db
         .insert(user)
-        .values({
-          email,
-          name,
-          role: role,
-          partnerId: partnerId || session.user.partnerId, // 继承创建者的 partnerId
-          emailVerified: true, // 管理员创建的用户默认已验证
-        } as any)  // 类型断言确保 role 字段被正确识别
+        .values(userData)
         .returning();
 
       // 同时在业务 users 表中创建记录
+      const businessUserData: any = {
+        id: newUser[0].id,
+        email,
+        username: email.split('@')[0], // 使用邮箱用户名部分作为默认用户名
+        name,
+        role: role,
+        partnerId: partnerId || session.user.partnerId,
+      };
       await db
         .insert(businessUsers)
-        .values({
-          id: newUser[0].id,
-          email,
-          username: email.split('@')[0], // 使用邮箱用户名部分作为默认用户名
-          name,
-          role: role,
-          partnerId: partnerId || session.user.partnerId,
-        });
+        .values(businessUserData);
 
       return new Response(
         JSON.stringify({ 
@@ -146,9 +149,10 @@ export default async function handler(req: Request) {
         );
       }
 
+      const updateUserPayload: any = { role, partnerId: partnerId || session.user.partnerId };
       await db
         .update(user)
-        .set({ role, partnerId: partnerId || session.user.partnerId })
+        .set(updateUserPayload)
         .where(eq(user.id, userId));
 
       return new Response(
