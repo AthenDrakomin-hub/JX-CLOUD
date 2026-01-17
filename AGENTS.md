@@ -465,3 +465,36 @@ node tools/smart-db-checker.js
 - `UserRole`: ADMIN, STAFF, PARTNER, MAINTAINER
 - `RoomStatus`: READY, ORDERING
 - `PaymentMethod`: CASH_PHP, GCASH, PAYPAL, ALIPAY, WECHAT_PAY, USDT_TRC20
+
+## 🧩 API 结构与服务层
+
+### 前端 API 网关 (services/api.ts)
+- 统一的 HTTP API 客户端，前端组件只允许通过此网关与后端通信
+- 包含 config, rooms, dishes, orders, categories, partners, users, expenses 等模块
+- 支持演示模式和生产模式切换
+- 包含错误处理和重试机制
+
+### 服务层组织
+- `api.ts`: 前端统一数据网关
+- `auth.ts`: 认证逻辑（服务端）
+- `auth-client.ts`: 客户端认证
+- `db.server.ts`: 服务端数据库连接（Drizzle ORM）
+- `notification.ts`: 通知服务
+- `printService.ts`: 打印服务
+- `s3Service.ts`: 文件存储服务（Supabase Storage）
+- `supabaseClient.ts`: Supabase 客户端（主要用于实时功能）
+
+## 🚀 构建与部署
+
+### 构建过程
+- 使用 Vite 构建工具
+- 支持代码分割和按需加载
+- 优化的 chunk 策略以减少包大小
+- TypeScript 类型检查在构建过程中被跳过以加速部署
+
+### Vercel 部署优化
+- Serverless 函数支持
+- 边缘网络部署
+- 自动环境变量注入
+- 连接池优化（使用 Supabase 6543 端口）
+- 自动 HTTPS 和 CDN 分发

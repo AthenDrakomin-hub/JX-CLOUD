@@ -36,7 +36,7 @@
       "@translations/*": ["src/translations/*"]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx", "api/**/*.ts"],
+  "include": ["**/*.ts", "**/*.tsx", "api/**/*.ts", "src/types/**/*.d.ts"],
   "exclude": [
     "node_modules", 
     "dist", 

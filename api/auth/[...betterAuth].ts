@@ -124,8 +124,8 @@ export const auth = betterAuth({
           name: 'name',
           image: 'image',
           role: 'role', // 扩展字段：用户角色
-          partnerId: 'partnerId', // 扩展字段：合伙人ID
-          modulePermissions: 'modulePermissions', // 扩展字段：模块权限
+          partnerId: 'partner_id', // 扩展字段：合伙人ID
+          modulePermissions: 'module_permissions', // 扩展字段：模块权限
           createdAt: 'createdAt',
           updatedAt: 'updatedAt',
         },
@@ -145,6 +145,24 @@ export const auth = betterAuth({
       },
     },
   }),
+  user: {
+    // Define additional fields to be available in session
+    additionalFields: {
+      role: {
+        type: "string",
+        required: true,
+        defaultValue: "user",
+      },
+      partnerId: {
+        type: "string",
+        required: false,
+      },
+      modulePermissions: {
+        type: "json",
+        required: false,
+      },
+    },
+  },
   socialProviders: {
     // 可选的社交登录提供商
   },
