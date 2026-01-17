@@ -1,7 +1,7 @@
-import { db } from '../src/services/db.server.js';
-import { user, users as businessUsers } from '../drizzle/schema.js';
+import { db } from '../../src/services/db.server';
+import { user, users as businessUsers } from '../../drizzle/schema';
 import { eq, and } from 'drizzle-orm';
-import { auth } from './auth/[...betterAuth].ts';
+import { auth } from '../auth/[...betterAuth]';
 
 export const config = {
   runtime: 'nodejs',
@@ -23,12 +23,23 @@ export default async function handler(req: Request) {
 
   const url = new URL(req.url);
   const path = url.pathname.replace(/^\/api\/admin/, '');
-  const { data: session } = await auth.api.getSession({
-    request: req,
-  });
+  
+  let session: any = null;
+  try {
+    const sessionResponse = await auth.api.getSession({
+      request: req,
+    });
+    session = sessionResponse;
+  } catch (error) {
+    console.error('Session verification failed:', error);
+    return new Response(
+      JSON.stringify({ error: 'Unauthorized: Invalid session' }), 
+      { status: 401, headers: corsHeaders }
+    );
+  }
 
   // 验证管理员权限
-  if (!session || session.user.role !== 'admin') {
+  if (!session || !session.user || session.user.role !== 'admin') {
     return new Response(
       JSON.stringify({ error: 'Unauthorized: Admin access required' }), 
       { status: 403, headers: corsHeaders }
@@ -97,7 +108,7 @@ export default async function handler(req: Request) {
 
     // 获取用户列表 (Admin only)
     if (path === '/users' && req.method === 'GET') {
-      const users = await db
+      const usersList = await db
         .select({
           id: user.id,
           email: user.email,
@@ -110,7 +121,7 @@ export default async function handler(req: Request) {
         .where(eq(user.partnerId, session.user.partnerId));
 
       return new Response(
-        JSON.stringify({ users }), 
+        JSON.stringify({ users: usersList }), 
         { status: 200, headers: corsHeaders }
       );
     }

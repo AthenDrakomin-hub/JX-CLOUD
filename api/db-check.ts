@@ -1,6 +1,6 @@
 
-import { db } from '../src/services/db.server.js';
-import { users } from '../drizzle/schema.js';
+import { db } from '../src/services/db.server';
+import { users } from '../drizzle/schema';
 import { sql } from 'drizzle-orm';
 
 export const config = {
@@ -58,8 +58,9 @@ export default async function handler(req: Request) {
       }
     );
   } catch (error: any) {
-    // 类型收窄/Narrowing - 更优雅的处理方式
-    const errorMessage = error instanceof Error ? error.message : String(error);
+    // 修复 TS2345 错误：处理 unknown 类型
+    const errorMessage = typeof error === 'object' && error !== null && 'message' in error ? 
+      (error as Error).message : String(error);
     const errorCode = (error as any)?.code || 'UNKNOWN_ERROR';
     
     return new Response(

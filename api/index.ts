@@ -1,6 +1,6 @@
 
-import { db } from '../src/services/db.server.js';
-import { systemConfig, orders } from '../drizzle/schema.js';
+import { db } from '../src/services/db.server';
+import { systemConfig, orders } from '../drizzle/schema';
 import { eq, sql } from 'drizzle-orm';
 
 /**
@@ -60,8 +60,9 @@ export default async function handler(req: Request) {
     }), { status: 404, headers: corsHeaders });
 
   } catch (error: any) {
-    // TS2345 修复：明确给 error 添加类型声明
-    const errorMessage = error instanceof Error ? error.message : String(error);
+    // 修复 TS2345 错误：处理 unknown 类型
+    const errorMessage = typeof error === 'object' && error !== null && 'message' in error ? 
+      (error as Error).message : String(error);
     const errorCode = (error as any)?.code || 'UNKNOWN_GATEWAY_ERROR';
     
     return new Response(
