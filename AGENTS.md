@@ -4,20 +4,21 @@ This file provides guidance to Qoder (qoder.com) when working with code in this 
 
 ## 🏨 项目概述
 
-这是一个名为"江西云厨"的现代化酒店管理生态系统，采用全栈架构设计，包含客房点餐、订单管理、财务管理等核心功能。该系统专门针对现代化酒店运营需求设计，集成了客房实时点餐（QR Ordering）、订单调度矩阵（KDS）、多维财务清算等功能。
+这是一个名为"江西云厨"的现代化酒店管理生态系统，采用全栈架构设计，包含客房点餐、订单管理、财务管理等核心功能。该系统专门针对现代化酒店运营需求设计，集成了客房实时点餐（QR Ordering）、订单调度矩阵（KDS）、多维财务清算、合伙人联营逻辑以及基于物理层 RLS 安全审计的功能。
 
 ## 🛠 核心技术栈
 
 - **前端框架**: React 19 + TypeScript + Vite
 - **样式方案**: Tailwind CSS
 - **后端服务**: Supabase (仅作为 PostgreSQL 数据库)
-- **认证系统**: Better-Auth (完全解耦，供应商无关，数据存储在 Supabase)
+- **认证系统**: Better-Auth (完全解耦，供应商无关，支持 Passkeys 生物识别)
 - **部署平台**: Vercel Edge Runtime
 - **图标库**: Lucide React
 - **图表库**: Recharts
 - **数据库工具**: Drizzle ORM
 - **状态管理**: React hooks + Supabase Realtime
 - **构建工具**: Vite with custom chunk splitting for optimized loading
+- **模块系统**: ESM (ECMAScript Modules) with explicit .js extensions
 
 ## 📁 项目架构
 
@@ -74,12 +75,6 @@ npm run users:init
 
 # 初始化分类数据
 npm run categories:init
-
-# 生成新的迁移文件
-npx drizzle-kit generate --out ./drizzle --schema ./drizzle/schema.ts
-
-# 运行迁移
-npx drizzle-kit migrate --config=drizzle.config.ts
 
 # Schema 检查和更新
 npm run schema:check
@@ -183,6 +178,19 @@ npx tsx scripts/init-categories.ts       # 手动运行分类初始化
 
 ## 🔧 开发注意事项
 
+### ESM 模块规范 (.js 后缀要求)
+由于使用 ESM (ECMAScript Modules) 和 nodenext 模块解析，所有相对导入路径必须显式包含 `.js` 后缀：
+
+```typescript
+// ✅ 正确 - 使用 .js 后缀
+import { db } from '../src/services/db.server.js';
+import { user } from '../drizzle/schema.js';
+
+// ❌ 错误 - 缺少 .js 后缀 (会导致 Vercel 部署失败)
+import { db } from '../src/services/db.server';
+import { user } from '../drizzle/schema';
+```
+
 ### 数据库操作规范
 - 所有数据库操作必须通过 `services/api.ts` 服务层 (使用Drizzle ORM)
 - 合伙人相关查询需添加 `partner_id` 过滤条件
@@ -207,7 +215,7 @@ npx tsx scripts/init-categories.ts       # 手动运行分类初始化
 - 参考 `App.tsx` 中的订单实时监听实现
 
 ### 认证与安全
-- 使用Better-Auth进行身份验证
+- 使用Better-Auth进行身份验证，支持 Passkeys 生物识别
 - 根管理员可通过本地存储绕过认证 (`jx_root_authority_bypass`)
 - 用户权限在服务层进行验证
 - 敏感操作需要权限检查
@@ -324,6 +332,7 @@ npx tsx scripts/init-categories.ts       # 手动运行分类初始化
 - SQL注入防护：使用参数化查询和ORM层保护
 - XSS防护：输入验证和输出转义
 - 认证与业务分离：认证数据与业务数据存储分离
+- Passkeys 生物识别：基于 WebAuthn 标准的无密码认证
 
 ## 🌐 国际化开发指南
 
@@ -347,6 +356,23 @@ All UI elements are now fully translated between Chinese, English, and Filipino:
 
 ## 🛠 工具与调试
 
+### Vite 非法导入检查工具
+项目包含 `/tools` 目录下的扫描工具，可自动检测违反架构守则的导入行为：
+
+```bash
+# 快速检查非法导入
+node tools/quick-vite-check.js
+
+# 详细分析报告
+node tools/smart-db-checker.js
+
+# 项目级扫描
+node tools/check-project-db-imports.js
+
+# 综合修复助手
+node tools/vite-db-fix-helper.js
+```
+
 ### 本地开发工具
 - `npm run schema:check`: 检查数据库schema是否与代码一致
 - `npm run schema:update`: 更新数据库schema到最新状态
@@ -359,12 +385,6 @@ All UI elements are now fully translated between Chinese, English, and Filipino:
 - `npx tsx scripts/debug-env.ts`: 调试环境变量配置
 - `npx tsx scripts/analyze-db-url.ts`: 分析数据库URL配置
 - `npx tsx scripts/update-schema.ts`: 更新数据库schema
-
-### 架构验证工具
-- `node tools/quick-vite-check.js`: 快速检查非法数据库导入
-- `node tools/smart-db-checker.js`: 智能分析前后端导入规则
-- `node tools/check-project-db-imports.js`: 项目级扫描非法导入
-- `node tools/vite-db-fix-helper.js`: 综合修复助手
 
 ### 数据库管理脚本
 - `npm run db:init`: 初始化数据库表结构

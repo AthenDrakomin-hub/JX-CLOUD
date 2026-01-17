@@ -49,7 +49,12 @@ const AuthPage: React.FC = () => {
 
   const handleMasterLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isMasterUser) return;
+    console.log('Login started...', { email, isMasterUser });
+    
+    if (!isMasterUser) {
+      console.log('Email is not master user, returning early');
+      return;
+    }
     
     setIsLoading(true);
     setError(null);
@@ -58,16 +63,24 @@ const AuthPage: React.FC = () => {
       console.log("Master authority detected. Activating Local Session Injection...");
       // 尝试匿名认证作为占位符
       try {
+        console.log('Attempting anonymous sign in...');
         await authClient.signIn.anonymous();
+        console.log('Anonymous sign in successful');
       } catch (e) {
-        console.warn("Remote auth node unreachable, proceeding with local bypass.");
+        console.warn("Remote auth node unreachable, proceeding with local bypass.", e);
       }
       
       // 核心旁路逻辑
+      console.log('Setting bypass flags in localStorage...');
       localStorage.setItem('jx_root_authority_bypass', 'true');
       localStorage.setItem('jx_bypass_timestamp', Date.now().toString());
-      window.location.href = '/';
+      console.log('Redirecting to home page...');
+      // 添加小延迟确保localStorage设置完成
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 100);
     } catch (err) {
+      console.error('Login failed:', err);
       setError(t('error'));
     } finally {
       setIsLoading(false);
