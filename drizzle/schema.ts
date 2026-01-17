@@ -38,7 +38,7 @@ export const users = pgTable('users', {
   username: text('username').notNull().unique(), // 业务所需字段
   email: text('email').notNull().unique(),
   name: text('name').notNull(),
-  role: text('role').default('user'), 
+  role: text('role').default('staff'), 
   partnerId: text('partner_id'), 
   authType: text('auth_type').default('credentials'), // 认证类型
   emailVerified: boolean('email_verified').default(false), // 邮箱验证状态
