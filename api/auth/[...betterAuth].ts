@@ -81,6 +81,8 @@ async function initializeRootAdmin() {
           name: name,
           role: 'admin',
           partnerId: null,
+          modulePermissions: null,
+          authType: 'credentials',
           createdAt: new Date(),
           updatedAt: new Date()
         });
@@ -154,6 +156,8 @@ const auth = betterAuth({
           name: data.data.name || data.data.email.split('@')[0],
           role: 'staff', // 默认为staff角色
           partnerId: data.data.partnerId || null,
+          modulePermissions: data.data.modulePermissions || null,
+          authType: 'credentials',
           createdAt: new Date(),
           updatedAt: new Date()
         });
