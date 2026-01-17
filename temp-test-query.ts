@@ -1,4 +1,4 @@
-import { db } from './services/db';
+import { db } from './services/db.server';
 import { menuCategories } from './schema';
 import { eq, and, asc } from 'drizzle-orm';
 

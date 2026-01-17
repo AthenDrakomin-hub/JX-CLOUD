@@ -1,7 +1,7 @@
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Order, Expense } from '../types';
-import { Language, getTranslation } from '../translations';
 import { 
   DollarSign, Wallet, RefreshCcw, 
   Clock, CheckCircle2, FileText, Banknote, ShieldCheck, Activity, History
@@ -12,16 +12,16 @@ interface FinanceManagementProps {
   expenses: Expense[];
   onAddExpense: (expense: Expense) => void;
   onDeleteExpense: (id: string) => void;
-  lang: Language;
 }
 
-const FinanceManagement: React.FC<FinanceManagementProps> = ({ orders, expenses, lang }) => {
+const FinanceManagement: React.FC<FinanceManagementProps> = ({ orders, expenses }) => {
+  const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState<'revenue' | 'shift'>('revenue');
   const [isEndingShift, setIsEndingShift] = useState(false);
   const [shiftHistory, setShiftHistory] = useState<any[]>([]);
 
-  const t = useCallback((key: string) => getTranslation(lang, key), [lang]);
-  const C = lang === 'zh' ? '₱' : '₱';
+  // Philippine Peso symbol remains consistent across all languages
+  const C = '₱';
 
   const completedOrders = useMemo(() => (orders || []).filter(o => o.status === 'completed'), [orders]);
 

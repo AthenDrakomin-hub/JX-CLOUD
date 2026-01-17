@@ -83,6 +83,38 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.rooms;
 
 ---
 
+## 🏗 架构守则 (Architecture Rules)
+
+### 前后端严格分离原则
+
+**🚫 禁止行为**:
+- 在任何前端组件中直接导入数据库驱动或连接 (`import { db } from '../services/db'`)
+- 前端文件中使用 `pg`, `mysql`, `sqlite` 等数据库包
+- 前端组件直接调用数据库查询语句
+
+**✅ 正确模式**:
+- 前端组件只能导入 API 客户端: `import { api } from '../services/api'`
+- 通过标准 API 接口进行数据交互
+- 使用 `fetch()` 或封装的 API 方法访问后端服务
+
+**自动化检查**:
+项目包含 `/tools` 目录下的扫描工具，可自动检测违反架构守则的导入行为：
+```bash
+# 快速检查非法导入
+node tools/quick-vite-check.js
+
+# 详细分析报告
+node tools/smart-db-checker.js
+```
+
+### 技术边界定义
+
+- **前端领域**: React 组件、UI 逻辑、状态管理、用户交互
+- **后端领域**: 数据库连接、业务逻辑、API 路由、认证服务
+- **通信桥梁**: 通过标准化 RESTful API 或 GraphQL 接口连接
+
+---
+
 ## 📜 免责声明与版权
 
 江西云厨终端系统由**系统研发部 (R&D Division)** 维护。所有代码经过多重 IP 协议保护，严禁用于非授权的物理商业环境。

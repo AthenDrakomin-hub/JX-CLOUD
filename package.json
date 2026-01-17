@@ -22,6 +22,7 @@
     "better-auth": "^0.8.1",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.36.4",
+    "i18next": "^25.7.4",
     "lucide-react": "^0.475.0",
     "pg": "^8.17.1",
     "postgres": "^3.4.5",
@@ -29,9 +30,11 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.53.2",
+    "react-i18next": "^16.5.3",
     "recharts": "^2.15.0"
   },
   "devDependencies": {
+    "@types/i18next": "^12.1.0",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

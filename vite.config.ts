@@ -4,6 +4,16 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
+  define: {
+    global: 'globalThis',
+  },
+  resolve: {
+    alias: {
+      // 防止在客户端打包时包含服务器端模块
+      'pg': './src/__mocks__/pg.js',
+      'postgres': './src/__mocks__/postgres.js',
+    }
+  },
   build: {
     outDir: 'dist',
     chunkSizeWarningLimit: 3500, // 增加到3500KB以适应大型库
@@ -34,7 +44,7 @@ export default defineConfig({
             if (id.includes('drizzle-orm')) {
               return 'vendor-drizzle';
             }
-            if (id.includes('postgres')) {
+            if (id.includes('postgres') || id.includes('pg')) {
               return 'vendor-postgres';
             }
             if (id.includes('react-hook-form')) {
@@ -64,24 +74,19 @@ export default defineConfig({
               }
             }
             
-            // 为剩余的通用包创建更细粒度的分组
+            // 为剩余的通用包创建更细粒度的分组，完全避免循环依赖
             if (id.includes('node_modules/')) {
-              // 按首字母分组以分散负载
+              // 简化分组策略 to avoid circular dependencies completely
               const parts = id.split('node_modules/');
               const remainingPath = parts[parts.length - 1];
               const packageName = remainingPath.split('/')[0];
               
               if (packageName.startsWith('@')) {
-                // 作用域包按第一个字母分组
-                const scopeParts = packageName.substring(1).split('/');
-                const scopePrefix = scopeParts[0];
-                if (scopePrefix) {
-                  return `vendor-scoped-${scopePrefix.substring(0, 3)}`;
-                }
+                // 作用域包统一处理 to prevent circular refs
+                return 'vendor-scoped-packages';
               } else {
-                // 普通包按首字母分组
-                const firstChar = packageName.charAt(0).toLowerCase();
-                return `vendor-common-${firstChar}`;
+                // 不再细分普通包 to avoid circular dependencies
+                return 'vendor-common-rest';
               }
             }
           }

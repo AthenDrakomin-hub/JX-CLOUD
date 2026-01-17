@@ -1,6 +1,9 @@
 
 export type Language = 'zh' | 'en';
 
+// DEPRECATED: This file is kept for backward compatibility during migration to i18next.
+// Use i18next with useTranslation hook instead.
+
 export const translations = {
   zh: {
     // 导航与标识

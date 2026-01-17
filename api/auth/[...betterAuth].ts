@@ -1,6 +1,6 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { db } from '../../services/db.js';
+import { db } from '../../services/db.server.js';
 import { user as authUser, session as authSession } from '../../schema.js';
 
 /**

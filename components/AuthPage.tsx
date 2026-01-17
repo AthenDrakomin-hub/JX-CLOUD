@@ -1,27 +1,38 @@
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { 
   Shield, Lock, User, ArrowRight, Sparkles, 
   Loader2, Cpu, Globe, CheckCircle2, AlertCircle, 
   Fingerprint, Zap, ShieldCheck, Activity
 } from 'lucide-react';
 import { authClient } from '../services/auth-client';
-import { Language, getTranslation } from '../translations';
 import LegalFooter from './LegalFooter';
 
-interface AuthPageProps {
-  lang: Language;
-  onToggleLang: () => void;
-}
-
-const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang }) => {
+const AuthPage: React.FC = () => {
+  const { t, i18n } = useTranslation();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isPasskeyLoading, setIsPasskeyLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sysTime, setSysTime] = useState(new Date().toLocaleTimeString());
 
-  const t = (key: string) => getTranslation(lang, key);
+  // Set initial language based on browser language
+  useEffect(() => {
+    const browserLang = navigator.language.toLowerCase();
+    let initialLang = 'en'; // default to English
+    
+    if (browserLang.includes('zh')) {
+      initialLang = 'zh';
+    } else if (browserLang.includes('fil') || browserLang.includes('tl') || browserLang.includes('ph')) {
+      initialLang = 'fil'; // Filipino/Tagalog
+    }
+    
+    // Only change language if it's different from current
+    if (i18n.language !== initialLang) {
+      i18n.changeLanguage(initialLang);
+    }
+  }, [i18n]);
 
   // 严格匹配根管理员邮箱进行上帝模式旁路注入
   const isMasterUser = email.trim().toLowerCase() === 'athendrakomin@proton.me';
@@ -30,6 +41,11 @@ const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang }) => {
     const timer = setInterval(() => setSysTime(new Date().toLocaleTimeString()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  const toggleLanguage = () => {
+    const newLang = i18n.language === 'en' ? 'zh' : 'en';
+    i18n.changeLanguage(newLang);
+  };
 
   const handleMasterLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,11 +155,11 @@ const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang }) => {
         {/* 语言切换按钮 */}
         <div className="absolute top-8 right-8 z-20">
           <button 
-            onClick={onToggleLang}
+            onClick={toggleLanguage}
             className="px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 backdrop-blur-xl"
           >
             <Globe size={14} className="text-blue-500" />
-            {lang === 'zh' ? 'English' : '中文模式'}
+            {i18n.language === 'zh' ? t('enMode') : t('zhMode')}
           </button>
         </div>
 
@@ -239,7 +255,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang }) => {
                    {t('rls_status')}
                 </div>
              </div>
-             <LegalFooter lang={lang} />
+             <LegalFooter lang={i18n.language as 'zh' | 'en'} />
           </div>
         </div>
       </div>

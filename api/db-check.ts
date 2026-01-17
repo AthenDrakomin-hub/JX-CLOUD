@@ -1,6 +1,6 @@
 
-import { db } from '../services/db';
-import { users } from '../schema';
+import { db } from '../services/db.server.js';
+import { users } from '../schema.js';
 import { sql } from 'drizzle-orm';
 
 export const config = {
