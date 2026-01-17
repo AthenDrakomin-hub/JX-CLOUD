@@ -101,15 +101,19 @@ node tools/vite-db-fix-helper.js      # Comprehensive fix helper
 
 ### Authentication System (Better-Auth)
 - **Two-factor auth**: Supports Passkeys biometrics + traditional passwords
-- **Root admin protection**: `athendrakomin@proton.me` special privilege account
+- **Root admin protection**: `athendrakomin@proton.me` special privilege account with automatic initialization
+- **Dual user system**: `user` table (Better Auth standard fields) and `users` table (business logic) with synchronized data via database hooks
 - **Session management**: JWT-based secure session mechanism
 - **Permission validation**: Fine-grained permission checks at service layer
+- **Passkeys integration**: Biometric authentication using WebAuthn standard with cross-platform support
 
 ### Data Security
-- **RLS policies**: Row-level security control, physical isolation of partner data
-- **SQL injection protection**: Full use of parameterized queries and ORM
+- **RLS policies**: Row-level security control, physical isolation of partner data via `partner_id` field
+- **Multi-tenant architecture**: Data separation through partner-based filtering
+- **SQL injection protection**: Full use of parameterized queries and Drizzle ORM
 - **XSS protection**: Input validation and output escaping
 - **Sensitive operation protection**: Root admin permission check before delete operations
+- **Connection pooling**: Optimized database connections for Vercel Serverless functions with automatic resource management
 
 ## 🌐 Internationalization Support
 
@@ -203,6 +207,13 @@ npx tsx scripts/debug-env.ts        # Environment variable debugging
 - Supports demo mode and production mode switching
 - Includes error handling and retry mechanisms
 
+### Backend API Routes (api/*)
+- Vercel Serverless Functions with both `edge` and `nodejs` runtime configurations
+- Health check endpoint at `/api/health.ts` (edge runtime)
+- Database connectivity check at `/api/db-check.ts` (nodejs runtime)
+- Better Auth routes at `/api/auth/[...betterAuth].ts` with dual table synchronization
+- Automatic root admin initialization for `athendrakomin@proton.me`
+
 ### Service Layer Organization
 - `api.ts`: Frontend unified data gateway
 - `auth.ts`: Authentication logic (server-side)
@@ -243,12 +254,33 @@ node tools/vite-db-fix-helper.js      # Automated fix suggestions
 node tools/check-project-db-imports.js # Project-specific import analysis
 ```
 
+## 🌐 Environment Variables & Deployment
+
+### Critical Environment Variables
+- `DATABASE_URL`: Direct database connection for Drizzle ORM (required for production)
+- `BETTER_AUTH_SECRET`: Secret key for Better Auth session encryption
+- `BETTER_AUTH_URL`: Production domain URL (e.g., `https://your-domain.vercel.app`)
+- `VITE_BETTER_AUTH_URL`: Frontend authentication URL
+- `SUPABASE_URL` and `SUPABASE_ANON_KEY`: Automatically injected by Vercel when connecting Supabase
+
+### Vercel Deployment Notes
+- Uses both Edge Runtime (for health checks) and Node.js Runtime (for database operations)
+- Connection pooling optimized for Serverless functions with automatic resource management
+- Supabase transaction pool port 6543 is automatically used for improved concurrency
+
 ## 🎯 Development Workflow Guidelines
 
 ### 1. Before Starting Work
 - Run `node tools/quick-vite-check.js` to validate current architecture compliance
 - Check `npx tsx scripts/test-connection.ts` to ensure database connectivity
 - Review existing components in `components/` directory for similar patterns
+
+### 2. Build Process & Chunking Strategy
+- Vite build uses manual chunking to optimize bundle size and reduce loading times
+- React and authentication libraries bundled together as `vendor-react-auth`
+- Supabase-related libraries in `vendor-supabase` chunk
+- UI libraries (Lucide React, Recharts) in `vendor-ui` chunk
+- Maximum chunk size warning threshold set to 1MB
 
 ### 2. During Development
 - Always use `src/services/api.ts` for frontend-backend communication
@@ -273,10 +305,19 @@ node tools/check-project-db-imports.js # Project-specific import analysis
 ### Critical Service Files
 - `src/services/api.ts`: Frontend API gateway (primary integration point)
 - `src/services/db.server.ts`: Database connection (server-side only)
-- `api/index.ts`: Main backend API router
+- `api/health.ts`: Health check endpoint
+- `api/db-check.ts`: Database connectivity check
+- `api/auth/[...betterAuth].ts`: Better Auth routes with dual table synchronization
 - `drizzle/schema.ts`: Database schema definitions
 
 ### Utility Scripts
 - `scripts/test-connection.ts`: Database connectivity testing
 - `scripts/init-db.ts`: Database initialization
+- `scripts/clean-reset-simple.ts`: Simple cleanup and reset operations
+- `scripts/cleanup-and-reset.ts`: Comprehensive cleanup and reset operations
+- `scripts/fk-verification.ts`: Foreign key constraint verification
+- `scripts/ph-payment-validation.ts`: Philippine payment validation logic
+- `scripts/emergency-rls-fix.ts`: Emergency Row-Level Security fixes
+- `scripts/monitor-connections.ts`: Database connection monitoring
+- `scripts/verify-final-status.ts`: Final status verification
 - `tools/quick-vite-check.js`: Architecture compliance checking
