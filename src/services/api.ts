@@ -13,7 +13,7 @@ import { INITIAL_DISHES, INITIAL_CATEGORIES } from '../constants';
  */
 
 // API 基础配置
-const API_BASE_URL = typeof window !== 'undefined' ? '/api' : 'http://localhost:3001/api';
+const API_BASE_URL = typeof window !== 'undefined' ? '/api' : '/api';
 
 // 统一的 API 请求封装
 async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -47,10 +47,10 @@ export const api = {
   config: {
     get: async (): Promise<SystemConfig> => {
       try {
-        // 检查是否在演示模式
-        const isDemoMode = !process.env.POSTGRES_URL;
-        
-        if (isDemoMode) {
+        // 通过 API 检查系统状态来判断是否为演示模式
+        const response = await fetch('/api/system/status');
+        if (!response.ok) {
+          // 如果 API 不可用，则使用演示模式数据
           return { 
             hotelName: '江西云厨(演示)', 
             theme: 'light', 
@@ -87,7 +87,9 @@ export const api = {
   rooms: {
     getAll: async (): Promise<HotelRoom[]> => {
       try {
-        const isDemoMode = !process.env.POSTGRES_URL;
+        // 通过 API 检查系统状态来判断是否为演示模式
+        const response = await fetch('/api/system/status');
+        const isDemoMode = !response.ok;
         
         if (isDemoMode) {
           // 演示数据
@@ -121,7 +123,9 @@ export const api = {
       search?: string 
     }): Promise<Dish[]> => {
       try {
-        const isDemoMode = !process.env.POSTGRES_URL;
+        // 通过 API 检查系统状态来判断是否为演示模式
+        const response = await fetch('/api/system/status');
+        const isDemoMode = !response.ok;
         
         if (isDemoMode) {
           // 演示数据
@@ -174,7 +178,9 @@ export const api = {
       roomNumber?: string 
     }): Promise<Order[]> => {
       try {
-        const isDemoMode = !process.env.POSTGRES_URL;
+        // 通过 API 检查系统状态来判断是否为演示模式
+        const response = await fetch('/api/system/status');
+        const isDemoMode = !response.ok;
         
         if (isDemoMode) {
           // 演示数据
@@ -217,7 +223,9 @@ export const api = {
       parentId?: string 
     }): Promise<Category[]> => {
       try {
-        const isDemoMode = !process.env.POSTGRES_URL;
+        // 通过 API 检查系统状态来判断是否为演示模式
+        const response = await fetch('/api/system/status');
+        const isDemoMode = !response.ok;
         
         if (isDemoMode) {
           // 演示数据
@@ -266,7 +274,9 @@ export const api = {
   partners: {
     getAll: async (): Promise<Partner[]> => {
       try {
-        const isDemoMode = !process.env.POSTGRES_URL;
+        // 通过 API 检查系统状态来判断是否为演示模式
+        const response = await fetch('/api/system/status');
+        const isDemoMode = !response.ok;
         
         if (isDemoMode) {
           // 演示数据
@@ -299,7 +309,9 @@ export const api = {
   users: {
     getAll: async (filters?: { partnerId?: string }): Promise<User[]> => {
       try {
-        const isDemoMode = !process.env.POSTGRES_URL;
+        // 通过 API 检查系统状态来判断是否为演示模式
+        const response = await fetch('/api/system/status');
+        const isDemoMode = !response.ok;
         
         if (isDemoMode) {
           // 演示数据
@@ -342,7 +354,9 @@ export const api = {
       endDate?: string 
     }): Promise<Expense[]> => {
       try {
-        const isDemoMode = !process.env.POSTGRES_URL;
+        // 通过 API 检查系统状态来判断是否为演示模式
+        const response = await fetch('/api/system/status');
+        const isDemoMode = !response.ok;
         
         if (isDemoMode) {
           // 演示数据
