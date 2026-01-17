@@ -29,9 +29,6 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000, // 降低警告阈值到1MB
     cssCodeSplit: true,
     rollupOptions: {
-      input: {
-        main: './index.html',
-      },
       output: {
         entryFileNames: `assets/[name]-[hash].js`,
         chunkFileNames: `assets/[name]-[hash].js`,

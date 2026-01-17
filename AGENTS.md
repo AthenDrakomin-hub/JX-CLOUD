@@ -25,7 +25,7 @@ This is "江西云厨" (Jiangxi Cloud Kitchen), a modern hotel management ecosys
 ### Frontend-Backend Strict Separation
 - **🚫 Forbidden**: Direct import of database drivers or connections in frontend components
 - **✅ Allowed**: Frontend can only communicate with backend through `services/api.ts` API gateway
-- **Validation Tools**: Use tools in `/tools` directory to regularly check for violations
+- **Validation Tools**: Use scripts in `/scripts` directory to regularly check for violations
 
 ### Data Flow
 ```
@@ -59,7 +59,6 @@ root/
 ├── drizzle/               # Database schema definitions
 │   └── schema.ts          # 🚨 Database table structures (all tables defined here)
 ├── scripts/               # Database maintenance scripts
-├── tools/                 # Architecture validation tools
 ├── src/                   # Frontend source
 │   ├── App.tsx            # Main app entry
 │   ├── GuestEntry.tsx     # Client-side ordering entry
@@ -90,11 +89,6 @@ npx tsx scripts/test-connection.ts     # Test database connection
 npx tsx scripts/debug-env.ts          # Debug environment variables
 npx tsx scripts/check-schema.ts       # Check table structure
 npx tsx scripts/init-db.ts            # Manual database initialization
-
-# 🏗️ Architecture validation
-node tools/quick-vite-check.js        # Quick invalid import check
-node tools/smart-db-checker.js        # Smart architecture analysis
-node tools/vite-db-fix-helper.js      # Comprehensive fix helper
 ```
 
 ## 🔐 Security Architecture
@@ -162,7 +156,7 @@ import { user } from '../drizzle/schema';
 **1. Vercel deployment failure - ESM import errors**
 ```
 Solution: Ensure all relative imports include .js extension
-Check: Run node tools/quick-vite-check.js
+Check: Run npm run build to verify the build works
 ```
 
 **2. Database connection failure**
@@ -188,11 +182,6 @@ Confirm: Are RLS policies configured correctly?
 
 ### Debugging Tools
 ```bash
-# Architecture checks
-node tools/quick-vite-check.js      # Quick invalid import check
-node tools/smart-db-checker.js      # Smart architecture analysis
-node tools/vite-db-fix-helper.js    # Comprehensive fix suggestions
-
 # Database diagnostics
 npx tsx scripts/test-connection.ts  # Connection test
 npx tsx scripts/check-schema.ts     # Schema consistency check
@@ -244,14 +233,13 @@ npx tsx scripts/find-all-users.ts     # List all system users
 ```
 
 ### Architecture Validation Tools
-The `tools/` directory contains automated validation tools:
+The `scripts/` directory contains validation tools:
 
 ```bash
-# Automated checks
-node tools/quick-vite-check.js        # Detect ESM import issues
-node tools/smart-db-checker.js        # Identify database import violations
-node tools/vite-db-fix-helper.js      # Automated fix suggestions
-node tools/check-project-db-imports.js # Project-specific import analysis
+# Database diagnostics
+npx tsx scripts/test-connection.ts  # Connection test
+npx tsx scripts/check-schema.ts     # Schema consistency check
+npx tsx scripts/debug-env.ts        # Environment variable debugging
 ```
 
 ## 🌐 Environment Variables & Deployment
@@ -271,7 +259,6 @@ node tools/check-project-db-imports.js # Project-specific import analysis
 ## 🎯 Development Workflow Guidelines
 
 ### 1. Before Starting Work
-- Run `node tools/quick-vite-check.js` to validate current architecture compliance
 - Check `npx tsx scripts/test-connection.ts` to ensure database connectivity
 - Review existing components in `components/` directory for similar patterns
 
@@ -289,7 +276,6 @@ node tools/check-project-db-imports.js # Project-specific import analysis
 - Test database changes with `npm run schema:check`
 
 ### 3. Before Deployment
-- Run all architecture validation tools
 - Execute `npm run build` to verify production build
 - Test with `npm run preview` to validate build output
 - Run database integrity checks
@@ -320,4 +306,3 @@ node tools/check-project-db-imports.js # Project-specific import analysis
 - `scripts/emergency-rls-fix.ts`: Emergency Row-Level Security fixes
 - `scripts/monitor-connections.ts`: Database connection monitoring
 - `scripts/verify-final-status.ts`: Final status verification
-- `tools/quick-vite-check.js`: Architecture compliance checking

@@ -1,10 +1,31 @@
-# 🏨 江西云厨终端系统 (JX CLOUD Terminal) - V4
+# 🏨 江西云厨企业级酒店管理套件 (JX CLOUD Terminal) - v4.0.0-PROD
 
 [![Vercel Deployment](https://img.shields.io/badge/Deployment-Vercel-black?style=flat-square&logo=vercel)](https://vercel.com)
 [![Database](https://img.shields.io/badge/Backend-Supabase-emerald?style=flat-square&logo=supabase)](https://supabase.com)
 [![Engine](https://img.shields.io/badge/Engine-React_19_|_Vite-blue?style=flat-square&logo=react)](https://react.dev)
 
-> **江西云厨** 是一款专为现代化酒店设计的全栈管理生态系统。集成了客房实时点餐（QR Ordering）、订单调度矩阵（KDS）、多维财务清算、合伙人联营逻辑以及基于物理层 RLS 安全审计的视觉资产管理。
+> **江西云厨** 是一款专为现代化酒店设计的企业级管理套件。集成了客房实时点餐（QR Ordering）、订单调度矩阵（KDS）、多维财务清算、合伙人联营逻辑以及基于物理层 RLS 安全审计的视觉资产管理。
+
+## 🏗 核心架构 (Core Architecture)
+
+- **Frontend**: Vite + React 19 + TypeScript + Tailwind CSS
+- **Backend**: Better-Auth + Vercel Serverless Functions
+- **Database**: Drizzle ORM + Supabase (PostgreSQL)
+- **Deployment**: Vercel Edge Network
+- **Security**: Passkeys (生物识别认证) + RLS (行级安全)
+
+## 🚀 当前状态 (Current Status)
+
+- **数据库 RLS 已加固**: Row Level Security 策略全面启用
+- **连接池限制**: 严格控制在 10 个连接以内
+- **认证方式**: 支持管理员指纹/邮箱登录
+- **部署环境**: Vercel Edge Network 运行时
+
+## 🛠 运维规范 (Operations Standards)
+
+- **维护脚本位置**: 所有维护脚本必须放在 `scripts/` 目录下运行
+- **目录结构**: 严禁修改根目录结构
+- **版本控制**: 严格遵守 `.gitignore` 规则，防止敏感文件上传
 
 ## 🏗 项目架构 (Project Architecture)
 
@@ -39,16 +60,6 @@
 ├── package.json         # 依赖管理
 └── vite.config.ts       # 构建配置
 ```
-
-## 🛠 核心技术架构 (Tech Stack)
-
-- **Frontend**: React 19 + TypeScript + Vite + Tailwind CSS
-- **Database**: Supabase (纯 PostgreSQL 数据库，不含认证)
-- **Auth**: Better-Auth (完全解耦，供应商无关，支持 Passkeys)
-- **Infrastructure**: Vercel Edge Runtime (边缘中间件与 API 网关)
-- **ORM**: Drizzle ORM (物理层架构映射)
-- **Security**: Passkeys (生物识别认证) + RLS (行级安全)
-- **Modules**: ESM (ECMAScript Modules) with explicit .js extensions
 
 ## 🔐 核心安全特性
 
@@ -146,13 +157,15 @@ import { user } from '../drizzle/schema';
 
 ## 🔄 Changelog
 
-### v4.0.0 (今日更新)
+### v4.0.0-PROD (企业级生产版)
 - **Vercel 部署攻克**: 成功解决 ESM 模块解析问题，实现稳定部署
 - **Passkeys 集成**: 完成生物识别认证功能，提升系统安全性
 - **模块规范统一**: 强制使用 .js 后缀，确保 ESM 模块兼容性
 - **错误处理优化**: 统一 unknown 类型错误处理，提升代码健壮性
 - **API 重构**: 优化 API 层错误处理逻辑，使用标准类型安全模式
 - **安全增强**: 完善生物识别认证流程，支持指纹和面部识别
+- **架构净化**: 清理根目录，移除空 tools 目录，优化项目结构
+- **运维规范**: 建立标准运维流程，确保生产环境稳定性
 
 ### v3.x
 - 实时订单推送系统上线
