@@ -8,14 +8,25 @@ import { passkeyClient, anonymousClient } from "better-auth/client/plugins";
  */
 
 const getAuthBaseURL = () => {
+    // 优先使用环境变量
     const envUrl = (import.meta as any).env?.VITE_BETTER_AUTH_URL || (process.env as any)?.VITE_BETTER_AUTH_URL;
     if (envUrl) return envUrl;
     
-    // 如果在浏览器环境且未配置 URL，则使用当前 Origin (Vercel 部署首选方案)
+    // 生产环境自动检测
     if (typeof window !== 'undefined') {
-        return window.location.origin;
+        const origin = window.location.origin;
+        // 如果是Vercel部署，使用当前origin
+        if (origin.includes('vercel.app')) {
+            return origin;
+        }
+        // 本地开发环境
+        return 'http://localhost:3001';
     }
-    return "";
+    
+    // 服务器端默认值
+    return process.env.VERCEL_URL ? 
+        `https://${process.env.VERCEL_URL}` : 
+        'http://localhost:3001';
 };
 
 export const authClient = createAuthClient({

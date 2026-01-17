@@ -9,6 +9,9 @@ import { user as authUser, session as authSession } from '../../schema.js';
  * 所有用户数据存储在 Supabase 的 public 模式下
  */
 export const auth = betterAuth({
+  baseURL: process.env.BETTER_AUTH_URL || process.env.VERCEL_URL ? 
+    `https://${process.env.VERCEL_URL}` : 
+    'http://localhost:3001',
   database: drizzleAdapter(db, {
     provider: 'pg', // 明确指定使用 Postgres
     // 映射 Better Auth 默认表到我们定义的表结构（使用标准字段名）
