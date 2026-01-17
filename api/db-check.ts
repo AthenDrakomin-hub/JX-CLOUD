@@ -57,12 +57,15 @@ export default async function handler(req: Request) {
         } 
       }
     );
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    const errorCode = error instanceof Error ? error.code || 'CONNECTION_FAILURE' : 'UNKNOWN_ERROR';
+    
     return new Response(
       JSON.stringify({
         status: 'error',
-        message: error.message,
-        code: error.code || 'CONNECTION_FAILURE',
+        message: errorMessage,
+        code: errorCode,
         timestamp: new Date().toISOString(),
       }),
       { 

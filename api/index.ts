@@ -59,7 +59,8 @@ export default async function handler(req: Request) {
       message: "API Node reached, but specific endpoint not defined." 
     }), { status: 404, headers: corsHeaders });
 
-  } catch (err: any) {
-    return new Response(JSON.stringify({ error: 'Gateway Error', details: err.message }), { status: 500, headers: corsHeaders });
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown gateway error occurred';
+    return new Response(JSON.stringify({ error: 'Gateway Error', details: errorMessage }), { status: 500, headers: corsHeaders });
   }
 }
