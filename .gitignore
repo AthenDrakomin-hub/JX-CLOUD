@@ -41,3 +41,4 @@ supabase/.temp/
 
 # 性能报告
 stats.html
+test-db-connection.ts

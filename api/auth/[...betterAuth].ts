@@ -107,7 +107,7 @@ setTimeout(initializeRootAdmin, 0); // Defer execution to avoid blocking module 
  * 使用 Drizzle 适配器连接到 Supabase PostgreSQL 数据库 (连接池模式)
  * 所有用户数据存储在 Supabase 的 public 模式下
  */
-export default betterAuth({
+const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL || 
            (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '') ||
            (typeof window !== 'undefined' ? window.location.origin : ''),
@@ -143,6 +143,7 @@ export default betterAuth({
           updatedAt: 'updatedAt',
         },
       },
+      // 注意：我们只定义了存在的表，移除了不存在的 account 和 verification 表
     },
   }),
   // 添加数据库钩子以实现双表数据同步
@@ -249,3 +250,8 @@ export default betterAuth({
     // 自定义登录页面或其他高级选项
   }
 });
+
+// 为 Vercel 兼容性导出 HTTP 处理程序
+// 使用类型断言解决 TypeScript 问题
+export const { GET, POST } = auth as any;
+export default auth;
