@@ -19,9 +19,30 @@ const loadPasskeyPlugin = async () => {
   return await passkeyPluginPromise;
 };
 
+// 自定义 fetch 函数以禁用缓存
+const noCacheFetch = (url: string, options: RequestInit = {}) => {
+  // 添加时间戳参数
+  const separator = url.includes('?') ? '&' : '?';
+  const urlWithTimestamp = `${url}${separator}t=${Date.now()}`;
+  
+  // 设置缓存控制头
+  const enhancedOptions: RequestInit = {
+    ...options,
+    headers: {
+      ...options.headers,
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    }
+  };
+  
+  return fetch(urlWithTimestamp, enhancedOptions);
+};
+
 // 创建基础认证客户端（不含 WebAuthn）
 export const authClient = createAuthClient({
-    baseURL: 'https://www.jiangxijiudian.store'
+    baseURL: 'https://www.jiangxijiudian.store',
+    fetch: noCacheFetch
 });
 
 // 导出带 WebAuthn 功能的认证客户端（按需加载）
@@ -29,7 +50,8 @@ export const getEnhancedAuthClient = async () => {
   const passkeyPlugin = await loadPasskeyPlugin();
   return createAuthClient({
     baseURL: 'https://www.jiangxijiudian.store',
-    plugins: [passkeyPlugin]
+    plugins: [passkeyPlugin],
+    fetch: noCacheFetch
   });
 };
 
