@@ -167,7 +167,8 @@ export default async function handler(req: Request) {
       const userId = path.split('/')[2];
 
       // 保护根管理员账户
-      if (userId === 'root_admin_athendrakomin') {
+      const targetUserInfo = await db.select({ email: user.email }).from(user).where(eq(user.id, userId)).limit(1);
+      if (targetUserInfo.length > 0 && targetUserInfo[0].email === 'athendrakomin@proton.me') {
         return new Response(
           JSON.stringify({ error: 'Cannot delete root administrator account' }), 
           { status: 403, headers: corsHeaders }

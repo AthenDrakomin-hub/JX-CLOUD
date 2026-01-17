@@ -100,7 +100,11 @@ const AuthPage: React.FC = () => {
     try {
       // 异步加载增强的认证客户端（包含 WebAuthn 插件）
       const enhancedClient = await getEnhancedAuthClient();
-      await enhancedClient.signIn.passkey();
+      await enhancedClient.signIn.passkey().catch((err: any) => {
+        // 弹出错误信息，便于调试
+        alert(`Passkey Error: ${err.name || 'Unknown Error'} - ${err.message || 'No message'}`);
+        throw err; // Re-throw to be caught by outer catch
+      });
       window.location.href = "/";
     } catch (err: any) {
       // 检查是否是跨设备场景（没有指纹硬件）
@@ -108,6 +112,8 @@ const AuthPage: React.FC = () => {
         // 显示跨设备验证提示
         setError('请使用手机扫描二维码完成跨设备验证');
       } else if (err.message !== 'User canceled') {
+        // 弹出错误信息 for debugging
+        alert(`Passkey Login Failed: ${err.name || 'Unknown Error'} - ${err.message || 'No message'}`);
         setError(t('auth_passkey_error'));
       }
     } finally {
@@ -265,7 +271,7 @@ const AuthPage: React.FC = () => {
               >
                 {isLoading ? <Loader2 size={24} className="animate-spin" /> : (
                   <>
-                    <span>{isMasterUser ? `${t('master_inject_btn')} (v4.2-FIX)` : `${t('auth_verify')} (v4.2-FIX)`}</span>
+                    <span>{isMasterUser ? `${t('master_inject_btn')} (v4.2-DB-READY)` : `${t('auth_verify')} (v4.2-DB-READY)`}</span>
                     <ArrowRight size={20} />
                   </>
                 )}

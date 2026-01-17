@@ -1,7 +1,106 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { db } from '../../src/services/db.server.js';
-import { user as authUser, session as authSession } from '../../drizzle/schema.js';
+import { user as authUser, session as authSession, users as businessUsers } from '../../drizzle/schema.js';
+import { eq } from 'drizzle-orm';
+import { nanoid } from 'nanoid';
+
+// Track if initialization has already run to prevent multiple executions
+let rootAdminInitialized = false;
+
+/**
+ * 初始化根管理员账户
+ * 在服务启动时确保根管理员账户存在
+ */
+async function initializeRootAdmin() {
+  if (rootAdminInitialized) {
+    console.log('⏭️ Root admin already initialized, skipping...');
+    return;
+  }
+  
+  try {
+    const rootEmail = 'athendrakomin@proton.me';
+    const rootUsername = 'AthenDrakomin';
+    const rootName = '系统总监';
+    
+    console.log('🔍 Checking for root admin account...');
+    
+    // 检查根管理员是否已存在于认证表中
+    const existingUser = await db.select().from(authUser).where(eq(authUser.email, rootEmail));
+    
+    let userId = '';
+    
+    if (existingUser.length > 0) {
+      // 更新现有用户为管理员
+      console.log('📝 Updating existing root admin account...');
+      await db.update(authUser).set({
+        role: 'admin',
+        name: rootName,
+        updatedAt: new Date()
+      }).where(eq(authUser.email, rootEmail));
+      
+      userId = existingUser[0].id;
+      console.log('✅ Root admin account updated successfully');
+    } else {
+      // 创建新根管理员账户
+      console.log('🔐 Creating new root admin account...');
+      const newUser = {
+        id: `user_${Date.now()}_${nanoid(8)}`,
+        name: rootName,
+        email: rootEmail,
+        emailVerified: true,
+        image: null,
+        role: 'admin',
+        partnerId: null,
+        modulePermissions: null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      const insertedUsers = await db.insert(authUser).values(newUser).returning();
+      userId = insertedUsers[0].id;
+      console.log('✅ Root admin account created successfully');
+    }
+    
+    // 检查根管理员是否已存在于业务表中
+    const existingBusinessUser = await db.select().from(businessUsers).where(eq(businessUsers.email, rootEmail));
+    
+    if (existingBusinessUser.length > 0) {
+      // 更新现有业务用户为管理员
+      await db.update(businessUsers).set({
+        role: 'admin',
+        name: rootName,
+        username: rootUsername,
+        updatedAt: new Date()
+      }).where(eq(businessUsers.email, rootEmail));
+      console.log('✅ Root admin business account updated successfully');
+    } else {
+      // 创建新业务用户记录
+      const newBusinessUser = {
+        id: `business_user_${Date.now()}_${nanoid(8)}`,
+        username: rootUsername,
+        email: rootEmail,
+        name: rootName,
+        role: 'admin',
+        partnerId: null,
+        modulePermissions: null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      await db.insert(businessUsers).values(newBusinessUser);
+      console.log('✅ Root admin business account created successfully');
+    }
+    
+    rootAdminInitialized = true;
+    console.log('🎉 Root admin initialization completed!');
+  } catch (error) {
+    console.error('❌ Error initializing root admin:', error);
+  }
+}
+
+// 初始化根管理员（在模块加载时执行）
+setTimeout(initializeRootAdmin, 0); // Defer execution to avoid blocking module loading
 
 /**
  * Better Auth 服务器端配置
@@ -52,6 +151,11 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: false, // 根据业务需求调整
+  },
+  passkey: {
+    enabled: true,
+    rpName: "www.jiangxijiudian.store",
+    rpID: "www.jiangxijiudian.store",
   },
   advanced: {
     // 自定义登录页面或其他高级选项
