@@ -9,7 +9,7 @@ import { eq, sql } from 'drizzle-orm';
  */
 
 export const config = {
-  runtime: 'edge',
+  runtime: 'nodejs',
 };
 
 // 生产级响应头
