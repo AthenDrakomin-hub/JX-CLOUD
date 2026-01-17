@@ -150,11 +150,56 @@ export default async function handler(req: Request) {
         );
       }
 
-      const updateUserPayload: any = { role, partnerId: partnerId || session.user.partnerId };
+      // 保护role字段：只有admin可以修改role，其他用户只能修改自己的非敏感信息
+      const isSelfUpdate = userId === session.user.id;
+      const isAdmin = session.user.role === 'admin';
+      
+      // 如果是自己更新且不是admin，则不允许修改role
+      if (isSelfUpdate && !isAdmin && role !== undefined) {
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized: Only admin can modify role' }), 
+          { status: 403, headers: corsHeaders }
+        );
+      }
+
+      // 构建更新负载，只包含允许修改的字段
+      const updateUserPayload: any = {};
+      if (role !== undefined && isAdmin) {
+        updateUserPayload.role = role;
+      }
+      if (partnerId !== undefined && isAdmin) {
+        updateUserPayload.partnerId = partnerId;
+      }
+
+      // 如果没有允许的字段要更新，则返回错误
+      if (Object.keys(updateUserPayload).length === 0) {
+        return new Response(
+          JSON.stringify({ error: 'No valid fields to update' }), 
+          { status: 400, headers: corsHeaders }
+        );
+      }
+
       await db
         .update(user)
         .set(updateUserPayload)
         .where(eq(user.id, userId));
+
+      // 同步更新业务表
+      const businessUpdatePayload: any = {};
+      if (role !== undefined && isAdmin) {
+        businessUpdatePayload.role = role;
+      }
+      if (partnerId !== undefined && isAdmin) {
+        businessUpdatePayload.partnerId = partnerId;
+      }
+      businessUpdatePayload.updatedAt = new Date();
+
+      if (Object.keys(businessUpdatePayload).length > 0) {
+        await db
+          .update(businessUsers)
+          .set(businessUpdatePayload)
+          .where(eq(businessUsers.id, userId));
+      }
 
       return new Response(
         JSON.stringify({ success: true }), 

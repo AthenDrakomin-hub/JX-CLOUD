@@ -370,6 +370,25 @@ export const api = {
       await apiRequest<void>(`/users/${id}`, {
         method: 'DELETE'
       });
+    },
+    
+    // 使用LEFT JOIN查询认证表和业务表的联合视图
+    getAllWithBusinessData: async (): Promise<User[]> => {
+      try {
+        const response = await fetch('/api/system/status');
+        const isDemoMode = !response.ok;
+        
+        if (isDemoMode) {
+          // 演示数据
+          return [];
+        }
+        
+        return await apiRequest<User[]>('/users/joined');
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error("获取联合用户数据失败:", errorMessage);
+        return [];
+      }
     }
   },
 

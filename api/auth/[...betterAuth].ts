@@ -147,6 +147,62 @@ export const auth = betterAuth({
         },
       },
     },
+    // 添加数据库钩子以实现双表数据同步
+    hooks: {
+      createUser: async (data) => {
+        try {
+          // 当认证用户被创建时，同步创建业务用户数据
+          await db.insert(businessUsers).values({
+            id: data.data.id,
+            username: data.data.email.split('@')[0], // 使用邮箱前缀作为用户名
+            email: data.data.email,
+            name: data.data.name || data.data.email.split('@')[0],
+            role: 'staff', // 默认为staff角色
+            partnerId: data.data.partnerId || null,
+            authType: 'credentials',
+            emailVerified: data.data.emailVerified || false,
+            isActive: true,
+            modulePermissions: data.data.modulePermissions || null,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          });
+        } catch (error) {
+          console.error('Failed to create business user record:', error);
+          // 不抛出错误，避免影响认证流程
+        }
+      },
+      updateUser: async (data) => {
+        try {
+          // 当认证用户被更新时，同步更新业务用户数据（除了role字段）
+          const updateData: any = {
+            email: data.data.email,
+            name: data.data.name,
+            partnerId: data.data.partnerId,
+            emailVerified: data.data.emailVerified,
+            updatedAt: new Date()
+          };
+          
+          // 如果提供了username，则更新它
+          if (data.data.username) {
+            updateData.username = data.data.username;
+          }
+          
+          await db.update(businessUsers).set(updateData).where(eq(businessUsers.id, data.data.id));
+        } catch (error) {
+          console.error('Failed to update business user record:', error);
+          // 不抛出错误，避免影响认证流程
+        }
+      },
+      deleteUser: async (data) => {
+        try {
+          // 当认证用户被删除时，同步删除业务用户数据
+          await db.delete(businessUsers).where(eq(businessUsers.id, data.data.id));
+        } catch (error) {
+          console.error('Failed to delete business user record:', error);
+          // 不抛出错误，避免影响认证流程
+        }
+      }
+    }
   }),
   user: {
     // Define additional fields to be available in session
