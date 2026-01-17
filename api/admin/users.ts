@@ -27,10 +27,11 @@ export default async function handler(req: Request) {
   
   let session: any = null;
   try {
-    const sessionResponse: any = await auth.api.getSession({
+    // @ts-ignore - Better Auth type recursion is too deep for TS to track
+    const sessionResponse = (await auth.api.getSession({
       headers: req.headers,
       request: req,
-    });
+    })) as any;
     session = sessionResponse;
   } catch (error) {
     console.error('Session verification failed:', error);
