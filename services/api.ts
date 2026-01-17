@@ -1,5 +1,5 @@
 
-import { db } from './db';
+import { db } from './db.server';
 import { eq, ilike, asc, desc, and, or } from 'drizzle-orm';
 import { 
   systemConfig, menuDishes, orders, menuCategories, partners, 
