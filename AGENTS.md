@@ -6,6 +6,10 @@ This file provides guidance to Qoder (qoder.com) when working with code in this 
 
 这是一个名为"江西云厨"的现代化酒店管理生态系统，采用全栈架构设计，包含客房点餐、订单管理、财务管理等核心功能。该系统专门针对现代化酒店运营需求设计，集成了客房实时点餐（QR Ordering）、订单调度矩阵（KDS）、多维财务清算、合伙人联营逻辑以及基于物理层 RLS 安全审计的功能。
 
+## 🏨 项目概述
+
+这是一个名为"江西云厨"的现代化酒店管理生态系统，采用全栈架构设计，包含客房点餐、订单管理、财务管理等核心功能。该系统专门针对现代化酒店运营需求设计，集成了客房实时点餐（QR Ordering）、订单调度矩阵（KDS）、多维财务清算、合伙人联营逻辑以及基于物理层 RLS 安全审计的功能。
+
 ## 🛠 核心技术栈
 
 - **前端框架**: React 19 + TypeScript + Vite
@@ -19,6 +23,55 @@ This file provides guidance to Qoder (qoder.com) when working with code in this 
 - **状态管理**: React hooks + Supabase Realtime
 - **构建工具**: Vite with custom chunk splitting for optimized loading
 - **模块系统**: ESM (ECMAScript Modules) with explicit .js extensions
+
+## 🏗 核心架构原则
+
+### 前后端严格分离
+- **🚫 禁止**: 前端组件直接导入数据库驱动或连接
+- **✅ 允许**: 前端只能通过 `services/api.ts` API网关与后端通信
+- **检查工具**: 使用 `/tools` 目录下的架构验证工具定期检查违规导入
+
+### 数据流向
+```
+前端组件 → API网关(services/api.ts) → 后端API路由(api/*) → Drizzle ORM → PostgreSQL
+     ↑                                                              ↓
+     └─────────────── Supabase Realtime ←───────────────────────────┘
+```
+
+### 双重用户系统
+- `user` 表：Better Auth 认证系统使用（标准字段命名）
+- `users` 表：业务逻辑使用（应用特定字段）
+- 两表通过邮箱关联，实现认证与业务逻辑解耦
+
+## 📁 项目核心目录结构
+
+```
+根目录/
+├── components/          # React业务组件 (30+个)
+├── services/           # 核心服务层
+│   ├── api.ts         # 🚨 前端唯一数据网关
+│   ├── auth.ts        # 认证逻辑（服务端）
+│   ├── auth-client.ts # 客户端认证
+│   ├── db.server.ts   # 🚨 服务端数据库连接（Drizzle ORM）
+│   ├── notification.ts # 通知服务
+│   ├── printService.ts # 打印服务
+│   └── s3Service.ts   # 文件存储服务
+├── api/               # 🚨 后端API路由（Vercel Serverless）
+│   ├── index.ts      # 主API网关
+│   ├── auth/[...betterAuth].ts # Better Auth路由
+│   └── health.ts     # 健康检查
+├── drizzle/          # 数据库Schema定义
+│   └── schema.ts     # 🚨 数据库表结构（所有表定义在此）
+├── scripts/          # 数据库维护脚本
+├── tools/            # 架构验证工具
+├── src/              # 前端源码
+│   ├── App.tsx       # 主应用入口
+│   ├── GuestEntry.tsx # 客户端点餐入口
+│   ├── constants.ts  # 初始数据常量
+│   ├── types.ts      # TypeScript类型定义
+│   └── translations.ts # 国际化翻译
+└── public/           # 静态资源
+```
 
 ## 📁 项目架构
 
@@ -48,91 +101,204 @@ This file provides guidance to Qoder (qoder.com) when working with code in this 
 └── index.html       # HTML模板
 ```
 
-## 🚀 开发命令
+## 🚀 核心开发命令
 
 ```bash
-# 启动开发服务器
-npm run dev
+# 🏃‍♂️ 日常开发
+npm run dev              # 启动开发服务器 (Vite)
+npm run build            # 构建生产版本
+npm run preview          # 预览构建结果
 
-# 构建生产版本
-npm run build
+# 🗄️ 数据库操作
+npm run db:generate      # 生成Drizzle迁移文件
+npm run db:migrate       # 运行数据库迁移
+npm run db:push          # 直接推送到数据库 (开发用)
+npm run db:init          # 初始化数据库表结构
+npm run schema:check     # 检查数据库schema一致性
+npm run schema:update    # 更新数据库schema
 
-# 预览构建结果
-npm run preview
+# 🧪 调试工具
+npx tsx scripts/test-connection.ts     # 测试数据库连接
+npx tsx scripts/debug-env.ts          # 调试环境变量
+npx tsx scripts/check-schema.ts       # 检查表结构
+npx tsx scripts/init-db.ts            # 手动初始化数据库
 
-# 数据库迁移 (开发)
-npm run db:generate
-npm run db:migrate
-
-# 数据库推送 (直接推送到数据库)
-npm run db:push
-
-# 初始化数据库表结构
-npm run db:init
-
-# 初始化用户数据
-npm run users:init
-
-# 初始化分类数据
-npm run categories:init
-
-# Schema 检查和更新
-npm run schema:check
-npm run schema:update
-
-# 调试和诊断命令
-npx tsx scripts/test-connection.ts        # 测试数据库连接
-npx tsx scripts/test-db-connection.ts     # 详细数据库连接测试
-npx tsx scripts/debug-env.ts             # 调试环境变量配置
-npx tsx scripts/analyze-db-url.ts        # 分析数据库URL配置
-npx tsx scripts/check-schema.ts          # 检查数据库schema一致性
-npx tsx scripts/check-supabase-schema.ts # 检查Supabase表结构
-npx tsx scripts/update-schema.ts         # 更新数据库schema
-npx tsx scripts/init-db.ts               # 手动运行数据库初始化
-npx tsx scripts/init-users.ts            # 手动运行用户初始化
-npx tsx scripts/init-categories.ts       # 手动运行分类初始化
+# 🏗️ 架构验证
+node tools/quick-vite-check.js        # 快速检查非法导入
+node tools/smart-db-checker.js        # 智能架构分析
+node tools/vite-db-fix-helper.js      # 综合修复助手
 ```
 
-## 🗄️ 数据库配置
+## 🔧 开发工作流
 
-### 连接到 Supabase
+### 1. 添加新API端点
+```
+api/新功能.ts → services/api.ts → 前端组件调用
+```
 
-1. **获取 Supabase 凭据**
-   - 访问 [Supabase Dashboard](https://app.supabase.com/projects) 获取您的项目凭据
-   - 项目 URL (VITE_SUPABASE_URL) - 如 `https://your-project-id.supabase.co`
-   - 匿名密钥 (VITE_SUPABASE_ANON_KEY) - 在 Project Settings > API 中找到
-   - 数据库密码 (DATABASE_URL) - 在 Project Settings > Database 中找到
+### 2. 数据库变更流程
+```
+修改 drizzle/schema.ts → npm run db:generate → npm run db:migrate → 更新 services/api.ts
+```
 
-2. **Vercel 部署配置**
-   - 在 Vercel 项目中关联 Supabase，会自动注入 `SUPABASE_URL` 和 `SUPABASE_ANON_KEY`
-   - 仅需手动添加 `BETTER_AUTH_SECRET`、`BETTER_AUTH_URL` 和 `VITE_BETTER_AUTH_URL`
+### 3. 组件开发规范
+- 必须使用 TypeScript 严格模式
+- 通过 props 传递数据，避免全局状态
+- 使用 `t('key')` 进行国际化
+- 遵循现有的错误边界模式
 
-3. **本地开发环境配置**
-   - 在 `.env` 文件中设置与线上相同的配置
-   - 确保获取真实的 ANON key 替换占位符
+### 4. 权限控制检查清单
+- [ ] 在 `services/api.ts` 中验证用户权限
+- [ ] 检查 `partner_id` 过滤条件
+- [ ] 根管理员特殊权限处理
+- [ ] 模块级 CRUD 权限验证
 
-4. **初始化数据库表**
-   - 在 Supabase SQL 编辑器中执行 `database_setup.sql` 内容
-   - 创建所有必需的表、RLS 策略和初始数据
-   - 激活实时复制频道: ALTER PUBLICATION supabase_realtime ADD TABLE public.orders;
+## 🔐 安全架构
 
-5. **本地开发注意事项**
-   - 认证与数据库完全解耦：Better Auth 负责认证，Supabase 仅提供数据库服务
-   - 本地开发时需要手动配置所有环境变量
-   - 生产环境 (Vercel) 会自动注入 Supabase 相关变量
+### 认证系统 (Better-Auth)
+- **双因素认证**: 支持 Passkeys 生物识别 + 传统密码
+- **根管理员保护**: `athendrakomin@proton.me` 特殊权限账户
+- **会话管理**: 基于 JWT 的安全会话机制
+- **权限验证**: 服务层进行细粒度权限检查
 
-## 🏗 核心架构特点
+### 数据安全
+- **RLS策略**: 行级安全控制，合伙人数据物理隔离
+- **SQL注入防护**: 全面使用参数化查询和ORM
+- **XSS防护**: 输入验证和输出转义
+- **敏感操作保护**: 删除操作前检查根管理员权限
 
-### 1. 数据流架构
-- 使用 `services/api.ts` 作为统一数据网关
-- 所有组件通过 `api.[模块].[方法]` 访问数据
-- 支持演示模式和生产模式切换
-- 演示模式下使用本地常量数据，生产模式连接Drizzle ORM (直连PostgreSQL)
-- 认证与数据库完全解耦：Better Auth负责认证，Drizzle ORM负责数据库操作
-- 实时功能仍使用Supabase (仅用于监听)，数据库操作已完全迁移到Drizzle
-- 用户数据双重架构：`user` 表用于认证系统，`users` 表用于业务逻辑
-- API网关支持完整的CRUD操作，包含错误处理和日志记录
-- 数据库连接通过 `services/db.server.ts` 配置，支持多种PostgreSQL连接字符串格式
+## 🌐 国际化支持
+
+### 三语系统
+- 中文 (zh) - 默认语言
+- 英文 (en) - 国际化支持  
+- 他加禄语 (fil) - 菲律宾本地化
+
+### 翻译管理
+- 集中在 `src/translations.ts` 管理
+- 使用 `t('key', {params})` 调用
+- 支持参数化翻译 `{paramName}`
+- 实时语言切换功能
+
+## 🚨 关键开发约束
+
+### ESM 模块规范
+```typescript
+// ✅ 正确 - 必须包含 .js 后缀
+import { db } from '../services/db.server.js';
+import { user } from '../drizzle/schema.js';
+
+// ❌ 错误 - 缺少 .js 后缀会导致部署失败
+import { db } from '../services/db.server';
+import { user } from '../drizzle/schema';
+```
+
+### 架构红线 (绝对禁止)
+1. 前端组件中直接导入数据库连接
+2. 在浏览器环境中使用 `pg`、`mysql` 等数据库驱动
+3. 绕过 `services/api.ts` 直接调用后端
+4. 在前端暴露数据库连接字符串
+5. 忽视合伙人数据隔离 (`partner_id` 过滤)
+
+### 性能优化要点
+- 代码分割：Vite 自动 chunk 分割
+- 连接池：生产环境使用 Supabase 6543 端口
+- 实时订阅：智能管理 WebSocket 连接
+- 图片优化：使用 OptimizedImage 组件
+- 数据缓存：合理使用 useMemo/useCallback
+
+## ☁️ 部署配置
+
+### Vercel 环境变量 (必需)
+```
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+DATABASE_URL=postgresql://... (Drizzle ORM连接)
+BETTER_AUTH_SECRET=随机生成的安全密钥
+BETTER_AUTH_URL=https://your-domain.vercel.app
+VITE_BETTER_AUTH_URL=https://your-domain.vercel.app
+```
+
+### 本地开发环境 (.env)
+```
+# Supabase 配置
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-real-anon-key
+
+# 数据库连接 (用于Drizzle ORM)
+DATABASE_URL=postgresql://postgres:password@host:port/database
+
+# Better Auth 配置
+BETTER_AUTH_SECRET=your-secret-key
+BETTER_AUTH_URL=http://localhost:5173
+VITE_BETTER_AUTH_URL=http://localhost:5173
+```
+
+### 部署检查清单
+- [ ] 环境变量配置完整
+- [ ] 数据库表结构已初始化
+- [ ] 根管理员账户已创建
+- [ ] 架构验证工具检查通过
+- [ ] ESM 模块后缀规范遵守
+
+## 🛠 故障排除
+
+### 常见错误及解决方案
+
+**1. Vercel部署失败 - ESM导入错误**
+```
+解决：确保所有相对导入都包含 .js 后缀
+检查：运行 node tools/quick-vite-check.js
+```
+
+**2. 数据库连接失败**
+```
+检查：DATABASE_URL 是否正确配置
+验证：运行 npx tsx scripts/test-connection.ts
+确认：Supabase连接池端口是否为6543
+```
+
+**3. 权限验证失败**
+```
+检查：用户 session 是否有效
+验证：partner_id 过滤条件是否正确
+确认：根管理员权限是否被正确识别
+```
+
+**4. 实时功能不工作**
+```
+检查：Supabase Realtime 频道是否激活
+验证：WebSocket连接状态
+确认：RLS策略是否正确配置
+```
+
+### 调试工具集
+```bash
+# 架构检查
+node tools/quick-vite-check.js      # 快速非法导入检查
+node tools/smart-db-checker.js      # 智能架构分析
+node tools/vite-db-fix-helper.js    # 综合修复建议
+
+# 数据库诊断
+npx tsx scripts/test-connection.ts  # 连接测试
+npx tsx scripts/check-schema.ts     # Schema一致性检查
+npx tsx scripts/debug-env.ts        # 环境变量调试
+```
+
+## 📊 性能监控
+
+### 关键指标
+- 页面加载时间 < 2秒
+- API响应时间 < 500ms  
+- 数据库查询时间 < 100ms
+- WebSocket连接成功率 > 99%
+
+### 优化策略
+- 代码分割和懒加载
+- 数据库连接池优化 (最大5个连接)
+- 图片CDN和压缩
+- 实时订阅智能管理
+- 组件级性能优化
 
 ### 2. 权限体系
 - 四种用户角色: ADMIN, PARTNER, STAFF, MAINTAINER

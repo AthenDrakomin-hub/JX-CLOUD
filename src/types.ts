@@ -65,8 +65,8 @@ export interface Order {
   status: OrderStatus;
   paymentMethod: string;
   paymentProof?: string; 
-  cash_received?: number;
-  cash_change?: number;
+  cashReceived?: number;
+  cashChange?: number;
   createdAt: string;
   updatedAt: string;
   taxAmount?: number;
@@ -84,15 +84,15 @@ export enum PaymentMethod {
 export interface Dish {
   id: string;
   name: string;
-  name_en: string;
+  nameEn: string;
   description?: string;
   tags?: string[];
   price: number;
   category: string; 
   stock: number;
-  image_url: string;
-  is_available: boolean;
-  is_recommended?: boolean;
+  imageUrl: string;
+  isAvailable: boolean;
+  isRecommended?: boolean;
   partnerId?: string;
 }
 
@@ -121,12 +121,12 @@ export interface Expense {
 export interface Category {
   id: string; 
   name: string;
-  name_en: string;
+  nameEn: string;
   code: string;
   level: number;
-  display_order: number;
-  is_active: boolean;
-  parent_id?: string | null;
+  displayOrder: number;
+  isActive: boolean;
+  parentId?: string | null;
   // Added missing property partnerId
   partnerId?: string;
 }
@@ -138,24 +138,24 @@ export interface Ingredient {
   stock: number;
   minStock: number;
   category?: string;
-  last_restocked?: string;
+  lastRestocked?: string;
 }
 
 export interface PaymentMethodConfig {
   id: string;
   name: string;
-  name_en: string;
+  nameEn: string;
   currency: string;
-  currency_symbol: string;
-  exchange_rate: number;
+  currencySymbol: string;
+  exchangeRate: number;
   isActive: boolean;
-  payment_type: string;
-  sort_order: number;
+  paymentType: string;
+  sortOrder: number;
   description: string;
-  description_en: string;
+  descriptionEn: string;
   iconType: string;
-  wallet_address?: string;
-  qr_url?: string;
+  walletAddress?: string;
+  qrUrl?: string;
 }
 
 export interface MaterialImage {

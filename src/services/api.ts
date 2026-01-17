@@ -214,6 +214,19 @@ export const api = {
         method: 'PUT',
         body: JSON.stringify(data)
       });
+    },
+
+    updateStatus: async (id: string, status: OrderStatus): Promise<Order> => {
+      return await apiRequest<Order>(`/orders/${id}/status`, {
+        method: 'PUT',
+        body: JSON.stringify({ status })
+      });
+    },
+
+    delete: async (id: string): Promise<void> => {
+      await apiRequest<void>(`/orders/${id}`, {
+        method: 'DELETE'
+      });
     }
   },
 
@@ -344,6 +357,19 @@ export const api = {
         method: 'PUT',
         body: JSON.stringify(data)
       });
+    },
+
+    upsert: async (data: Omit<User, 'id' | 'createdAt' | 'updatedAt'>): Promise<User> => {
+      return await apiRequest<User>('/users/upsert', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      });
+    },
+
+    delete: async (id: string): Promise<void> => {
+      await apiRequest<void>(`/users/${id}`, {
+        method: 'DELETE'
+      });
     }
   },
 
@@ -383,6 +409,12 @@ export const api = {
       return await apiRequest<Expense>('/expenses', {
         method: 'POST',
         body: JSON.stringify(data)
+      });
+    },
+
+    delete: async (id: string): Promise<void> => {
+      await apiRequest<void>(`/expenses/${id}`, {
+        method: 'DELETE'
       });
     }
   }

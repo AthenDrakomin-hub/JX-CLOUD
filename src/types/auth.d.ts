@@ -7,6 +7,9 @@ declare global {
     interface User {
       role: string;
       partnerId: string;
+      modulePermissions?: any;
+      authType?: string;
+      emailVerified?: boolean;
     }
     
     interface Session {
@@ -21,6 +24,8 @@ declare global {
         // 扩展字段 - 江西云厨应用的自定义字段
         role: string;
         partnerId: string;
+        modulePermissions?: any;
+        authType?: string;
       };
     }
   }

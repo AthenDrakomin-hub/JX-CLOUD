@@ -161,6 +161,18 @@ export const auth = betterAuth({
         required: false,
         fieldName: "partner_id", // 映射到数据库字段 partner_id
       },
+      authType: {
+        type: "string",
+        required: false,
+        defaultValue: "credentials",
+        fieldName: "auth_type", // 认证类型字段
+      },
+      emailVerified: {
+        type: "boolean",
+        required: false,
+        defaultValue: false,
+        fieldName: "email_verified", // 邮箱验证状态
+      },
       modulePermissions: {
         type: "string",
         required: false,

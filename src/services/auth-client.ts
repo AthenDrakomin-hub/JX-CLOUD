@@ -55,4 +55,15 @@ export const getEnhancedAuthClient = async () => {
   });
 };
 
+// 扩展Better Auth客户端以包含自定义字段
 export const { useSession, signIn, signOut, signUp } = authClient;
+
+// 类型扩展以包含扩展字段
+declare module "better-auth/react" {
+  interface User {
+    role?: string;
+    partnerId?: string;
+    emailVerified?: boolean;
+    authType?: string;
+  }
+}
