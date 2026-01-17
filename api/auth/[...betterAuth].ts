@@ -22,81 +22,80 @@ async function initializeRootAdmin() {
   }
   
   try {
-    const rootEmail = 'athendrakomin@proton.me';
-    const rootUsername = 'AthenDrakomin';
-    const rootName = '系统总监';
+    const adminEmails = ['2811284084qq.com', 'athendrakomin@proton.me'];
     
-    console.log('🔍 Checking for root admin account...');
-    
-    // 检查根管理员是否已存在于认证表中
-    const existingUser = await db.select().from(authUser).where(eq(authUser.email, rootEmail));
-    
-    let userId = '';
-    
-    if (existingUser.length > 0) {
-      // 更新现有用户为管理员
-      console.log('📝 Updating existing root admin account...');
-      await db.update(authUser).set({
-        role: 'admin',
-        name: rootName,
-        updatedAt: new Date()
-      }).where(eq(authUser.email, rootEmail));
+    for (const email of adminEmails) {
+      const username = email.split('@')[0];
+      const name = '系统总监';
       
-      userId = existingUser[0].id;
-      console.log('✅ Root admin account updated successfully');
-    } else {
-      // 创建新根管理员账户
-      console.log('🔐 Creating new root admin account...');
-      const newUser = {
-        id: `user_${Date.now()}_${nanoid(8)}`,
-        name: rootName,
-        email: rootEmail,
-        emailVerified: true,
-        image: null,
-        role: 'admin',
-        partnerId: null,
-        modulePermissions: null,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
+      console.log(`🔍 Checking for root admin account: ${email}`);
       
-      const insertedUsers = await db.insert(authUser).values(newUser).returning();
-      userId = insertedUsers[0].id;
-      console.log('✅ Root admin account created successfully');
-    }
-    
-    // 检查根管理员是否已存在于业务表中
-    const existingBusinessUser = await db.select().from(businessUsers).where(eq(businessUsers.email, rootEmail));
-    
-    if (existingBusinessUser.length > 0) {
-      // 更新现有业务用户为管理员
-      await db.update(businessUsers).set({
-        role: 'admin',
-        name: rootName,
-        username: rootUsername,
-        updatedAt: new Date()
-      }).where(eq(businessUsers.email, rootEmail));
-      console.log('✅ Root admin business account updated successfully');
-    } else {
-      // 创建新业务用户记录
-      const newBusinessUser = {
-        id: `business_user_${Date.now()}_${nanoid(8)}`,
-        username: rootUsername,
-        email: rootEmail,
-        name: rootName,
-        role: 'admin',
-        partnerId: null,
-        modulePermissions: null,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
+      // 检查管理员是否已存在于认证表中
+      const existingUser = await db.select().from(authUser).where(eq(authUser.email, email));
       
-      await db.insert(businessUsers).values(newBusinessUser);
-      console.log('✅ Root admin business account created successfully');
+      if (existingUser.length > 0) {
+        // 更新现有用户为管理员
+        console.log(`📝 Updating existing admin account: ${email}`);
+        await db.update(authUser).set({
+          role: 'admin',
+          name: name,
+          updatedAt: new Date()
+        }).where(eq(authUser.email, email));
+        
+        console.log(`✅ Admin account updated successfully: ${email}`);
+      } else {
+        // 创建新管理员账户
+        console.log(`🔐 Creating new admin account: ${email}`);
+        const newUser = {
+          id: `user_${Date.now()}_${nanoid(8)}`,
+          name: name,
+          email: email,
+          emailVerified: true,
+          image: null,
+          role: 'admin',
+          partnerId: null,
+          modulePermissions: null,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+        
+        await db.insert(authUser).values(newUser);
+        console.log(`✅ Admin account created successfully: ${email}`);
+      }
+      
+      // 检查管理员是否已存在于业务表中
+      const existingBusinessUser = await db.select().from(businessUsers).where(eq(businessUsers.email, email));
+      
+      if (existingBusinessUser.length > 0) {
+        // 更新现有业务用户为管理员
+        await db.update(businessUsers).set({
+          role: 'admin',
+          name: name,
+          username: username,
+          updatedAt: new Date()
+        }).where(eq(businessUsers.email, email));
+        console.log(`✅ Admin business account updated successfully: ${email}`);
+      } else {
+        // 创建新业务用户记录
+        const newBusinessUser = {
+          id: `business_user_${Date.now()}_${nanoid(8)}`,
+          username: username,
+          email: email,
+          name: name,
+          role: 'admin',
+          partnerId: null,
+          modulePermissions: null,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+        
+        await db.insert(businessUsers).values(newBusinessUser);
+        console.log(`✅ Admin business account created successfully: ${email}`);
+      }
     }
     
     rootAdminInitialized = true;
-    console.log('🎉 Root admin initialization completed!');
+    console.log('🎉 Root admin initialization completed for all admin accounts!');
   } catch (error) {
     console.error('❌ Error initializing root admin:', error);
   }

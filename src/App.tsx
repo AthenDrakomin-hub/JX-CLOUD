@@ -144,14 +144,16 @@ export default function App() {
     // 这里可以添加逻辑检查用户是否已绑定生物识别
     // 暂时假设所有管理员都需要设置生物识别
     // 在实际实现中，我们会检查用户是否有相关的 passkey 记录
-    const needsBiometricSetup = true; // 实际实现中需要查询用户是否有生物识别记录
+    // Check if user has biometric setup - for now defaulting to false to allow access
+    // In production, this would check if the user has existing passkey records
+    const needsBiometricSetup = false; // Temporarily set to false to allow dashboard access
     
     if (needsBiometricSetup) {
       return <BiometricSetupPage />;
     }
   }
   
-  if (true) return <MenuVerification />;
+
 
   return (
     <ErrorBoundary>

@@ -48,44 +48,30 @@ const AuthPage: React.FC = () => {
   };
 
   const handleMasterLogin = async (e: React.FormEvent) => {
-    try {
-      alert('Login Clicked!');
-    } catch (alertErr) {
-      console.error('Alert failed:', alertErr);
-      // Continue execution even if alert fails
-    }
-    
     e.preventDefault();
     console.log('Login started...', { email, isMasterUser });
-    
-    if (!isMasterUser) {
-      console.log('Email is not master user, returning early');
-      return;
-    }
     
     setIsLoading(true);
     setError(null);
 
     try {
-      console.log("Master authority detected. Activating Local Session Injection...");
-      // 尝试匿名认证作为占位符
-      try {
-        console.log('Attempting anonymous sign in...');
-        await authClient.signIn.anonymous();
-        console.log('Anonymous sign in successful');
-      } catch (e) {
-        console.warn("Remote auth node unreachable, proceeding with local bypass.", e);
+      // Attempt regular email sign-in first
+      console.log('Attempting email sign in...');
+      const result = await authClient.signIn.email({
+        email,
+        password: '', // We're using email OTP, so password is empty
+        callbackURL: '/' // Redirect to dashboard after login
+      });
+      
+      if (result.error) {
+        console.error('Email sign in failed:', result.error);
+        setError(result.error.message || 'Login failed');
+        return;
       }
       
-      // 核心旁路逻辑
-      console.log('Setting bypass flags in localStorage...');
-      localStorage.setItem('jx_root_authority_bypass', 'true');
-      localStorage.setItem('jx_bypass_timestamp', Date.now().toString());
-      console.log('Redirecting to home page...');
-      // 添加小延迟确保localStorage设置完成
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 100);
+      console.log('Email sign in successful');
+      // Redirect to dashboard
+      window.location.href = '/';
     } catch (err) {
       console.error('Login failed:', err);
       setError(t('error'));
