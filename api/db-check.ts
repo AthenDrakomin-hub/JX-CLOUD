@@ -29,7 +29,7 @@ export default async function handler(req: Request) {
 
     // 2. 测试业务表读取正确性 (users 表)
     const countResult = await db.select({ count: sql`COUNT(*)` }).from(users);
-    const userCount = parseInt(countResult[0]?.count || '0');
+    const userCount = parseInt(String(countResult[0]?.count || '0'));
 
     const totalTime = Date.now() - start;
 
@@ -57,10 +57,9 @@ export default async function handler(req: Request) {
         } 
       }
     );
-  } catch (error: any) {
-    // 修复 TS2345 错误：处理 unknown 类型
-    const errorMessage = typeof error === 'object' && error !== null && 'message' in error ? 
-      (error as Error).message : String(error);
+  } catch (error) {
+    // 标准的、类型安全的错误处理
+    const errorMessage = error instanceof Error ? error.message : String(error);
     const errorCode = (error as any)?.code || 'UNKNOWN_ERROR';
     
     return new Response(

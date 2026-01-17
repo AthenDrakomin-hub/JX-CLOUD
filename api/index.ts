@@ -43,7 +43,7 @@ export default async function handler(req: Request) {
       
       return new Response(JSON.stringify({
         hotel: config[0]?.hotelName,
-        activeOrders: parseInt(orderCountResult[0]?.count || '0'),
+        activeOrders: parseInt(String(orderCountResult[0]?.count || '0')),
         timestamp: new Date().toISOString()
       }), { status: 200, headers: corsHeaders });
     }
@@ -59,10 +59,9 @@ export default async function handler(req: Request) {
       message: "API Node reached, but specific endpoint not defined." 
     }), { status: 404, headers: corsHeaders });
 
-  } catch (error: any) {
-    // 修复 TS2345 错误：处理 unknown 类型
-    const errorMessage = typeof error === 'object' && error !== null && 'message' in error ? 
-      (error as Error).message : String(error);
+  } catch (error) {
+    // 标准的、类型安全的错误处理
+    const errorMessage = error instanceof Error ? error.message : String(error);
     const errorCode = (error as any)?.code || 'UNKNOWN_GATEWAY_ERROR';
     
     return new Response(
