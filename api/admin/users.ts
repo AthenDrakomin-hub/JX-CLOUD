@@ -27,6 +27,7 @@ export default async function handler(req: Request) {
   let session: any = null;
   try {
     const sessionResponse = await auth.api.getSession({
+      headers: req.headers,
       request: req,
     });
     session = sessionResponse;
@@ -82,7 +83,7 @@ export default async function handler(req: Request) {
           role: role,
           partnerId: partnerId || session.user.partnerId, // 继承创建者的 partnerId
           emailVerified: true, // 管理员创建的用户默认已验证
-        })
+        } as any)  // 类型断言确保 role 字段被正确识别
         .returning();
 
       // 同时在业务 users 表中创建记录

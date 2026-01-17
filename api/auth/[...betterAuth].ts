@@ -52,7 +52,6 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: false, // 根据业务需求调整
-    sendEmailVerificationOnSignUp: false, // 不自动发送验证邮件，由管理员控制
   },
   advanced: {
     // 自定义登录页面或其他高级选项

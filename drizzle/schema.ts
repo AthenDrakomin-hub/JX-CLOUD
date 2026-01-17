@@ -151,3 +151,11 @@ export const expenses = pgTable('expenses', {
   date: timestamp('date').defaultNow(),
   createdAt: timestamp('created_at').defaultNow(),
 });
+
+// 类型导出
+export type User = typeof user.$inferSelect;
+export type NewUser = typeof user.$inferInsert;
+export type Session = typeof session.$inferSelect;
+export type NewSession = typeof session.$inferInsert;
+export type BusinessUser = typeof users.$inferSelect;
+export type NewBusinessUser = typeof users.$inferInsert;
