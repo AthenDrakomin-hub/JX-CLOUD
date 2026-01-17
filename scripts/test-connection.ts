@@ -1,5 +1,5 @@
-import { db } from '../services/db.server';
-import { systemConfig, users } from '../drizzle/schema';
+import { db } from '../services/db.server.js';
+import { systemConfig, users } from '../drizzle/schema.js';
 import { eq, sql } from 'drizzle-orm';
 import * as dotenv from 'dotenv';
 dotenv.config();

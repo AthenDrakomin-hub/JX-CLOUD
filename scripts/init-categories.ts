@@ -1,5 +1,5 @@
-import { db } from '../services/db.server';
-import { menuCategories } from '../drizzle/schema';
+import { db } from '../services/db.server.js';
+import { menuCategories } from '../drizzle/schema.js';
 import { sql } from 'drizzle-orm';
 import * as dotenv from 'dotenv';
 dotenv.config();

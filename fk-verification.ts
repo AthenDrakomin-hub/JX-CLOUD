@@ -1,5 +1,5 @@
-import { db } from './services/db.server';
-import { menuCategories, menuDishes } from './drizzle/schema';
+import { db } from './services/db.server.js';
+import { menuCategories, menuDishes } from './drizzle/schema.js';
 import { sql } from 'drizzle-orm';
 import { and, eq } from 'drizzle-orm';
 

@@ -1,4 +1,4 @@
-import { menuCategories } from '../drizzle/schema';
+import { menuCategories } from '../drizzle/schema.js';
 
 console.log('🔍 验证数据库 schema 中的 menu_categories 表结构...');
 

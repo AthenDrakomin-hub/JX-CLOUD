@@ -1,5 +1,5 @@
-import { db } from '../../src/services/db.server';
-import { user, users as businessUsers } from '../../drizzle/schema';
+import { db } from '../../src/services/db.server.js';
+import { user, users as businessUsers } from '../../drizzle/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { auth } from '../auth/[...betterAuth]';
 

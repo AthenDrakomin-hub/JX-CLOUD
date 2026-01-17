@@ -1,10 +1,10 @@
 
-import { db } from './db.server';
+import { db } from './db.server.js';
 import { eq, ilike, asc, desc, and, or } from 'drizzle-orm';
 import { 
   systemConfig, menuDishes, orders, menuCategories, partners, 
   users, paymentMethods, ingredients, expenses, rooms 
-} from '../../drizzle/schema';
+} from '../../drizzle/schema.js';
 
 // 演示模式仍然保留，但在生产环境中优先使用drizzle
 const isDemoMode = !process.env.POSTGRES_URL;

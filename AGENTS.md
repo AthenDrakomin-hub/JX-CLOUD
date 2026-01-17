@@ -38,7 +38,7 @@ This file provides guidance to Qoder (qoder.com) when working with code in this 
 ├── tools/              # 项目架构验证工具
 ├── types.ts          # TypeScript类型定义
 ├── translations.ts   # 国际化翻译
-├── schema.ts         # 数据库表结构定义
+├── drizzle/schema.ts # 数据库表结构定义
 ├── src/              # Source directory
 │   ├── App.tsx      # 主应用入口
 │   ├── GuestEntry.tsx # 客户端点餐入口
@@ -76,7 +76,7 @@ npm run users:init
 npm run categories:init
 
 # 生成新的迁移文件
-npx drizzle-kit generate --out ./drizzle --schema ./schema.ts
+npx drizzle-kit generate --out ./drizzle --schema ./drizzle/schema.ts
 
 # 运行迁移
 npx drizzle-kit migrate --config=drizzle.config.ts
@@ -264,7 +264,7 @@ npx tsx scripts/init-categories.ts       # 手动运行分类初始化
 
 ### 修改数据库结构
 1. 更新 `database_setup.sql` 脚本
-2. 在 `schema.ts` 中同步类型定义
+2. 在 `drizzle/schema.ts` 中同步类型定义
 3. 更新 `services/api.ts` 中的相关方法
 4. 修改对应的组件UI
 5. 生成并运行数据库迁移
@@ -382,7 +382,7 @@ All UI elements are now fully translated between Chinese, English, and Filipino:
 
 ### 常见开发工作流
 - **添加新功能**: 在 `components/` 创建组件 → 在 `services/api.ts` 添加API方法 → 在 `types.ts` 定义类型 → 更新 `App.tsx` 路由
-- **修改数据库结构**: 更新 `schema.ts` → 运行 `npm run db:generate` → 运行 `npm run db:migrate` → 更新相关API方法
+- **修改数据库结构**: 更新 `drizzle/schema.ts` → 运行 `npm run db:generate` → 运行 `npm run db:migrate` → 更新相关API方法
 - **修复Bug**: 查找相关组件和服务 → 复现问题 → 编写修复代码 → 测试验证
 - **更新依赖**: 检查 `package.json` → 运行 `npm install package-name` → 测试功能完整性
 
@@ -430,3 +430,18 @@ node tools/quick-vite-check.js
 # 详细分析报告
 node tools/smart-db-checker.js
 ```
+
+## 📦 重要常量和数据结构
+
+### 初始数据
+- `INITIAL_DISHES`: 初始菜品数据，包含扒饭系列、中式精品、高端洋酒、海鲜水产及软饮
+- `ROOM_NUMBERS`: 8201-8232, 8301-8332, VIP-666, VIP-888, VIP-000 房间号数组
+- `INITIAL_CATEGORIES`: 初始分类数据，包含主食、中式、海鲜、洋酒、饮料等类别
+- `INITIAL_USERS`: 初始用户数据，包含根管理员账户
+- `INITIAL_PAYMENT_METHODS`: 支持现金、GCash、PayPal、支付宝、微信支付、USDT等多种支付方式
+
+### 数据模型
+- `OrderStatus`: PENDING, PREPARING, DELIVERING, COMPLETED, CANCELLED
+- `UserRole`: ADMIN, STAFF, PARTNER, MAINTAINER
+- `RoomStatus`: READY, ORDERING
+- `PaymentMethod`: CASH_PHP, GCASH, PAYPAL, ALIPAY, WECHAT_PAY, USDT_TRC20
