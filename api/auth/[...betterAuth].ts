@@ -151,7 +151,7 @@ const auth = betterAuth({
     createUser: async (data: any) => {
       try {
         // 当认证用户被创建时，同步创建业务用户数据
-        await db.insert(businessUsers).values({
+        const userData = {
           id: data.data.id,
           username: data.data.email.split('@')[0], // 使用邮箱前缀作为用户名
           email: data.data.email,
@@ -164,7 +164,9 @@ const auth = betterAuth({
           modulePermissions: data.data.modulePermissions || null,
           createdAt: new Date(),
           updatedAt: new Date()
-        });
+        };
+        
+        await db.insert(businessUsers).values(userData);
       } catch (error) {
         console.error('Failed to create business user record:', error);
         // 不抛出错误，避免影响认证流程
