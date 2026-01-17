@@ -16,6 +16,8 @@ export default async function handler(request: Request) {
   let dbResponse = null;
   let connectionStats = null;
   let errorMessage = null;
+  let configResult = null;
+  let orderCountResult = null;
 
   try {
     // 1. 使用共享db实例执行心跳检查（无状态）
@@ -28,10 +30,10 @@ export default async function handler(request: Request) {
     }
     
     // 2. 获取系统配置（使用ORM，自动管理连接）
-    const configResult = await db.select().from(systemConfig).where(eq(systemConfig.id, 'global')).limit(1);
+    configResult = await db.select().from(systemConfig).where(eq(systemConfig.id, 'global')).limit(1);
     
     // 3. 获取订单统计（使用ORM，自动管理连接）
-    const orderCountResult = await db.select({ count: sql`COUNT(*)` }).from(orders);
+    orderCountResult = await db.select({ count: sql`COUNT(*)` }).from(orders);
     
     // 4. 获取连接统计信息（使用单独的查询）
     try {
