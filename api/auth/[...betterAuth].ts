@@ -3,7 +3,7 @@ import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { db } from '../../src/services/db.server.js';
 import { user as authUser, session as authSession, users as businessUsers } from '../../drizzle/schema.js';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 
 // Track if initialization has already run to prevent multiple executions
@@ -44,7 +44,8 @@ async function initializeRootAdmin() {
       } else {
         // 创建新管理员账户
         console.log(`🔐 Creating new admin account: ${email}`);
-        const newUser = {
+        // 使用符合 authUser 表结构的数据
+        await db.insert(authUser).values({
           id: `user_${Date.now()}_${nanoid(8)}`,
           name: name,
           email: email,
@@ -55,9 +56,7 @@ async function initializeRootAdmin() {
           modulePermissions: null,
           createdAt: new Date(),
           updatedAt: new Date()
-        };
-        
-        await db.insert(authUser).values(newUser);
+        });
         console.log(`✅ Admin account created successfully: ${email}`);
       }
       
@@ -75,7 +74,7 @@ async function initializeRootAdmin() {
         console.log(`✅ Admin business account updated successfully: ${email}`);
       } else {
         // 创建新业务用户记录
-        const newBusinessUser = {
+        await db.insert(businessUsers).values({
           id: `business_user_${Date.now()}_${nanoid(8)}`,
           username: username,
           email: email,
@@ -85,9 +84,7 @@ async function initializeRootAdmin() {
           modulePermissions: null,
           createdAt: new Date(),
           updatedAt: new Date()
-        };
-        
-        await db.insert(businessUsers).values(newBusinessUser);
+        });
         console.log(`✅ Admin business account created successfully: ${email}`);
       }
     }
@@ -151,7 +148,7 @@ const auth = betterAuth({
     createUser: async (data: any) => {
       try {
         // 当认证用户被创建时，同步创建业务用户数据
-        const userData = {
+        await db.insert(businessUsers).values({
           id: data.data.id,
           username: data.data.email.split('@')[0], // 使用邮箱前缀作为用户名
           email: data.data.email,
@@ -164,9 +161,7 @@ const auth = betterAuth({
           modulePermissions: data.data.modulePermissions || null,
           createdAt: new Date(),
           updatedAt: new Date()
-        };
-        
-        await db.insert(businessUsers).values(userData);
+        });
       } catch (error) {
         console.error('Failed to create business user record:', error);
         // 不抛出错误，避免影响认证流程

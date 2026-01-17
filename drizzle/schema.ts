@@ -1,5 +1,4 @@
-
-import { pgTable, text, numeric, timestamp, integer, boolean, jsonb, pgEnum } from 'drizzle-orm/pg-core';
+import { pgTable, text, numeric, timestamp, integer, boolean, jsonb, pgEnum, cidr } from 'drizzle-orm/pg-core';
 
 // 角色枚举
 export const roleEnum = pgEnum('user_role', ['admin', 'staff', 'partner', 'user']);
@@ -36,16 +35,18 @@ export const session = pgTable('session', {
 export const users = pgTable('users', {
   id: text('id').primaryKey(),
   username: text('username').notNull().unique(), // 业务所需字段
-  email: text('email').notNull().unique(),
-  name: text('name').notNull(),
+  email: text('email'),
+  name: text('name'),
   role: text('role').default('staff'), 
   partnerId: text('partner_id'), 
-  authType: text('auth_type').default('credentials'), // 认证类型
-  emailVerified: boolean('email_verified').default(false), // 邮箱验证状态
+  createdAt: timestamp('created_at').defaultNow(),
+  allowedIps: text('allowed_ips').array().default([]), // IP 白名单
+  authType: text('auth_type').default('id-only'), // 认证类型
   isActive: boolean('is_active').default(true), // 账户激活状态
-  modulePermissions: jsonb('module_permissions'), // 存储模块级 CRUD 权限
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  displayName: text('display_name'), // 显示名称
+  lastLogin: timestamp('last_login'), // 最后登录时间
+  passwordHash: text('password_hash'), // 密码哈希
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 // 2. 酒店业务表
