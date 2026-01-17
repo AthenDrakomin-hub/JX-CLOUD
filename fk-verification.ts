@@ -1,4 +1,4 @@
-import { db } from './services/db';
+import { db } from './services/db.server';
 import { menuCategories, menuDishes } from './schema';
 import { sql } from 'drizzle-orm';
 import { and, eq } from 'drizzle-orm';

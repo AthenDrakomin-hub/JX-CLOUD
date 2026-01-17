@@ -3,7 +3,7 @@
  * This script provides functions to initialize the database with sample data
  */
 
-import { db } from '../services/db';
+import { db } from '../services/db.server';
 import { systemConfig, rooms, users } from '../schema';
 import { eq, sql } from 'drizzle-orm';
 import * as dotenv from 'dotenv';

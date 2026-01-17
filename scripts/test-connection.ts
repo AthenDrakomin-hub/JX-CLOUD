@@ -1,4 +1,4 @@
-import { db } from '../services/db';
+import { db } from '../services/db.server';
 import { systemConfig, users } from '../schema';
 import { eq, sql } from 'drizzle-orm';
 import * as dotenv from 'dotenv';
