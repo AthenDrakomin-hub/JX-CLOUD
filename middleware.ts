@@ -23,9 +23,10 @@ export default async function middleware(request: Request) {
   const isMasterBypass = cookieHeader.includes('jx_root_authority_bypass=true');
 
   // 极简权限检查
-  if (pathname.startsWith('/admin') || pathname.startsWith('/dashboard')) {
+  if (pathname.startsWith('/admin') || pathname.startsWith('/dashboard') || pathname.startsWith('/settings') || pathname.startsWith('/users')) {
     if (!hasSessionToken && !isMasterBypass) {
-      // 仅返回响应头，不涉及数据库查询
+      // 重定向到根路径，App.tsx会渲染AuthPage组件
+      return Response.redirect(new URL('/', request.url));
     }
   }
 

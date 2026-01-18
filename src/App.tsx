@@ -22,8 +22,7 @@ import UserBiometricSetup from './components/UserBiometricSetup';
 import { Wifi, WifiOff, Command, CheckCircle2 } from 'lucide-react';
 import i18n from './i18n';
 
-// 强制为所有访问者设置管理员身份
-if (typeof window !== 'undefined') localStorage.setItem('jx_dev_user', JSON.stringify({id:'1', email:'admin@test.com', name:'SuperAdmin', role:'admin'}));
+
 
 // Lazy load non-critical components for better initial load performance
 const SupplyChainManager = lazy(() => import('./components/SupplyChainManager'));
@@ -68,14 +67,14 @@ export default function App() {
     }
   }, [devUserObj]);
   
-  // 使用自定义的会话逻辑：优先使用开发用户，否则使用正式会话
-  // const { data: originalSession, isLoading: isAuthLoading } = useSession();
+  // 使用正式会话逻辑
+  const { data: originalSession, isLoading: isAuthLoading } = useSession();
   
-  // 优先使用开发用户，其次是正式会话
-  const effectiveSession = devUserObj 
+  // 优先使用开发用户（仅开发环境），其次是正式会话
+  const effectiveSession = devUserObj && process.env.NODE_ENV === 'development'
     ? { user: devUserObj }
-    : null; // originalSession;
-  const effectiveLoading = false; // devUserObj ? false : isAuthLoading;
+    : originalSession;
+  const effectiveLoading = devUserObj && process.env.NODE_ENV === 'development' ? false : isAuthLoading;
 
 
   const [currentTab, setCurrentTab] = useState('dashboard');

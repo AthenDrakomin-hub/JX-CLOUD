@@ -55,6 +55,14 @@ const getPooledUrl = (url: string) => {
     const parsed = new URL(url);
     if (parsed.hostname.includes('supabase.co')) {
         parsed.port = "6543"; // 使用连接池端口以提高并发性能
+        // 确保添加 SSL 模式参数以避免 Vercel 环境下的连接挂起
+        const searchParams = parsed.searchParams;
+        if (!searchParams.has('sslmode')) {
+          searchParams.set('sslmode', 'require');
+        }
+    } else if (!parsed.searchParams.has('sslmode')) {
+      // 为非 Supabase 的连接也确保 SSL 模式设置
+      parsed.searchParams.set('sslmode', 'require');
     }
     return parsed.toString();
   } catch (error) {

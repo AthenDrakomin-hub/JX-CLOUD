@@ -66,10 +66,10 @@ export default async function handler(request: Request) {
       id: userId,
       name: name,
       email: email,
-      emailVerified: true, // 强制验证
+      email_verified: true, // 强制验证 - 使用数据库列名
       image: null,
-      role: role || 'staff',
-      partnerId: partnerId || null,
+      role: role || 'user', // 默认为'user'符合Better Auth标准
+      partner_id: partnerId || null,
       modulePermissions: null,
       createdAt: new Date(),
       updatedAt: new Date()
@@ -82,11 +82,12 @@ export default async function handler(request: Request) {
       email: email,
       name: name,
       role: role || 'staff',
-      partnerId: partnerId || null,
+      partner_id: partnerId || null,
       modulePermissions: null,
-      authType: 'passkey',
-      emailVerified: true, // 强制验证
-      isActive: false, // 初始状态为未激活，等待指纹绑定
+      auth_type: 'passkey',
+      email_verified: true, // 强制验证
+      is_active: false, // 初始状态为未激活，等待指纹绑定
+      is_passkey_bound: false, // 初始状态为未绑定指纹
       createdAt: new Date(),
       updatedAt: new Date()
     });
@@ -105,7 +106,7 @@ export default async function handler(request: Request) {
     cleanupExpiredTokens();
 
     // 生成注册链接
-    const baseUrl = process.env.BASE_URL || 'http://localhost:3002';
+    const baseUrl = process.env.BETTER_AUTH_URL || process.env.VITE_BETTER_AUTH_URL || 'http://localhost:3002';
     const registrationLink = `${baseUrl}/auth/register-passkey?userId=${userId}&token=${registrationToken}`;
 
     return new Response(JSON.stringify({

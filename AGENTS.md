@@ -214,7 +214,15 @@ Verify: Is partner_id filter condition correct?
 Confirm: Is root admin permission recognized correctly?
 ```
 
-**4. Real-time functionality not working**
+**4. Timeout errors (504) and API hangs**
+```
+Check: Does DATABASE_URL include ?sslmode=require parameter?
+Verify: Are BETTER_AUTH_SECRET and SUPABASE_SERVICE_ROLE_KEY set in Vercel?
+Solution: Simplify heavy queries in /api/system/status, /api/health, /api/db-check
+Alternative: Return static JSON data instead of querying database
+```
+
+**5. Real-time functionality not working**
 ```
 Check: Is Supabase Realtime channel activated?
 Verify: WebSocket connection status
@@ -296,11 +304,14 @@ npx tsx scripts/debug-env.ts        # Environment variable debugging
 ## 🌐 Environment Variables & Deployment
 
 ### Critical Environment Variables
-- `DATABASE_URL`: Direct database connection for Drizzle ORM (required for production)
-- `BETTER_AUTH_SECRET`: Secret key for Better Auth session encryption
+- `DATABASE_URL`: Direct database connection for Drizzle ORM (required for production) - Ensure to add `?sslmode=require` for Vercel deployments
+- `BETTER_AUTH_SECRET`: Secret key for Better Auth session encryption (Required in Vercel environment)
 - `BETTER_AUTH_URL`: Production domain URL (e.g., `https://your-domain.vercel.app`)
 - `VITE_BETTER_AUTH_URL`: Frontend authentication URL
 - `SUPABASE_URL` and `SUPABASE_ANON_KEY`: Automatically injected by Vercel when connecting Supabase
+- `SUPABASE_SERVICE_ROLE_KEY`: Service role key for Supabase access (Required in Vercel environment)
+- `POSTGRES_URL`: Connection string for direct database access (Should include `?sslmode=require`)
+- `DIRECT_URL`: Direct connection string for database migrations (Should include `?sslmode=require`)
 
 ### Vercel Deployment Notes
 - Uses both Edge Runtime (for health checks) and Node.js Runtime (for database operations)
