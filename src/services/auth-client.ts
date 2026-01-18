@@ -29,7 +29,11 @@ export const signInWithPasskey = (options: { email?: string }) =>
 export const signUpWithPasskey = () => authClient.signUp.passkey();
 
 // 保留原有导出，兼容现有代码
-export const { useSession, signIn, signOut: originalSignOut, signUp } = authClient;
+// Better Auth客户端的正确导出方式
+export const useSession = () => authClient.useSession();
+export const signIn = authClient.signIn;
+export const signOut: any = authClient.signOut;
+export const signUp = authClient.signUp;
 
 // 🔒 安全退出函数，彻底清除所有认证状态
 export const safeSignOut = async () => {

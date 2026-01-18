@@ -32,9 +32,8 @@ const BiometricSetupPage: React.FC = () => {
       const enhancedClient = await getEnhancedAuthClient();
       
       // 注册生物识别
-      await enhancedClient.clientPasskey.register({
-        displayName: session?.user?.name || 'System Admin',
-        username: session?.user?.email || 'admin',
+      await enhancedClient.passkey.register({
+        email: session?.user?.email || 'admin',
       });
 
       setStatus('success');

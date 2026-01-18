@@ -5,9 +5,9 @@ import {
   Loader2, Cpu, Globe, CheckCircle2, AlertCircle, 
   Fingerprint, Zap, ShieldCheck, Activity
 } from 'lucide-react';
-import { authClient, signInWithPasskey } from '../services/auth-client';
-import LegalFooter from './LegalFooter';
-import { Language } from '../translations';
+import { authClient, signInWithPasskey } from '../services/auth-client.js';
+import LegalFooter from './LegalFooter.js';
+import { Language } from '../translations.js';
 
 const AuthPage: React.FC = () => {
   const { t, i18n } = useTranslation();

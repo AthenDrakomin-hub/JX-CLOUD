@@ -1,39 +1,40 @@
 import React, { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
-import Sidebar from './components/Sidebar';
-import Dashboard from './components/Dashboard'; // Keep this as it's the main dashboard
-import RoomGrid from './components/RoomGrid'; // Keep this as it's likely used frequently
-import OrderManagement from './components/OrderManagement'; // Keep this as it's core functionality
-import AuthPage from './components/AuthPage';
-import GuestEntry from './GuestEntry';  // This is correct since both are in src/
-import Toast, { ToastType } from './components/Toast';
-import { useSession, safeSignOut as signOut } from './services/auth-client';
-import { api } from './services/api';
-import { isDemoMode, createSupabaseClient } from './services/supabaseClient';
+import Sidebar from './components/Sidebar.js';
+import Dashboard from './components/Dashboard.js'; // Keep this as it's the main dashboard
+import RoomGrid from './components/RoomGrid.js'; // Keep this as it's likely used frequently
+import OrderManagement from './components/OrderManagement.js'; // Keep this as it's core functionality
+import AuthPage from './components/AuthPage.js';
+import GuestEntry from './GuestEntry.js';  // This is correct since both are in src/
+import Toast, { ToastType } from './components/Toast.js';
+import { useSession, safeSignOut as signOut } from './services/auth-client.js';
+import { api } from './services/api.js';
+import { isDemoMode, createSupabaseClient } from './services/supabaseClient.js';
 // 保持对supabase的引用，仅用于实时功能
 const supabase = createSupabaseClient();
-import { notificationService } from './services/notification';
-import { INITIAL_USERS } from './constants';
+import { notificationService } from './services/notification.js';
+import { INITIAL_USERS } from './constants.js';
 import { 
   Partner, Order, Dish, OrderStatus, SystemConfig, UserRole,
   Category, Ingredient, PaymentMethodConfig, HotelRoom, User, Expense 
-} from './types';
-import UserBiometricSetup from './components/UserBiometricSetup';
+} from './types.js';
+import UserBiometricSetup from './components/UserBiometricSetup.js';
+import BiometricSetupPage from './components/BiometricSetupPage.js';
 import { Wifi, WifiOff, Command, CheckCircle2 } from 'lucide-react';
-import i18n from './i18n';
+import i18n from './i18n/index.js';
 
 
 
 // Lazy load non-critical components for better initial load performance
-const SupplyChainManager = lazy(() => import('./components/SupplyChainManager'));
-const FinancialCenter = lazy(() => import('./components/FinancialCenter'));
-const ImageManagement = lazy(() => import('./components/ImageManagement'));
-const StaffManagement = lazy(() => import('./components/StaffManagement'));
-const SystemSettings = lazy(() => import('./components/SystemSettings'));
-const DatabaseManagement = lazy(() => import('./components/DatabaseManagement'));
-const CommandCenter = lazy(() => import('./components/CommandCenter'));
-const NotificationCenter = lazy(() => import('./components/NotificationCenter'));
-const DeliveryDashboard = lazy(() => import('./components/DeliveryDashboard'));
+const SupplyChainManager = lazy(() => import('./components/SupplyChainManager.js'));
+const FinancialCenter = lazy(() => import('./components/FinancialCenter.js'));
+const ImageManagement = lazy(() => import('./components/ImageManagement.js'));
+const StaffManagement = lazy(() => import('./components/StaffManagement.js'));
+const SystemSettings = lazy(() => import('./components/SystemSettings.js'));
+const DatabaseManagement = lazy(() => import('./components/DatabaseManagement.js'));
+const CommandCenter = lazy(() => import('./components/CommandCenter.js'));
+const NotificationCenter = lazy(() => import('./components/NotificationCenter.js'));
+const DeliveryDashboard = lazy(() => import('./components/DeliveryDashboard.js'));
 
 // Loading component for lazy-loaded components
 const LoadingComponent = ({ message = "Loading..." }) => (
@@ -44,14 +45,44 @@ const LoadingComponent = ({ message = "Loading..." }) => (
 );
 
 export default function App() {
+  // 🔧 改进的 URL hash 清理机制
+  const cleanUnwantedHash = useCallback(() => {
+    // 定义需要清理的 unwanted hash 值
+    const unwantedHashes = ['#welcome-shown', '#welcome', '#home'];
+    
+    if (typeof window !== 'undefined' && unwantedHashes.includes(window.location.hash)) {
+      console.log('🔧 Cleaning unwanted hash:', window.location.hash);
+      // 使用 replaceState 而不是直接修改 location，避免产生历史记录
+      const newUrl = window.location.pathname + window.location.search;
+      window.history.replaceState(null, '', newUrl);
+      return true; // 表示进行了清理
+    }
+    return false; // 表示无需清理
+  }, []);
   const { t, i18n } = useTranslation();
   
-
+  // 🔧 在应用启动时和路由变化时都清理 hash
+  const [hashCleaned, setHashCleaned] = useState(false);
+  
+  useEffect(() => {
+    const wasCleaned = cleanUnwantedHash();
+    if (wasCleaned) {
+      setHashCleaned(true);
+    }
+  }, [cleanUnwantedHash]);
   
 
   
-  // 使用正式会话逻辑
-  const { data: session, isLoading: isAuthLoading } = useSession();
+
+  
+  // 🔧 严格认证状态管理 - 修复竞态条件
+  const sessionResult = useSession();
+  const session = sessionResult?.data || sessionResult;
+  const isAuthLoading = sessionResult?.isLoading || false;
+  
+  // 🔧 严格化加载状态：在认证状态确定前绝不渲染主界面
+  const isAuthReady = !isAuthLoading && sessionResult !== undefined;
+  const isAuthenticated = session?.data?.user !== undefined && session?.data?.user !== null;
 
   // 监听会话过期，提前提醒用户
   useEffect(() => {
@@ -177,13 +208,23 @@ export default function App() {
     return <GuestEntry />;
   }
 
-  if (isAuthLoading) {
-    // 即使有 bypass 标志，也要等待认证状态加载完成
-    return <div className="h-screen bg-[#020617] flex flex-col items-center justify-center space-y-6"><div className="w-16 h-16 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" /><p className="text-[10px] font-black text-blue-500 uppercase tracking-widest">JX CLOUD SECURE LINK...</p></div>;
+  // 🔧 严格认证守卫：在认证状态完全确定前显示加载界面
+  if (!isAuthReady) {
+    return (
+      <div className="h-screen bg-[#020617] flex flex-col items-center justify-center space-y-6">
+        <div className="w-16 h-16 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
+        <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest">
+          JX CLOUD SECURE LINK...
+        </p>
+        <p className="text-[8px] text-slate-500 uppercase tracking-widest">
+          verifying authentication status
+        </p>
+      </div>
+    );
   }
 
-  // 明确检查认证状态，确保在生产环境中行为一致
-  if (!session?.data?.user) {
+  // 🔧 严格的认证检查逻辑
+  if (!isAuthenticated) {
     return <AuthPage />;
   }
 

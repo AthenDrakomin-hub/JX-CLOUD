@@ -66,3 +66,4 @@ access.log
 *.tmp
 *.temp
 Thumbs.db
+.vercel

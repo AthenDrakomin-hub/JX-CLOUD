@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Dish, Order, Category, PaymentMethodConfig } from './types';
+import { Dish, Order, Category, PaymentMethodConfig } from './types.js';
 import { useTranslation } from 'react-i18next';
-import { api } from './services/api';
-import GuestOrder from './components/GuestOrder';
+import { api } from './services/api.js';
+import GuestOrder from './components/GuestOrder.js';
 
 /**
  * 客户点餐入口页面

@@ -6,7 +6,7 @@ import {
   Users, Settings, LogOut, ChevronLeft, ChevronRight,
   Handshake, Box, Image as ImageIcon, PanelLeftClose, PanelLeft
 } from 'lucide-react';
-import { UserRole } from '../types';
+import { UserRole } from '../types.js';
 
 interface SidebarProps {
   currentTab: string;

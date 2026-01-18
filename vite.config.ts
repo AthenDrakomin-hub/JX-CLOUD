@@ -15,6 +15,7 @@ export default defineConfig({
     global: 'globalThis',
   },
   resolve: {
+    dedupe: ['react', 'react-dom'],
     alias: {
       '@': resolve(__dirname, 'src'),
       '@src': resolve(__dirname, 'src'),
@@ -22,6 +23,8 @@ export default defineConfig({
       '@services': resolve(__dirname, 'services'),
       '@utils': resolve(__dirname, 'utils'),
       '@types': resolve(__dirname, 'src/types'), // Direct alias for types
+      'react': resolve(__dirname, 'node_modules/react'),
+      'react-dom': resolve(__dirname, 'node_modules/react-dom'),
     },
   },
   build: {
@@ -81,7 +84,7 @@ export default defineConfig({
               id.includes('node_modules/scheduler') ||
               id.includes('node_modules/react-dom')) {
             // 检查是否同时包含 React 和图表库，如果是则只分配给图表库已避免循环
-            if (id.includes('recharts')) {
+            if (id.includes('recharts') || id.includes('react-smooth') || id.includes('react-transition-group')) {
               return 'vendor-charts'; // 让图表库处理自己的 React 依赖
             }
             return 'vendor-react';
@@ -91,7 +94,7 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
+    port: 3002,
     open: true
     // 移除API代理配置，在本地开发环境中API路由由Vite直接处理
   }

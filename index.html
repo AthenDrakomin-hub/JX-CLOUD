@@ -7,6 +7,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>江西云厨终端系统 - JX CLOUD Terminal</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
   
@@ -137,6 +138,16 @@
   </div>
   <script type="module" src="/src/index.tsx"></script>
 <script>
+  // 🔧 早期清理不需要的 hash（在应用加载前）
+  (function() {
+    const unwantedHashes = ['#welcome-shown', '#welcome', '#home'];
+    if (unwantedHashes.includes(window.location.hash)) {
+      console.log('🔧 Early cleaning unwanted hash:', window.location.hash);
+      const newUrl = window.location.pathname + window.location.search;
+      window.history.replaceState(null, '', newUrl);
+    }
+  })();
+  
   // 检测 URL 参数并在必要时重定向到合适的页面
   window.addEventListener('load', () => {
     const urlParams = new URLSearchParams(window.location.search);

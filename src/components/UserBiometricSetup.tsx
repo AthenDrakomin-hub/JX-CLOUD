@@ -4,8 +4,8 @@ import {
   Fingerprint, ShieldCheck, Loader2, CheckCircle2, AlertCircle, 
   ArrowRight, UserRound, Clock, Users, Key 
 } from 'lucide-react';
-import { getEnhancedAuthClient } from '../services/auth-client';
-import { api } from '../services/api';
+import { getEnhancedAuthClient } from '../services/auth-client.js';
+import { api } from '../services/api.js';
 
 interface UserBiometricSetupProps {
   mode?: 'admin' | 'employee' | 'invite';

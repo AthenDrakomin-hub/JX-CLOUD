@@ -1,8 +1,8 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Dish, Order, OrderStatus, Category, PaymentMethodConfig } from '../types';
+import { Dish, Order, OrderStatus, Category, PaymentMethodConfig } from '../types.js';
 import { useTranslation } from 'react-i18next';
-import { api } from '../services/api-client';
+import { api } from '../services/api-client.js';
 import { 
   Plus, Minus, Globe, Search,
   ChevronRight, ShoppingCart, 
@@ -10,7 +10,7 @@ import {
   ArrowLeft, CreditCard, Sparkles,
   Copy, Check, Image as ImageIcon, ChevronLeft
 } from 'lucide-react';
-import OptimizedImage from './OptimizedImage';
+import OptimizedImage from './OptimizedImage.js';
 
 // 复制按钮组件
 const CopyToClipboardButton: React.FC<{ text: string }> = ({ text }) => {
