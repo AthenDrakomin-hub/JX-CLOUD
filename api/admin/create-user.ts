@@ -68,10 +68,10 @@ export default async function handler(request: Request) {
       id: userId,
       name: name,
       email: email,
-      emailVerified: true, // ✅ 修复：使用驼峰命名
+      emailVerified: true,
       image: null,
       role: role || 'user',
-      partnerId: partnerId || null, // ✅ 修复：使用驼峰命名
+      partnerId: partnerId ?? null,
       modulePermissions: null,
       createdAt: new Date(),
       updatedAt: new Date()
@@ -84,12 +84,12 @@ export default async function handler(request: Request) {
       email: email,
       name: name,
       role: role || 'staff',
-      partnerId: partnerId || null, // ✅ 修复：使用驼峰命名
+      partnerId: partnerId ?? null,
       modulePermissions: null,
-      authType: 'passkey', // ✅ 修复：使用驼峰命名
-      emailVerified: true, // ✅ 修复：使用驼峰命名
-      isActive: false, // ✅ 修复：使用驼峰命名
-      isPasskeyBound: false, // ✅ 修复：使用驼峰命名
+      authType: 'passkey',
+      emailVerified: true,
+      isActive: false,
+      isPasskeyBound: false,
       createdAt: new Date(),
       updatedAt: new Date()
     });
@@ -127,7 +127,7 @@ export default async function handler(request: Request) {
     if (error instanceof z.ZodError) {
       return new Response(JSON.stringify({ 
         error: 'Validation failed',
-        details: error.errors 
+        details: error.issues 
       }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
