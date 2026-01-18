@@ -16,13 +16,14 @@ export default async function handler(request: Request) {
     if (request.method === 'GET' && pathname === '/api/users') {
       const partnerId = url.searchParams.get('partnerId');
       
-      let query = db.select().from(businessUsers);
-      
+      let users;
       if (partnerId) {
-        query = query.where(eq(businessUsers.partnerId, partnerId));
+        users = await db.query.users.findMany({
+          where: eq(businessUsers.partnerId, partnerId)
+        });
+      } else {
+        users = await db.query.users.findMany();
       }
-      
-      const users = await query;
       
       return new Response(JSON.stringify(users), {
         status: 200,

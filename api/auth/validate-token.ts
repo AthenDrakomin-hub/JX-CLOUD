@@ -1,5 +1,5 @@
 // api/auth/validate-token.ts
-import { validateRegistrationToken } from '../admin/create-user';
+import { validateRegistrationToken } from '../admin/create-user.js';
 
 export const config = {
   runtime: 'nodejs',

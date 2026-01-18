@@ -36,14 +36,14 @@ export default async function handler(request: Request) {
     }
 
     // 验证管理员权限
-    const adminUser = await db.select().from(authUser).where(
-      and(
+    const adminUser = await db.query.user.findFirst({
+      where: and(
         eq(authUser.email, adminEmail),
         eq(authUser.role, 'admin')
       )
-    );
+    });
 
-    if (adminUser.length === 0) {
+    if (!adminUser) {
       return new Response(JSON.stringify({ error: 'Unauthorized: Not an admin' }), {
         status: 403,
         headers: { 'Content-Type': 'application/json' }
@@ -66,10 +66,10 @@ export default async function handler(request: Request) {
       id: userId,
       name: name,
       email: email,
-      email_verified: true, // 强制验证 - 使用数据库列名
+      emailVerified: true, // 使用正确的字段名
       image: null,
       role: role || 'user', // 默认为'user'符合Better Auth标准
-      partner_id: partnerId || null,
+      partnerId: partnerId || null,
       modulePermissions: null,
       createdAt: new Date(),
       updatedAt: new Date()
@@ -82,12 +82,12 @@ export default async function handler(request: Request) {
       email: email,
       name: name,
       role: role || 'staff',
-      partner_id: partnerId || null,
+      partnerId: partnerId || null,
       modulePermissions: null,
-      auth_type: 'passkey',
-      email_verified: true, // 强制验证
-      is_active: false, // 初始状态为未激活，等待指纹绑定
-      is_passkey_bound: false, // 初始状态为未绑定指纹
+      authType: 'passkey',
+      emailVerified: true, // 使用正确的字段名
+      isActive: false, // 使用正确的字段名
+      isPasskeyBound: false, // 使用正确的字段名
       createdAt: new Date(),
       updatedAt: new Date()
     });
@@ -145,7 +145,7 @@ function cleanupExpiredTokens() {
 // 导出token验证函数供其他API使用
 export function validateRegistrationToken(token: string, email: string): { valid: boolean; userId?: string } {
   const tokenData = registrationTokens.get(token);
-  
+
   if (!tokenData) {
     return { valid: false };
   }

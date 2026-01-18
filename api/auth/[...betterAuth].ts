@@ -24,5 +24,6 @@ export const auth = betterAuth({
 });
 
 // 为 Vercel 兼容性导出 HTTP 处理程序
-export const { GET, POST, PUT, DELETE } = auth;
+const handler = auth.handler;
+export { handler as GET, handler as POST, handler as PUT, handler as DELETE };
 export default auth;

@@ -74,10 +74,7 @@ async function initializeDatabase() {
         currencySymbol: '₱',
         isActive: true,
         paymentType: 'cash',
-        sortOrder: 1,
-        description: '直接现金支付',
-        descriptionEn: 'Direct cash payment',
-        iconType: 'payment-cash'
+        sortOrder: 1
       },
       {
         id: 'gcash',
@@ -87,10 +84,7 @@ async function initializeDatabase() {
         currencySymbol: '₱',
         isActive: true,
         paymentType: 'digital_wallet',
-        sortOrder: 2,
-        description: '菲律宾主流数字钱包',
-        descriptionEn: 'Philippines mainstream digital wallet',
-        iconType: 'payment-gcash'
+        sortOrder: 2
       }
     ];
 
@@ -103,12 +97,11 @@ async function initializeDatabase() {
         await db.execute(`
           INSERT INTO payment_methods (
             id, name, name_en, currency, currency_symbol, is_active, 
-            payment_type, sort_order, description, description_en, icon_type, created_at
+            payment_type, sort_order, created_at
           ) VALUES (
             '${method.id}', '${method.name}', '${method.nameEn}', '${method.currency}', 
             '${method.currencySymbol}', ${method.isActive}, '${method.paymentType}', 
-            ${method.sortOrder}, '${method.description}', '${method.descriptionEn}', 
-            '${method.iconType}', NOW()
+            ${method.sortOrder}, NOW()
           )
         `);
       }
@@ -148,7 +141,7 @@ async function initializeDatabase() {
       await db.execute(`
         INSERT INTO partners (
           id, name, owner_name, status, commission_rate, balance, 
-          authorized_categories, created_at
+          authorized_categories, joined_at
         ) VALUES (
           'partner-default', '默认合作伙伴', '系统管理员', 'active', '0.15', '0',
           '{}', NOW()
