@@ -60,6 +60,30 @@ export default async function handler(request: Request) {
       });
     }
 
+    // 检查用户是否已存在
+    const existingUser = await db.query.user.findFirst({
+      where: eq(authUser.email, email)
+    });
+
+    if (existingUser) {
+      return new Response(JSON.stringify({ error: '该邮箱已被注册' }), {
+        status: 409,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // 检查目标邮箱是否已存在
+    const existingEmailUser = await db.query.user.findFirst({
+      where: eq(authUser.email, email)
+    });
+
+    if (existingEmailUser) {
+      return new Response(JSON.stringify({ error: '该邮箱已被注册' }), {
+        status: 409,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
     // 生成用户ID
     const userId = `user_${Date.now()}_${nanoid(8)}`;
 
@@ -72,7 +96,7 @@ export default async function handler(request: Request) {
       image: null,
       role: role || 'user',
       partnerId: partnerId ?? null,
-      modulePermissions: null,
+      modulePermissions: null, // 也可以传 {} 但 null 更符合数据库默认值
       createdAt: new Date(),
       updatedAt: new Date()
     });

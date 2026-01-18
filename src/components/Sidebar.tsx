@@ -23,10 +23,6 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const { t, i18n } = useTranslation();
   
-  const toggleLanguage = () => {
-    const newLang = i18n.language === 'en' ? 'zh' : 'en';
-    i18n.changeLanguage(newLang);
-  };
 
   const menuItems = useMemo(() => {
     const role = currentUser?.role || 'user';
@@ -104,19 +100,8 @@ const Sidebar: React.FC<SidebarProps> = ({
            )}
         </div>
 
-        <button onClick={toggleLanguage} className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-xl text-slate-400 font-black text-[9px] uppercase hover:text-blue-600 hover:bg-blue-50/50 transition-all active-scale ${isCollapsed ? 'justify-center px-0' : ''}`}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="2" y1="12" x2="22" y2="12"></line>
-            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-          </svg>
-          {!isCollapsed && <span>{i18n.language === 'zh' ? t('enMode') : t('zhMode')}</span>}
-        </button>
 
-        <button onClick={onLogout} className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-xl text-slate-400 font-black text-[9px] uppercase hover:text-red-500 hover:bg-red-50/50 transition-all active-scale ${isCollapsed ? 'justify-center px-0' : ''}`}>
-          <LogOut size={14} />
-          {!isCollapsed && <span>{t('signOut')}</span>}
-        </button>
+
       </div>
     </aside>
   );

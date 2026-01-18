@@ -1,36 +1,12 @@
-import { createAuthClient } from "better-auth/react";
+import { createAuthClient } from "better-auth/client";
+import type { AuthClient as BetterAuthClient } from "better-auth/client";
 import { useState, useEffect } from "react";
 
 /**
- * 江西云厨 - 身份验证客户端 (支持 WebAuthn 异步加载)
+ * 江西云厨 - 身份验证客户端
  * 实现 Vercel 生产环境自适应 URL
- * WebAuthn 插件通过异步加载避免影响首屏性能
+ * Passkey/WebAuthn 功能通过服务端配置启用
  */
-
-// 异步加载 WebAuthn 插件，配置跨设备能力
-let passkeyPluginPromise: Promise<any> | null = null;
-
-const loadPasskeyPlugin = async () => {
-  if (!passkeyPluginPromise) {
-    passkeyPluginPromise = import("better-auth/client/plugins").then(
-      (module) => module.passkeyClient({
-        // 配置 WebAuthn 跨设备认证
-        authenticatorSelection: {
-          authenticatorAttachment: "cross-platform", // 允许跨平台认证（手机/电脑）
-          residentKey: "preferred", // 优先使用驻留密钥
-          userVerification: "preferred" // 用户验证偏好
-        },
-        // 生产环境配置 RP ID，开发环境使用当前主机
-        rpID: typeof window !== 'undefined' 
-          ? window.location.hostname === 'localhost' 
-            ? 'localhost'  // 开发环境使用localhost
-            : window.location.hostname  // 生产环境使用实际域名
-          : 'localhost'
-      })
-    );
-  }
-  return await passkeyPluginPromise;
-};
 
 // 自定义 fetch 函数以禁用缓存
 const noCacheFetch = (url: string, options: RequestInit = {}) => {
@@ -64,23 +40,31 @@ const getBaseURL = () => {
   return process.env.BETTER_AUTH_URL || 'https://localhost:3008';
 };
 
-// 创建基础认证客户端（不含 WebAuthn）
+// 创建认证客户端 - 与服务端配置保持一致
 export const authClient = createAuthClient({
-    baseURL: getBaseURL(),
-    fetch: noCacheFetch
+  baseURL: getBaseURL(),
+  fetch: noCacheFetch
 });
 
-// 导出带 WebAuthn 功能的认证客户端（按需加载）
-export const getEnhancedAuthClient = async () => {
-  const passkeyPlugin = await loadPasskeyPlugin();
-  return createAuthClient({
-    baseURL: getBaseURL(),
-    plugins: [passkeyPlugin],
-    fetch: noCacheFetch
-  });
+// ✅ 提供类型安全的辅助函数（使用安全检查）
+export const signInWithPasskey = async (options?: any) => {
+  if ('passkey' in authClient.signIn && typeof authClient.signIn.passkey === 'function') {
+    return authClient.signIn.passkey(options);
+  } else {
+    // 如果 passkey 方法不可用，抛出错误提示用户
+    throw new Error('Passkey authentication is not available. Please ensure the service worker is registered and WebAuthn is supported in your browser.');
+  }
 };
 
-// 扩展Better Auth客户端以包含自定义字段
+export const signUpWithPasskey = async () => {
+  if ('passkey' in authClient.signUp && typeof authClient.signUp.passkey === 'function') {
+    return authClient.signUp.passkey();
+  } else {
+    throw new Error('Passkey registration is not available. Please ensure the service worker is registered and WebAuthn is supported in your browser.');
+  }
+};
+
+// 导出基础认证方法
 export const { useSession, signIn, signOut, signUp } = authClient;
 
 // 开发环境会话Hook
@@ -102,12 +86,3 @@ export const useDevSession = () => {
   return { data: session, isLoading };
 };
 
-// 类型扩展以包含扩展字段
-declare module "better-auth/react" {
-  interface User {
-    role?: string;
-    partnerId?: string;
-    emailVerified?: boolean;
-    authType?: string;
-  }
-}

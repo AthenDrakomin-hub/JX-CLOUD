@@ -6,7 +6,7 @@ import {
   Loader2, Cpu, Globe, CheckCircle2, AlertCircle, 
   Fingerprint, Zap, ShieldCheck, Activity
 } from 'lucide-react';
-import { authClient, getEnhancedAuthClient } from '../services/auth-client';
+import { authClient, signInWithPasskey } from '../services/auth-client';
 import LegalFooter from './LegalFooter';
 
 const AuthPage: React.FC = () => {
@@ -41,8 +41,9 @@ const AuthPage: React.FC = () => {
   useEffect(() => {
     const checkAdminStatus = async () => {
       try {
-        const session = await authClient.getSession();
-        const userRole = session?.user?.role;
+        const session: any = await authClient.getSession();
+        // 简单处理 session 数据，绕过复杂类型
+        const userRole = session?.data?.user?.role || session?.user?.role || '';
         setIsAdminUser(userRole === 'admin');
         setIsMasterUser(userRole === 'admin'); // Set master user status
       } catch (error) {
@@ -66,11 +67,8 @@ const AuthPage: React.FC = () => {
     setError(null);
 
     try {
-      // 异步加载增强的认证客户端（包含 WebAuthn 插件）
-      const enhancedClient = await getEnhancedAuthClient();
-      
-      // Call passkey login with the provided email
-      await enhancedClient.signIn.passkey({
+      // 使用新的 Passkey 登录方法
+      await signInWithPasskey({
         email,
       });
       
@@ -101,7 +99,16 @@ const AuthPage: React.FC = () => {
   };
 
   const toggleLanguage = () => {
-    const newLang = i18n.language === 'en' ? 'zh' : 'en';
+    // 循环切换语言: en -> zh -> fil -> en
+    let newLang: string;
+    if (i18n.language === 'en') {
+      newLang = 'zh';
+    } else if (i18n.language === 'zh') {
+      newLang = 'fil';
+    } else {
+      // 如果当前是 fil 或其他语言，则切换回 en
+      newLang = 'en';
+    }
     i18n.changeLanguage(newLang);
   };
 
@@ -111,9 +118,8 @@ const AuthPage: React.FC = () => {
     setIsPasskeyLoading(true);
     setError(null);
     try {
-      // 异步加载增强的认证客户端（包含 WebAuthn 插件）
-      const enhancedClient = await getEnhancedAuthClient();
-      await enhancedClient.signIn.passkey().catch((err: any) => {
+      // 使用新的 Passkey 登录方法
+      await signInWithPasskey().catch((err: any) => {
         // 弹出错误信息，便于调试
         alert(`Passkey Error: ${err.name || 'Unknown Error'} - ${err.message || 'No message'}`);
         throw err; // Re-throw to be caught by outer catch
@@ -214,7 +220,7 @@ const AuthPage: React.FC = () => {
             className="px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 backdrop-blur-xl"
           >
             <Globe size={14} className="text-blue-500" />
-            {i18n.language === 'zh' ? t('enMode') : t('zhMode')}
+            {i18n.language === 'zh' ? t('enMode') : i18n.language === 'en' ? t('zhMode') : t('enMode')}
           </button>
         </div>
 
