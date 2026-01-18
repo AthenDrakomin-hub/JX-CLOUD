@@ -34,57 +34,57 @@ export default defineConfig({
         chunkFileNames: `assets/[name]-[hash].js`,
         assetFileNames: `assets/[name]-[hash].[ext]`,
         
-        // 优化分包策略 - 避免循环依赖的拆包策略
+        // 优化分包策略 - 解决循环依赖问题
         manualChunks: (id) => {
-          // Better Auth 单独拆包 (体积较大)
-          if (id.includes('node_modules/better-auth')) {
-            return 'vendor-auth';
-          }
-          
-          // React 相关库合并
-          if (id.includes('node_modules/react') || id.includes('node_modules/scheduler')) {
-            return 'vendor-react';
-          }
-          
-          // UI 图标库单独拆包
-          if (id.includes('node_modules/lucide-react')) {
-            return 'vendor-icons';
-          }
-          
-          // 图表库单独拆包 (最大的库之一)
+          // 将最大的库单独拆包
           if (id.includes('node_modules/recharts')) {
             return 'vendor-charts';
           }
           
-          // Supabase 相关单独拆包
+          // 将 Supabase 相关库单独拆包
           if (id.includes('node_modules/@supabase')) {
             return 'vendor-supabase';
           }
           
-          // 国际化库单独拆包
+          // 将 Better Auth 单独拆包
+          if (id.includes('node_modules/better-auth')) {
+            return 'vendor-auth';
+          }
+          
+          // 将国际化相关库单独拆包
           if (id.includes('node_modules/i18next') || 
               id.includes('node_modules/react-i18next')) {
             return 'vendor-i18n';
           }
           
-          // 表单库单独拆包
+          // 将图标库单独拆包
+          if (id.includes('node_modules/lucide-react')) {
+            return 'vendor-icons';
+          }
+          
+          // 将表单库单独拆包
           if (id.includes('node_modules/react-hook-form')) {
             return 'vendor-forms';
           }
           
-          // QR码库单独拆包
+          // 将其他大型库单独拆包
           if (id.includes('node_modules/qrcode.react')) {
             return 'vendor-qrcode';
           }
           
-          // Drizzle ORM 单独拆包
           if (id.includes('node_modules/drizzle-orm')) {
             return 'vendor-drizzle';
           }
           
-          // 工具库单独拆包
-          if (id.includes('node_modules/nanoid')) {
-            return 'vendor-utils';
+          // 将 React 相关库统一打包，但要小心处理与图表库的关系
+          if (id.includes('node_modules/react') || 
+              id.includes('node_modules/scheduler') ||
+              id.includes('node_modules/react-dom')) {
+            // 检查是否同时包含 React 和图表库，如果是则只分配给图表库已避免循环
+            if (id.includes('recharts')) {
+              return 'vendor-charts'; // 让图表库处理自己的 React 依赖
+            }
+            return 'vendor-react';
           }
         }
       }

@@ -1,44 +1,81 @@
 import { createAuthClient } from "better-auth/client";
 import { passkeyClient } from "@better-auth/passkey/client";
+import type { AuthClient as BetterAuthClient } from "better-auth/client";
 
-// ✅ 简化初始化 Passkey 插件，使用 any 跳过复杂类型
-const passkeyPlugin = passkeyClient();
+// ✅ 配置 Passkey 插件
+const passkeyPlugin = passkeyClient({
+  authenticatorSelection: {
+    authenticatorAttachment: "cross-platform",
+    residentKey: "preferred",
+    userVerification: "preferred"
+  },
+  rpID: typeof window !== 'undefined' 
+    ? window.location.hostname === 'localhost' ? 'localhost' : window.location.hostname 
+    : 'localhost'
+});
 
-// ✅ 使用 any 类型跳过复杂类型定义，确保功能可用
+// ✅ 创建认证客户端
 export const authClient = createAuthClient({
   plugins: [passkeyPlugin]
-}) as any;
+});
 
-// ✅ 简化 Passkey 登录函数，直接调用底层 API
-export const signInWithPasskey = async () => {
-  try {
-    // 尝试登录，这会触发浏览器的指纹/面部识别弹窗
-    return await authClient.signIn.passkey();
-  } catch (error) {
-    console.error("Passkey 登录错误:", error);
-    // 统一错误处理
-    if (error instanceof Error && (error.message.includes("no credentials") || error.message.includes("No credentials"))) {
-      throw new Error("未找到你的生物识别凭证，请先注册");
-    }
-    throw error;
-  }
-};
+// ✅ 导出类型定义（类型安全）
+export type AuthClient = BetterAuthClient<{ plugins: [typeof passkeyPlugin] }>;
 
-// ✅ 简化 Admin Passkey 注册函数
-export const registerAdminPasskey = async (email: string) => {
-  try {
-    // 使用 signUp.passkey 进行初始化注册
-    return await authClient.signUp.passkey({ 
-      email: email,
-      // 添加用户名作为凭证标识
-      username: email.split('@')[0] 
-    });
-  } catch (error) {
-    console.error("Admin Passkey 注册失败:", error);
-    throw error;
-  }
-};
+// ✅ 基础 Passkey 辅助函数
+export const signInWithPasskey = (options: { email?: string }) => 
+  authClient.signIn.passkey(options);
+
+export const signUpWithPasskey = () => authClient.signUp.passkey();
 
 // 保留原有导出，兼容现有代码
-export const { useSession, signIn, signOut, signUp } = authClient;
-export const getEnhancedAuthClient = async () => authClient;
+export const { useSession, signIn, signOut: originalSignOut, signUp } = authClient;
+
+// 🔒 安全退出函数，彻底清除所有认证状态
+export const safeSignOut = async () => {
+  try {
+    // 1. 调用 Better Auth 官方退出接口
+    await authClient.signOut();
+    // 2. 强制清除所有认证相关存储（兜底方案）
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('better-auth.session');
+      localStorage.removeItem('better-auth.session');
+      localStorage.removeItem('better-auth.user');
+      // 清除任何可能的认证相关存储
+      Object.keys(localStorage).forEach(key => {
+        if (key.includes('better-auth') || key.includes('auth')) {
+          localStorage.removeItem(key);
+        }
+      });
+      Object.keys(sessionStorage).forEach(key => {
+        if (key.includes('better-auth') || key.includes('auth')) {
+          sessionStorage.removeItem(key);
+        }
+      });
+    }
+    // 3. 强制跳转到登录页，避免 React 路由状态残留
+    // 使用完整的 URL 确保正确重定向
+    const loginUrl = typeof window !== 'undefined' 
+      ? `${window.location.protocol}//${window.location.host}/auth`
+      : '/auth';
+    window.location.href = loginUrl;
+  } catch (error) {
+    console.error('退出登录失败:', error);
+    // 即使出错也强制清除状态，避免死锁
+    if (typeof window !== 'undefined') {
+      sessionStorage.clear();
+      localStorage.clear();
+    }
+    const loginUrl = typeof window !== 'undefined' 
+      ? `${window.location.protocol}//${window.location.host}/auth`
+      : '/auth';
+    window.location.href = loginUrl;
+  }
+};
+
+// ✅ 修复：添加缺失的 getEnhancedAuthClient 函数并正确导出
+// 兼容原有异步调用方式，无需修改调用方代码
+export const getEnhancedAuthClient = async (): Promise<AuthClient> => {
+  // 客户端已同步初始化完成，直接返回实例即可
+  return authClient;
+};

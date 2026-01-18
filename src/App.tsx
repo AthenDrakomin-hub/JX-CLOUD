@@ -7,7 +7,7 @@ import OrderManagement from './components/OrderManagement'; // Keep this as it's
 import AuthPage from './components/AuthPage';
 import GuestEntry from './GuestEntry';  // This is correct since both are in src/
 import Toast, { ToastType } from './components/Toast';
-import { useSession, signOut } from './services/auth-client';
+import { useSession, safeSignOut as signOut } from './services/auth-client';
 import { api } from './services/api';
 import { isDemoMode, createSupabaseClient } from './services/supabaseClient';
 // 保持对supabase的引用，仅用于实时功能
@@ -52,6 +52,28 @@ export default function App() {
   
   // 使用正式会话逻辑
   const { data: session, isLoading: isAuthLoading } = useSession();
+
+  // 监听会话过期，提前提醒用户
+  useEffect(() => {
+    if (session?.data?.session?.expiresAt) {
+      const expiryTime = new Date(session.data.session.expiresAt);
+      const currentTime = new Date();
+      const timeUntilExpiry = expiryTime.getTime() - currentTime.getTime();
+      
+      // 如果会话即将过期（在10分钟内），提前提醒
+      if (timeUntilExpiry > 0 && timeUntilExpiry <= 10 * 60 * 1000) { // 10分钟
+        setTimeout(() => {
+          alert('会话即将过期，请注意保存工作');
+        }, timeUntilExpiry - 5 * 60 * 1000); // 提前5分钟提醒
+      }
+      
+      // 如果会话已经过期，自动登出
+      if (expiryTime < currentTime) {
+        alert('会话已过期，请重新登录');
+        signOut();
+      }
+    }
+  }, [session]);
 
 
   const [currentTab, setCurrentTab] = useState('dashboard');
@@ -165,8 +187,7 @@ export default function App() {
 
   const handleLogout = async () => {
     localStorage.removeItem('jx_root_authority_bypass');
-    await signOut();
-    window.location.reload();
+    await signOut(); // This is now safeSignOut which handles redirection internally
   };
   
   // 检查是否为管理员且需要绑定生物识别
