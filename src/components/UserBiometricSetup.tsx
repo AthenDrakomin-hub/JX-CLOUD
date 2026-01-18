@@ -111,8 +111,8 @@ const UserBiometricSetup: React.FC<UserBiometricSetupProps> = ({
     try {
       const enhancedClient = await getEnhancedAuthClient();
 
-      const result = await enhancedClient.passkey.addPasskey({
-        name: email,
+      const result = await enhancedClient.passkey.register({
+        email: email,
       });
 
       if (result.error) {

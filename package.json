@@ -15,13 +15,15 @@
     "categories:init": "tsx scripts/init-categories.ts",
     "schema:check": "tsx scripts/check-schema.ts",
     "schema:update": "tsx scripts/update-schema.ts",
-    "db:sync": "tsx src/scripts/force-sync-auth.ts"
+    "db:sync": "tsx src/scripts/force-sync-auth.ts",
+    "type-check": "tsc --noEmit",
+    "type-check-watch": "tsc --noEmit --watch"
   },
   "dependencies": {
     "@better-auth/passkey": "^1.4.15",
     "@supabase/supabase-js": "^2.39.0",
     "@types/pg": "^8.16.0",
-    "better-auth": "^1.4.15",
+    "better-auth": "=1.4.15",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.45.1",
     "i18next": "^25.7.4",

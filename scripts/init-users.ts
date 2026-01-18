@@ -53,7 +53,7 @@ async function initializeRootAdmin() {
       await db.update(user).set({
         role: rootRole,
         name: rootName,
-        updated_at: new Date()
+        updatedAt: new Date()
       }).where(eq(user.email, rootEmail));
       
       userId = existingUser[0].id;
@@ -85,7 +85,7 @@ async function initializeRootAdmin() {
         role: rootRole,
         name: rootName,
         username: rootUsername,
-        updated_at: new Date()
+        updatedAt: new Date()
       }).where(eq(businessUsers.email, rootEmail));
     } else {
       console.log('➕ Creating new admin user in business table...');
@@ -101,8 +101,8 @@ async function initializeRootAdmin() {
         auth_type: 'credentials',
         email_verified: true,
         is_active: true,
-        created_at: new Date(),
-        updated_at: new Date()
+        createdAt: new Date(),
+        updatedAt: new Date()
       };
       
       await db.insert(businessUsers).values(newBusinessUser);

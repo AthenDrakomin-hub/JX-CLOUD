@@ -1,29 +1,24 @@
 import { betterAuth } from "better-auth";
+import { passkey } from "@better-auth/passkey";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+
+// 导入数据库连接和认证表
 import { db } from "../../src/services/db.server.js";
+import { user } from "../../drizzle/schema.js";
 
 export const auth = betterAuth({
-    database: drizzleAdapter(db, {
-        provider: "pg",
-    }),
-    // 🔥 核心修正：强制让后端感知到自己在 3000 端口运行
-    baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
-    
-    emailAndPassword: {
-        enabled: false
-    },
-    plugins: [
-        // 确保指纹插件已开启
-        {
-            id: "passkey",
-            options: {}
-        }
-    ],
-    // 允许跨域凭证
-    trustedOrigins: ["http://localhost:3000"]
+  database: drizzleAdapter(db, {
+    provider: "pg"
+  }),
+  plugins: [
+    passkey({
+      rpName: "江西云厨",
+      rpID: process.env.NODE_ENV === "production" 
+        ? process.env.AUTH_RP_ID || process.env.NEXT_PUBLIC_APP_DOMAIN || "jiangxijiudian.store"
+        : "localhost",
+      origin: process.env.BETTER_AUTH_URL || "http://localhost:3002"
+    })
+  ],
+  emailAndPassword: { enabled: false }, // 禁用传统密码认证，只使用 Passkey
+  social: { enabled: false } // 禁用社交登录
 });
-
-// 为 Vercel 兼容性导出 HTTP 处理程序
-const handler = auth.handler;
-export { handler as GET, handler as POST, handler as PUT, handler as DELETE };
-export default auth;

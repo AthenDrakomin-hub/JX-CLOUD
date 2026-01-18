@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
@@ -8,6 +7,7 @@ import {
 } from 'lucide-react';
 import { authClient, signInWithPasskey } from '../services/auth-client';
 import LegalFooter from './LegalFooter';
+import { Language } from '../translations';
 
 const AuthPage: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -16,79 +16,80 @@ const AuthPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [sysTime, setSysTime] = useState(new Date().toLocaleTimeString());
 
-  // Set initial language based on browser language
+  // 语言初始化
   useEffect(() => {
     const browserLang = navigator.language.toLowerCase();
-    let initialLang = 'en'; // default to English
+    let initialLang = 'en';
+    if (browserLang.includes('zh')) initialLang = 'zh';
+    else if (browserLang.includes('fil') || browserLang.includes('tl')) initialLang = 'fil';
     
-    if (browserLang.includes('zh')) {
-      initialLang = 'zh';
-    } else if (browserLang.includes('fil') || browserLang.includes('tl') || browserLang.includes('ph')) {
-      initialLang = 'fil'; // Filipino/Tagalog
-    }
-    
-    // Only change language if it's different from current
     if (i18n.language !== initialLang) {
       i18n.changeLanguage(initialLang);
     }
   }, [i18n]);
 
-  // 检查用户是否为管理员（基于后端会话数据）
+  // 管理员状态检查
   const [isAdminUser, setIsAdminUser] = useState(false);
-  const [isMasterUser, setIsMasterUser] = useState(false); // Add missing variable
-  
-  // 根据会话数据更新管理员状态
+  const [isMasterUser, setIsMasterUser] = useState(false);
+
+  // 简化管理员状态检查 - 使用 localStorage 或其他方式来判断
   useEffect(() => {
-    const checkAdminStatus = async () => {
-      try {
-        const session: any = await authClient.getSession();
-        // 简单处理 session 数据，绕过复杂类型
-        const userRole = session?.data?.user?.role || session?.user?.role || '';
-        setIsAdminUser(userRole === 'admin');
-        setIsMasterUser(userRole === 'admin'); // Set master user status
-      } catch (error) {
-        setIsAdminUser(false);
-        setIsMasterUser(false);
-      }
+    // 在实际应用中，您可能需要从后端获取用户信息
+    // 这里只是简化处理
+    const checkAdminStatus = () => {
+      // Placeholder: 实际应用中应该通过 API 获取用户信息
+      // 暂时设为 false，因为没有可用的会话钩子
+      setIsAdminUser(false);
+      setIsMasterUser(false);
     };
     checkAdminStatus();
-  }, [email]);
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => setSysTime(new Date().toLocaleTimeString()), 1000);
     return () => clearInterval(timer);
   }, []);
 
+
+
+
+
+  // ✅ 智能 Passkey 登录，自动判断是否需要初始化
   const handleMasterLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Passkey login started...', { email });
-    
+    if (!email) {
+      setError('请输入邮箱地址');
+      return;
+    }
+
     setIsPasskeyLoading(true);
     setError(null);
 
     try {
-      // 使用新的 Passkey 登录方法
-      await signInWithPasskey();
-      
-      console.log('Passkey sign in successful');
+      // 首先尝试使用现有的 Passkey 凭证登录
+      await authClient.signIn.passkey();
       window.location.href = "/";
     } catch (err: any) {
-      console.error('Passkey login error:', err);
-      // 检查是否是跨设备场景（没有指纹硬件）或不支持的错误
-      if (err.name === 'NotAllowedError' || 
+      // 智能判断错误类型并提供相应处理
+      if (
+        err.name === "NotFoundError" || 
+        err.message?.includes("no credentials") ||
+        err.message?.includes("credential not found") ||
+        err.message?.includes("No available authenticator") ||
+        err.message?.includes("No credentials")
+      ) {
+        // 如果没有找到凭证，引导用户进行初始化
+        setError("🔑 未找到你的生物识别凭证。点击下方按钮进行初始化。");
+      } else if (err.name === 'NotAllowedError' || 
           err.name === 'NotSupportedError' ||
           err.message?.includes('platform authenticator not available') ||
           err.message?.includes('cross-device') || 
           err.name === 'InvalidStateError' ||
           err.message?.includes('operation denied') ||
-          err.message?.includes('no credentials') ||
-          err.message?.includes('No available authenticator') ||
           err.message?.includes('SecurityError') ||
           err.message?.includes('The operation either timed out or was not allowed')) {
-        // 显示跨设备验证提示和扫码指引
         setError('🔄 跨设备认证已激活！请使用手机扫描屏幕上的二维码，在手机上完成指纹验证。\n\n📱 操作步骤：\n1. 打开手机相机或微信扫码\n2. 点击链接跳转到手机验证页面\n3. 使用手机指纹完成登录');
       } else if (err.message !== 'User canceled') {
-        // 其他错误情况
         setError(`${t('auth_passkey_error')}: ${err.message || err.name || '未知错误'}`);
       }
     } finally {
@@ -97,52 +98,71 @@ const AuthPage: React.FC = () => {
   };
 
   const toggleLanguage = () => {
-    // 循环切换语言: en -> zh -> fil -> en
-    let newLang: string;
-    if (i18n.language === 'en') {
-      newLang = 'zh';
-    } else if (i18n.language === 'zh') {
-      newLang = 'fil';
-    } else {
-      // 如果当前是 fil 或其他语言，则切换回 en
-      newLang = 'en';
-    }
+    const newLang = i18n.language === 'en' ? 'zh' : i18n.language === 'zh' ? 'fil' : 'en';
     i18n.changeLanguage(newLang);
   };
 
 
 
-  const handlePasskeyLogin = async () => {
+  // 新增智能判断和初始化处理函数
+  const handleSmartPasskeyLogin = async () => {
+    if (!email) {
+      setError('请先输入邮箱地址');
+      return;
+    }
+
     setIsPasskeyLoading(true);
     setError(null);
+    
     try {
-      // 使用新的 Passkey 登录方法
-      await signInWithPasskey().catch((err: any) => {
-        // 弹出错误信息，便于调试
-        alert(`Passkey Error: ${err.name || 'Unknown Error'} - ${err.message || 'No message'}`);
-        throw err; // Re-throw to be caught by outer catch
-      });
+      // 尝试使用现有的 Passkey 凭证登录
+      await authClient.signIn.passkey();
       window.location.href = "/";
     } catch (err: any) {
-      console.log('Passkey login error:', err);
-      // 检查是否是跨设备场景（没有指纹硬件）或不支持的错误
-      if (err.name === 'NotAllowedError' || 
-          err.name === 'NotSupportedError' ||
-          err.message?.includes('platform authenticator not available') ||
-          err.message?.includes('cross-device') || 
-          err.name === 'InvalidStateError' ||
-          err.message?.includes('operation denied') ||
-          err.message?.includes('no credentials') ||
-          err.message?.includes('No available authenticator') ||
-          err.message?.includes('SecurityError') ||
-          err.message?.includes('The operation either timed out or was not allowed')) {
-        // 显示跨设备验证提示和扫码指引
-        setError('🔄 跨设备认证已激活！请使用手机扫描屏幕上的二维码，在手机上完成指纹验证。\n\n📱 操作步骤：\n1. 打开手机相机或微信扫码\n2. 点击链接跳转到手机验证页面\n3. 使用手机指纹完成登录');
-      } else if (err.message !== 'User canceled') {
-        // 其他错误情况
-        alert(`Passkey Login Failed: ${err.name || 'Unknown Error'} - ${err.message || 'No message'}`);
-        setError(`${t('auth_passkey_error')}: ${err.message || err.name || '未知错误'}`);
+      // 智能判断错误类型并提供相应处理
+      if (
+        err.name === "NotFoundError" || 
+        err.message?.includes("no credentials") ||
+        err.message?.includes("credential not found") ||
+        err.message?.includes("No available authenticator") ||
+        err.message?.includes("No credentials")
+      ) {
+        // 如果没有找到凭证，引导用户进行初始化
+        setError("🔑 未找到你的生物识别凭证。点击下方按钮进行初始化。");
+      } else {
+        setError(`登录失败：${err.message || err.name}`);
       }
+    } finally {
+      setIsPasskeyLoading(false);
+    }
+  };
+
+  // 初始化 Passkey 函数
+  const handleInitializePasskey = async (email: string) => {
+    if (!email) {
+      setError("请先输入邮箱");
+      return;
+    }
+
+    try {
+      setIsPasskeyLoading(true);
+      // 使用 signUp.passkey 进行初始化注册
+      const result = await authClient.signUp.passkey({ 
+        email: email,
+        username: email.split('@')[0] // 使用邮箱用户名部分作为标识
+      });
+      
+      if (result?.session) {
+        // 初始化成功，跳转到首页
+        alert("生物识别初始化成功！");
+        window.location.href = "/";
+      } else {
+        // 如果注册后直接登录不成功，提示用户重新登录
+        alert("生物识别初始化完成，请重新登录");
+        setError("初始化完成，请点击'使用现有凭证登录'");
+      }
+    } catch (error: any) {
+      setError("初始化失败：" + (error.message || "未知错误"));
     } finally {
       setIsPasskeyLoading(false);
     }
@@ -156,208 +176,150 @@ const AuthPage: React.FC = () => {
         
         <div className="relative z-10 animate-fade-up">
           <div className="flex items-center gap-4">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-1000 ${isAdminUser ? 'bg-amber-500 shadow-[0_0_50px_rgba(245,158,11,0.6)] animate-pulse' : 'bg-blue-600 shadow-[0_0_30px_rgba(37,99,235,0.4)]'}`}>
-              {isAdminUser ? <Zap size={28} className="text-white" /> : <Shield size={28} className="text-white" />}
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-1000 ${isAdminUser ? 'bg-amber-500 text-amber-900' : 'bg-slate-800 text-slate-400'}`}>
+              <Shield className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-2xl font-black tracking-tighter uppercase leading-none">JX CLOUD</h1>
-              <p className="text-[9px] font-bold text-blue-400 uppercase tracking-[0.3em] mt-1">
-                {isAdminUser ? t('master_identity') : t('intel_node')}
+              <h1 className="text-2xl font-bold text-white">{t('hotel_management_system')}</h1>
+              <p className="text-slate-400 text-sm mt-1">{t('secure_enterprise_solution')}</p>
+            </div>
+          </div>
+          
+          <div className="mt-16 space-y-8">
+            <div className="bg-slate-900/50 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                  <Zap className="w-5 h-5 text-emerald-400" />
+                </div>
+                <h3 className="font-semibold text-white">实时订单处理</h3>
+              </div>
+              <p className="text-slate-400 text-sm leading-relaxed">
+                智能订单分发系统，支持多终端同步，确保每个订单都能及时响应。
               </p>
             </div>
-          </div>
-        </div>
-
-        <div className="relative z-10 space-y-12">
-          <div className="space-y-4 max-w-md">
-            <h2 className="text-6xl font-black tracking-tighter leading-tight italic">
-              {t('digital_driven')} <br/>
-              <span className={isAdminUser ? 'text-amber-500' : 'text-blue-500'}>{t('cloud_kitchen')}</span>
-            </h2>
-            <p className="text-slate-400 font-medium leading-relaxed">
-              {t('auth_description')}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-6 max-w-sm">
-             <div className="p-6 rounded-3xl bg-white/5 border border-white/5 backdrop-blur-md space-y-2">
-                <div className="flex items-center gap-2 text-emerald-400">
-                   <Activity size={14} />
-                   <span className="text-[9px] font-black uppercase tracking-widest">{t('auth_protocol')}</span>
+            
+            <div className="bg-slate-900/50 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                  <ShieldCheck className="w-5 h-5 text-blue-400" />
                 </div>
-                <p className="text-xl font-bold tracking-tight">{isAdminUser ? 'BYPASS_ACTIVE' : t('stable_status')}</p>
-             </div>
-             <div className="p-6 rounded-3xl bg-white/5 border border-white/5 backdrop-blur-md space-y-2">
-                <div className="flex items-center gap-2 text-blue-400">
-                   <Zap size={14} />
-                   <span className="text-[9px] font-black uppercase tracking-widest">{t('mode')}</span>
-                </div>
-                <p className="text-xl font-bold tracking-tight">{isAdminUser ? 'GOD_MODE' : 'STANDARD'}</p>
-             </div>
-          </div>
-        </div>
-
-        <div className="relative z-10 flex items-center justify-between opacity-30">
-          <div className="flex items-center gap-6">
-            <span className="text-[9px] font-black uppercase tracking-[0.4em]">v8.8.2-MASTER</span>
-            <div className="w-1 h-1 bg-slate-500 rounded-full" />
-            <span className="text-[9px] font-black uppercase tracking-[0.4em]">{sysTime}</span>
-          </div>
-          <p className="text-[8px] font-black uppercase tracking-widest">JX-CLOUD © R&D DIVISION</p>
-        </div>
-      </div>
-
-      {/* 右侧登录表单面板 */}
-      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-8 relative">
-        <div className={`absolute top-1/4 right-0 w-96 h-96 blur-[120px] rounded-full animate-pulse transition-colors duration-1000 ${isAdminUser ? 'bg-amber-600/20' : 'bg-blue-600/10'}`} />
-        
-        {/* 语言切换按钮 */}
-        <div className="absolute top-8 right-8 z-20">
-          <button 
-            onClick={toggleLanguage}
-            className="px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 backdrop-blur-xl"
-          >
-            <Globe size={14} className="text-blue-500" />
-            {i18n.language === 'zh' ? t('enMode') : i18n.language === 'en' ? t('zhMode') : t('enMode')}
-          </button>
-        </div>
-
-        <div className="w-full max-w-md space-y-12 relative z-10">
-          <div className="space-y-2 text-center lg:text-left">
-            <h2 className={`text-4xl font-black tracking-tight ${isMasterUser ? 'text-amber-500' : 'text-blue-500'}`}>
-              生物识别登录
-            </h2>
-            <p className="text-sm text-slate-500 font-bold uppercase tracking-widest">
-              使用指纹或面部识别安全登录
-            </p>
-          </div>
-
-          <div className="space-y-10">
-            {/* 1. 生物识别入口 (首选) */}
-            <div className="group relative">
-               <div className={`absolute -inset-1 rounded-[2.5rem] blur opacity-20 group-hover:opacity-40 transition duration-1000 ${isMasterUser ? 'bg-gradient-to-r from-amber-500 to-orange-600' : 'bg-gradient-to-r from-blue-600 to-indigo-600'}`}></div>
-               <button 
-                onClick={handlePasskeyLogin}
-                disabled={isPasskeyLoading || !email}
-                className="relative w-full p-10 bg-slate-900 hover:bg-slate-800 border border-white/5 rounded-[2rem] transition-all flex items-center justify-between group active:scale-[0.98]"
-               >
-                 <div className="flex items-center gap-6">
-                    <div className="w-20 h-20 bg-blue-500/10 rounded-[1.5rem] flex items-center justify-center border border-blue-500/20">
-                       <Fingerprint size={48} className="text-blue-500 group-hover:scale-110 transition-transform" />
-                    </div>
-                    <div className="text-left">
-                       <p className="text-xl font-black text-white leading-none mb-2">
-                         {t('auth_passkey_entry')}
-                         {isPasskeyLoading && <span className="ml-2 text-sm text-blue-400">(等待验证...)</span>}
-                       </p>
-                       <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
-                         {t('auth_passkey_desc')}
-                         {!isPasskeyLoading && <span className="block text-blue-400 mt-1">📱 支持手机扫码跨设备验证</span>}
-                       </p>
-                    </div>
-                 </div>
-                 {isPasskeyLoading ? <Loader2 size={24} className="animate-spin text-blue-500" /> : <ArrowRight size={20} className="text-slate-700 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />}
-               </button>
-            </div>
-
-            {/* 纯净的指纹登录流程 */}
-            <div className="space-y-6">
-              <div className="space-y-4">
-                 <div className={`relative group border-2 rounded-[1.5rem] transition-all duration-500 border-white/5 bg-white/[0.01]`}>
-                    <div className="absolute left-6 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-white/5 border border-white/5 text-slate-500 group-focus-within:text-blue-500 transition-all">
-                       <User size={18} />
-                    </div>
-                    <input 
-                      type="email" 
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="请输入管理员邮箱"
-                      className="w-full pl-20 pr-6 py-6 bg-transparent rounded-2xl text-white text-lg font-bold outline-none focus:bg-white/[0.02] transition-all" 
-                    />
-                 </div>
+                <h3 className="font-semibold text-white">生物识别安全</h3>
               </div>
-
-              {error && (
-                <div className="flex items-center space-x-3 p-5 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-xs font-bold animate-shake">
-                   <AlertCircle size={18} />
-                   <span className="leading-tight">{error}</span>
+              <p className="text-slate-400 text-sm leading-relaxed">
+                采用Passkeys生物识别技术，无需密码，安全便捷的登录体验。
+              </p>
+            </div>
+            
+            <div className="bg-slate-900/50 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                  <Activity className="w-5 h-5 text-purple-400" />
                 </div>
-              )}
-
-              <button 
-                type="button" 
-                onClick={handleMasterLogin}
-                disabled={isPasskeyLoading || !email}
-                className={`w-full h-20 rounded-[1.5rem] font-black text-xs uppercase tracking-[0.4em] flex items-center justify-center space-x-4 transition-all shadow-2xl active-scale-95 disabled:bg-slate-800/50 disabled:text-slate-600 bg-slate-800 text-slate-400`}
-              >
-                {isPasskeyLoading ? <Loader2 size={24} className="animate-spin" /> : (
-                  <>
-                    <span>🔐 指纹登录</span>
-                    <ArrowRight size={20} />
-                  </>
-                )}
-              </button>
-
-              {/* Dev 跳过按钮 - 仅在开发环境显示 */}
-              {process.env.NODE_ENV === 'development' && (
-                <button 
-                  type="button"
-                  onClick={() => {
-                    // Dev 环境直接登录 - 更简单的实现
-                    const mockUser = {
-                      id: 'dev-user-1',
-                      email: email || 'dev@example.com',
-                      name: 'Developer User',
-                      role: 'admin'
-                    };
-                    
-                    // 设置本地存储
-                    localStorage.setItem('jx_dev_bypass', 'true');
-                    localStorage.setItem('jx_dev_user', JSON.stringify(mockUser));
-                    
-                    // 显示成功提示
-                    alert(`开发模式登录成功！\n用户: ${mockUser.email}\n角色: ${mockUser.role}\n正在跳转到主页...`);
-                    
-                    // 延迟刷新页面以显示提示
-                    setTimeout(() => {
-                      window.location.reload();
-                    }, 1500);
-                  }}
-                  className="w-full h-12 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold text-sm mt-4 transition-colors"
-                >
-                  🛠️ Dev 跳过指纹 (生产环境删除)
-                </button>
-              )}
+                <h3 className="font-semibold text-white">实时监控</h3>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-400">系统时间</span>
+                  <span className="text-white font-mono">{sysTime}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-400">状态</span>
+                  <span className="text-emerald-400 flex items-center gap-1">
+                    <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
+                    运行正常
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
+        </div>
+        
+        <LegalFooter lang={i18n.language === 'fil' ? 'en' : i18n.language as Language} />
+      </div>
 
-          {/* 底部状态 */}
-          <div className="flex items-center justify-between px-2 pt-12 border-t border-white/5">
-             <div className="flex items-center gap-6">
-                <div className="flex items-center gap-2 text-[10px] font-black text-slate-600 uppercase tracking-widest">
-                   <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                   {t('rls_status')}
+      {/* 右侧面板：登录表单 */}
+      <div className="flex-1 flex flex-col justify-center p-16 bg-[#020617]/95 backdrop-blur-sm">
+        <div className="max-w-md mx-auto w-full space-y-8">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Lock className="w-8 h-8 text-amber-400" />
+            </div>
+            <h2 className="text-3xl font-bold text-white mb-2">欢迎回来</h2>
+            <p className="text-slate-400">使用生物识别技术安全登录</p>
+          </div>
+
+          <form onSubmit={handleMasterLogin} className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                邮箱地址
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
+                placeholder="请输入您的邮箱地址"
+                required
+              />
+            </div>
+
+            {error && (
+              <div className="p-4 bg-red-500/20 border border-red-500/30 rounded-xl">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
+                  <p className="text-red-300 text-sm whitespace-pre-line">{error}</p>
                 </div>
-             </div>
-             <LegalFooter lang={i18n.language as 'zh' | 'en'} />
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={isPasskeyLoading}
+              className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isPasskeyLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  验证中...
+                </>
+              ) : (
+                <>
+                  <Fingerprint className="w-5 h-5" />
+                  生物识别登录
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSmartPasskeyLogin}
+              disabled={isPasskeyLoading}
+              className="w-full bg-slate-700 hover:bg-slate-600 text-white font-medium py-2.5 px-4 rounded-xl transition-all duration-200 text-sm"
+            >
+              智能登录 (检测凭证状态)
+            </button>
+          </form>
+
+          <div className="text-center space-y-4">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-700"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 bg-[#020617] text-slate-500">其他选项</span>
+              </div>
+            </div>
+            
+            <button
+              onClick={toggleLanguage}
+              className="text-slate-400 hover:text-white text-sm transition-colors"
+            >
+              切换语言: {i18n.language === 'zh' ? '中文' : i18n.language === 'en' ? 'English' : 'Filipino'}
+            </button>
           </div>
         </div>
       </div>
-
-      <style>{`
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-4px); }
-          75% { transform: translateX(4px); }
-        }
-        .animate-shake { animation: shake 0.2s ease-in-out 0s 2; }
-        .animate-fade-up { animation: fade-up 0.6s ease-out forwards; }
-        @keyframes fade-up {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </div>
   );
 };

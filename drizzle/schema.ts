@@ -1,4 +1,4 @@
-import { pgTable, text, numeric, timestamp, integer, boolean, jsonb, pgEnum, cidr } from 'drizzle-orm/pg-core';
+import { pgTable, text, numeric, timestamp, integer, boolean, jsonb, pgEnum, cidr, uuid, index, varchar } from 'drizzle-orm/pg-core';
 
 // 角色枚举
 export const roleEnum = pgEnum('user_role', ['admin', 'staff', 'partner', 'user']);
@@ -29,6 +29,29 @@ export const session = pgTable('session', {
   createdAt: timestamp('created_at').notNull().defaultNow(), // Better Auth 标准字段名
   updatedAt: timestamp('updated_at').notNull().defaultNow(), // Better Auth 标准字段名
 });
+
+// ✅ 添加 Passkey 表结构 (用于生物识别认证)
+export const passkeys = pgTable('passkeys', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  // 核心外键：关联到认证 user 表
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  // WebAuthn 核心安全字段  
+  credentialId: text('credential_id').notNull().unique(), // base64 编码的凭证 ID
+  publicKey: text('public_key').notNull(), // 公钥 PEM 格式
+  counter: integer('counter').notNull().default(0), // 防重放攻击计数器
+  // 设备元数据
+  deviceType: text('device_type').notNull(), // 'cross-platform' 或 'platform'
+  transports: jsonb('transports').default([]), // 支持的传输方式
+  // 时间字段
+  lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
+  expiresAt: timestamp('expires_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull()
+}, (table) => ({
+  // 索引优化
+  userIdIdx: index('passkeys_user_id_idx').on(table.userId),
+  credentialIdIdx: index('passkeys_credential_id_idx').on(table.credentialId)
+}));
 
 // 2. 业务用户表 (用于应用特定逻辑)
 // 与 api.ts 中使用的 'users' 表对应
