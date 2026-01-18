@@ -3,9 +3,19 @@ import { db } from '../../src/services/db.server.js';
 import { user as authUser, users as businessUsers } from '../../drizzle/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+import { z } from 'zod'; // 添加 Zod 验证
 
 // 存储临时注册token的内存映射（生产环境建议使用Redis）
 const registrationTokens = new Map<string, { userId: string; createdAt: Date; email: string }>();
+
+// 请求体验证 schema
+const CreateUserSchema = z.object({
+  email: z.string().email(),
+  name: z.string().min(1),
+  role: z.string().optional(),
+  partnerId: z.string().nullable().optional(),
+  createdBy: z.string().optional()
+});
 
 export const config = {
   runtime: 'nodejs',
@@ -20,9 +30,9 @@ export default async function handler(request: Request) {
   }
 
   try {
-    // 解析请求体
+    // 解析并验证请求体
     const body = await request.json();
-    const { email, name, role, partnerId, createdBy } = body;
+    const { email, name, role, partnerId, createdBy } = CreateUserSchema.parse(body);
 
     // 权限校验：检查请求者是否为管理员
     // 这里需要从前端传递管理员session信息进行验证
@@ -50,14 +60,6 @@ export default async function handler(request: Request) {
       });
     }
 
-    // 验证必填字段
-    if (!email || !name) {
-      return new Response(JSON.stringify({ error: 'Email and name are required' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
     // 生成用户ID
     const userId = `user_${Date.now()}_${nanoid(8)}`;
 
@@ -66,10 +68,10 @@ export default async function handler(request: Request) {
       id: userId,
       name: name,
       email: email,
-      emailVerified: true, // 使用正确的字段名
+      emailVerified: true, // ✅ 修复：使用驼峰命名
       image: null,
-      role: role || 'user', // 默认为'user'符合Better Auth标准
-      partnerId: partnerId || null,
+      role: role || 'user',
+      partnerId: partnerId || null, // ✅ 修复：使用驼峰命名
       modulePermissions: null,
       createdAt: new Date(),
       updatedAt: new Date()
@@ -82,12 +84,12 @@ export default async function handler(request: Request) {
       email: email,
       name: name,
       role: role || 'staff',
-      partnerId: partnerId || null,
+      partnerId: partnerId || null, // ✅ 修复：使用驼峰命名
       modulePermissions: null,
-      authType: 'passkey',
-      emailVerified: true, // 使用正确的字段名
-      isActive: false, // 使用正确的字段名
-      isPasskeyBound: false, // 使用正确的字段名
+      authType: 'passkey', // ✅ 修复：使用驼峰命名
+      emailVerified: true, // ✅ 修复：使用驼峰命名
+      isActive: false, // ✅ 修复：使用驼峰命名
+      isPasskeyBound: false, // ✅ 修复：使用驼峰命名
       createdAt: new Date(),
       updatedAt: new Date()
     });
@@ -121,6 +123,17 @@ export default async function handler(request: Request) {
 
   } catch (error: any) {
     console.error('Error creating user:', error);
+    // 区分验证错误和其他错误
+    if (error instanceof z.ZodError) {
+      return new Response(JSON.stringify({ 
+        error: 'Validation failed',
+        details: error.errors 
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
     return new Response(JSON.stringify({ 
       error: 'Failed to create user',
       details: error.message 
