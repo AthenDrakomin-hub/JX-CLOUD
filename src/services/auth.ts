@@ -1,4 +1,3 @@
-
 /**
  * JX CLOUD - 极简 TOTP 算法实现 (Web Crypto API)
  * 支持与 Google Authenticator 对齐

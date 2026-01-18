@@ -1,4 +1,3 @@
-
 export enum UserRole {
   ADMIN = 'admin',      
   STAFF = 'staff',
@@ -38,6 +37,12 @@ export interface User {
   ipWhitelist?: string[];
   isEnvLocked?: boolean;
   partnerId?: string;
+  emailVerified?: boolean;
+  isActive?: boolean;
+  isPasskeyBound?: boolean;
+  authType?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface OrderItem {

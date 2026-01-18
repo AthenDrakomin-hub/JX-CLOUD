@@ -1,7 +1,7 @@
 
-import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Dish, Order, OrderStatus, Category, PaymentMethodConfig } from '../types';
-import { Language, getTranslation } from '../translations';
+import { useTranslation } from 'react-i18next';
 import { api } from '../services/api-client';
 import { 
   Plus, Minus, Globe, Search,
@@ -38,8 +38,8 @@ interface GuestOrderProps {
   dishes: Dish[];
   categories?: Category[];
   onSubmitOrder: (order: Partial<Order>) => Promise<void>;
-  lang: Language;
-  onToggleLang: () => void;
+  lang?: Language;
+  onToggleLang?: () => void;
   onRescan: () => void;
 }
 
@@ -61,7 +61,7 @@ const GuestOrder: React.FC<GuestOrderProps> = ({
   
   const [paymentProof, setPaymentProof] = useState('');
 
-  const t = useCallback((key: string, params?: any) => getTranslation(lang, key, params), [lang]);
+  const { t, i18n } = useTranslation();
 
   useEffect(() => {
     api.payments.getAll().then(pAll => {

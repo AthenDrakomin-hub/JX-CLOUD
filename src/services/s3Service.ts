@@ -90,5 +90,25 @@ export const s3Service = {
       console.error("Storage Delete Error:", error);
       throw error;
     }
+  },
+
+  /**
+   * 获取公开 URL
+   */
+  async getPublicUrl(key: string): Promise<string> {
+    if (!supabase) throw new Error("Supabase client not initialized");
+    
+    try {
+      const { data, error } = await supabase.storage
+        .from(BUCKET_NAME)
+        .getPublicUrl(key);
+
+      if (error) throw error;
+      
+      return data.publicUrl;
+    } catch (error) {
+      console.error("Storage Get Public URL Error:", error);
+      throw error;
+    }
   }
 };

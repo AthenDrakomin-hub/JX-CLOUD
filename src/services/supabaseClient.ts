@@ -51,7 +51,7 @@ export const createSupabaseClient = () => {
 // 导出 Supabase 实例（可能为 null，直到初始化完成）
 export const supabase = supabaseInstance;
 
-export const ADMIN_CREDENTIALS = { email: 'athendrakomin@proton.me' };
+export const ADMIN_CREDENTIALS = { email: 'admin@example.com' };
 export const STAFF_CREDENTIALS = { id: 'staff_user' };
 
 /**

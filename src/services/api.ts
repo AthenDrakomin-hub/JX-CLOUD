@@ -39,6 +39,50 @@ async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promi
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(`API 请求错误 (${endpoint}):`, errorMessage);
+    
+    // 开发环境返回模拟数据而不是抛出错误
+    if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+      console.log('🔧 开发环境: 返回模拟数据');
+      // 根据endpoint返回相应的模拟数据
+      if (endpoint.includes('/config')) {
+        return { 
+          hotelName: '江西云厨(开发)', 
+          theme: 'light', 
+          autoPrintOrder: true, 
+          ticketStyle: 'standard', 
+          fontFamily: 'Plus Jakarta Sans' 
+        } as any;
+      }
+      if (endpoint.includes('/rooms')) {
+        return [
+          { id: '1', status: 'ready' },
+          { id: '2', status: 'ordering' },
+          { id: '3', status: 'ready' }
+        ] as any;
+      }
+      if (endpoint.includes('/orders')) {
+        return [] as any;
+      }
+      if (endpoint.includes('/dishes')) {
+        return INITIAL_DISHES.map(dish => ({
+          ...dish,
+          partnerId: 'demo-partner'
+        })) as any;
+      }
+      if (endpoint.includes('/categories')) {
+        return INITIAL_CATEGORIES.map(cat => ({
+          ...cat,
+          partnerId: 'demo-partner'
+        })) as any;
+      }
+      if (endpoint.includes('/partners')) {
+        return [] as any;
+      }
+      if (endpoint.includes('/expenses')) {
+        return [] as any;
+      }
+    }
+    
     throw new Error(`请求失败: ${errorMessage}`);
   }
 }
@@ -322,6 +366,27 @@ export const api = {
   users: {
     getAll: async (filters?: { partnerId?: string }): Promise<User[]> => {
       try {
+        // 开发环境：直接返回模拟数据
+        if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+          return [
+            {
+              id: '1',
+              username: 'admin',
+              email: 'admin@example.com',
+              name: '系统管理员',
+              role: UserRole.ADMIN,
+              partnerId: undefined,
+              modulePermissions: undefined,
+              emailVerified: true,
+              isActive: true,
+              isPasskeyBound: true,
+              authType: 'passkey',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            }
+          ];
+        }
+        
         // 通过 API 检查系统状态来判断是否为演示模式
         const response = await fetch('/api/system/status');
         const isDemoMode = !response.ok;
@@ -375,6 +440,27 @@ export const api = {
     // 使用LEFT JOIN查询认证表和业务表的联合视图
     getAllWithBusinessData: async (): Promise<User[]> => {
       try {
+        // 开发环境：直接返回模拟数据
+        if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+          return [
+            {
+              id: '1',
+              username: 'admin',
+              email: 'admin@example.com',
+              name: '系统管理员',
+              role: UserRole.ADMIN,
+              partnerId: undefined,
+              modulePermissions: undefined,
+              emailVerified: true,
+              isActive: true,
+              isPasskeyBound: true,
+              authType: 'passkey',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            }
+          ];
+        }
+        
         const response = await fetch('/api/system/status');
         const isDemoMode = !response.ok;
         

@@ -4,9 +4,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --port 3000",
     "build": "vite build",
-    "preview": "vite preview",
+    "preview": "vite preview --port 3000",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
@@ -14,7 +14,8 @@
     "users:init": "tsx scripts/init-users.ts",
     "categories:init": "tsx scripts/init-categories.ts",
     "schema:check": "tsx scripts/check-schema.ts",
-    "schema:update": "tsx scripts/update-schema.ts"
+    "schema:update": "tsx scripts/update-schema.ts",
+    "db:sync": "tsx src/scripts/force-sync-auth.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",

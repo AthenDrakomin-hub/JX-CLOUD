@@ -91,7 +91,8 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3001,
+    port: 3000,
     open: true
+    // 移除API代理配置，在本地开发环境中API路由由Vite直接处理
   }
 });

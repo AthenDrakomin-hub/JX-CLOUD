@@ -75,16 +75,18 @@ const StaffManagement: React.FC<StaffManagementProps> = ({
   const [activeSubTab, setActiveSubTab] = useState<'accounts' | 'partners'>('accounts');
   const [isOpen, setIsOpen] = useState(false);
   const [editing, setEditing] = useState<User | null>(null);
-  const [showInviteLink, setShowInviteLink] = useState<string | null>(null);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [registrationLink, setRegistrationLink] = useState('');
   const [selectedRole, setSelectedRole] = useState<UserRole>(UserRole.STAFF);
   const [isPasskeyLoading, setIsPasskeyLoading] = useState(false);
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
   
   const [permissions, setPermissions] = useState<Partial<Record<AppModule, CRUDPermissions>>>({});
 
   const t = useCallback((key: string) => getTranslation(lang, key), [lang]);
 
   const handleOpen = (u: User | null) => {
-    if (u?.email === 'athendrakomin@proton.me' && currentUser?.email !== 'athendrakomin@proton.me') {
+    if (u?.role === 'admin' && currentUser?.role !== 'admin') {
       alert("⚠️ ROOT_DENIED: Physical asset locked.");
       return;
     }
@@ -116,35 +118,136 @@ const StaffManagement: React.FC<StaffManagementProps> = ({
     const email = fd.get('email') as string;
     const name = fd.get('name') as string;
     
-    const userData: User = { 
-      ...editing, 
-      id: editing?.id || `u-${Date.now()}`, 
-      name, 
-      email,
-      username: email.split('@')[0], 
-      role: selectedRole,
-      partnerId: selectedRole === UserRole.PARTNER ? (editing?.partnerId || `p-${Date.now()}`) : undefined,
-      modulePermissions: permissions
-    }; 
+    setIsCreatingUser(true);
     
     try {
       if (editing) {
+        // 更新现有用户
+        const userData: User = { 
+          ...editing, 
+          name, 
+          email,
+          username: email.split('@')[0], 
+          role: selectedRole,
+          partnerId: selectedRole === UserRole.PARTNER ? (editing?.partnerId || `p-${Date.now()}`) : undefined,
+          modulePermissions: permissions
+        }; 
         await onUpdateUser(userData);
         setIsOpen(false);
       } else {
-        await onAddUser(userData);
-        const payload = { email, role: selectedRole, name, ts: Date.now() };
-        const activationToken = btoa(JSON.stringify(payload));
-        setShowInviteLink(`${window.location.origin}${window.location.pathname}?activate=${activationToken}`);
+        // 创建新用户并生成Passkey邀请链接
+        const adminEmail = currentUser?.email || 'admin@example.com'; // 获取当前管理员邮箱
+        
+        const response = await fetch('/api/admin/create-user', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-email': adminEmail
+          },
+          body: JSON.stringify({
+            email,
+            name,
+            role: selectedRole,
+            partnerId: selectedRole === UserRole.PARTNER ? `p-${Date.now()}` : undefined,
+            createdBy: adminEmail
+          })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          // 显示Passkey注册链接模态框
+          setRegistrationLink(result.registrationLink);
+          setShowInviteModal(true);
+          setIsOpen(false);
+          
+          // 刷新用户列表
+          onRefresh();
+        } else {
+          alert(`创建失败: ${result.error}`);
+        }
       }
-      onRefresh();
     } catch (err) {
+      console.error('User creation error:', err);
       alert(t('error'));
+    } finally {
+      setIsCreatingUser(false);
+    }
+  };
+
+  // 复制到剪贴板功能
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      alert('链接已复制到剪贴板！');
+    } catch (error) {
+      console.error('Failed to copy:', error);
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      alert('链接已复制到剪贴板！');
     }
   };
 
   return (
     <div className="space-y-8 animate-fade-up">
+      {/* 现有的组件内容保持不变 */}
+
+      {/* Passkey注册链接模态框 */}
+      {showInviteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white">员工入职邀请</h3>
+                <button 
+                  onClick={() => setShowInviteModal(false)}
+                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="text-center space-y-4">
+                <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto">
+                  <CheckCircle2 size={32} className="text-green-600 dark:text-green-400" />
+                </div>
+                <h4 className="text-lg font-bold text-slate-900 dark:text-white">
+                  账户创建成功！
+                </h4>
+                <p className="text-slate-600 dark:text-slate-300">
+                  请将以下邀请链接发送给新员工完成指纹绑定：
+                </p>
+                
+                <div className="bg-slate-100 dark:bg-slate-700 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-slate-800 dark:text-slate-200 break-all">
+                    {registrationLink}
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => copyToClipboard(registrationLink)}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                >
+                  <Copy size={18} />
+                  一键复制注册链接
+                </button>
+
+                <button
+                  onClick={() => setShowInviteModal(false)}
+                  className="w-full mt-3 px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                >
+                  完成
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="flex flex-col md:flex-row justify-between items-center bg-white p-8 rounded-[3rem] border border-slate-200 shadow-premium relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 blur-[80px] rounded-full" />
         <div className="flex items-center space-x-6 relative z-10">
@@ -175,7 +278,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 pb-32">
             {users.map(u => {
               const isMe = u.email === currentUser?.email;
-              const isRoot = u.email === 'athendrakomin@proton.me';
+              const isRoot = u.role === 'admin';
               return (
                 <div key={u.id} className={`bg-white p-10 rounded-[4rem] border transition-all cursor-pointer group flex flex-col relative overflow-hidden ${isRoot ? 'border-amber-200 shadow-xl ring-2 ring-amber-100' : 'hover:border-blue-600 shadow-md'}`} onClick={() => handleOpen(u)}>
                   {isRoot && <div className="absolute top-0 right-0 bg-amber-500 text-white px-4 py-1.5 text-[8px] font-black uppercase tracking-widest">{t('root_authority')}</div>}
@@ -189,6 +292,21 @@ const StaffManagement: React.FC<StaffManagementProps> = ({
                   </div>
                   <h4 className="font-black text-slate-900 text-xl tracking-tight">{u.name}</h4>
                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{u.email}</p>
+                  
+                  {/* Passkey绑定状态指示 */}
+                  <div className="mt-4 flex items-center gap-2">
+                    {u.isPasskeyBound ? (
+                      <div className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 rounded-full text-[8px] font-bold">
+                        <CheckCircle2 size={10} />
+                        <span>已绑定指纹</span>
+                      </div>
+                    ) : (
+                      <div className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-[8px] font-bold">
+                        <AlertCircle size={10} />
+                        <span>待绑定指纹</span>
+                      </div>
+                    )}
+                  </div>
                   
                   {isMe && (
                     <button 
@@ -333,9 +451,26 @@ const StaffManagement: React.FC<StaffManagementProps> = ({
                   </div>
                   
                   <div className="pt-10 border-t border-slate-100">
-                    <button type="submit" className="w-full py-6 bg-slate-950 text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.4em] flex items-center justify-center gap-4 hover:bg-blue-600 transition-all shadow-xl active-scale-95">
-                      <Save size={20} />
-                      <span>{editing ? t('save_permissions') : t('issue_certificate')}</span>
+                    <button 
+                      type="submit" 
+                      disabled={isCreatingUser}
+                      className={`w-full py-6 rounded-[2rem] font-black text-xs uppercase tracking-[0.4em] flex items-center justify-center gap-4 transition-all shadow-xl active-scale-95 ${
+                        isCreatingUser 
+                          ? 'bg-slate-400 text-slate-200 cursor-not-allowed' 
+                          : 'bg-slate-950 text-white hover:bg-blue-600'
+                      }`}
+                    >
+                      {isCreatingUser ? (
+                        <>
+                          <Loader2 size={20} className="animate-spin" />
+                          <span>创建中...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Save size={20} />
+                          <span>{editing ? t('save_permissions') : t('issue_certificate')}</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 </form>

@@ -41,6 +41,9 @@ export const users = pgTable('users', {
   partnerId: text('partner_id'), 
   modulePermissions: jsonb('module_permissions'), // 存储模块级 CRUD 权限
   authType: text('auth_type').default('credentials'), // 认证类型
+  emailVerified: boolean('email_verified').default(false), // 邮箱验证状态
+  isActive: boolean('is_active').default(true), // 用户是否活跃
+  isPasskeyBound: boolean('is_passkey_bound').default(false), // Passkey绑定状态
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });

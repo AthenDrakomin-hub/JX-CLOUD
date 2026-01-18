@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dish, Order, Category, PaymentMethodConfig } from './types';
-import { Language, getTranslation } from './translations';
+import { useTranslation } from 'react-i18next';
 import { api } from './services/api';
 import GuestOrder from './components/GuestOrder';
 
@@ -14,9 +14,7 @@ const GuestEntry: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [lang, setLang] = useState<Language>('zh');
-
-  const t = useCallback((key: string, params?: any) => getTranslation(lang, params ? key : key, params), [lang]);
+  const { t } = useTranslation();
 
   useEffect(() => {
     // 从 URL 参数获取房间 ID
@@ -87,10 +85,10 @@ const GuestEntry: React.FC = () => {
       }
 
       // 显示成功消息
-      alert('订单提交成功！厨房已收到您的订单。');
+      alert(t('order_submitted_success')); // Using translated message
     } catch (err) {
       console.error('提交订单失败:', err);
-      alert('订单提交失败，请稍后重试。');
+      alert(t('order_submit_failed')); // Using translated message
     }
   };
 
@@ -129,14 +127,21 @@ const GuestEntry: React.FC = () => {
     return null;
   }
 
+  const { i18n } = useTranslation();
+
+  const toggleLanguage = () => {
+    const newLang = i18n.language === 'zh' ? 'en' : 'zh';
+    i18n.changeLanguage(newLang);
+  };
+
   return (
     <GuestOrder 
       roomId={roomId}
       dishes={dishes}
       categories={categories}
       onSubmitOrder={handleOrderSubmit}
-      lang={lang}
-      onToggleLang={() => setLang(prev => prev === 'zh' ? 'en' : 'zh')}
+      lang={i18n.language as any} // Pass current i18next language
+      onToggleLang={toggleLanguage}
       onRescan={() => window.location.reload()}
     />
   );

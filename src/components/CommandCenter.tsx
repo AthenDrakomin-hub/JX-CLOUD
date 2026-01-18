@@ -5,8 +5,8 @@ import {
   Utensils, Zap, X, ArrowRight, Sun, 
   Moon, LogOut, Printer, LayoutDashboard
 } from 'lucide-react';
-import { HotelRoom, Order, Dish } from './types';
-import { Language, getTranslation } from '../translations';
+import { HotelRoom, Order, Dish } from '../types';
+import { useTranslation } from 'react-i18next';
 
 interface CommandCenterProps {
   isOpen: boolean;
@@ -14,19 +14,19 @@ interface CommandCenterProps {
   rooms: HotelRoom[];
   orders: Order[];
   dishes: Dish[];
-  lang: Language;
+  lang?: Language;  // Made optional since we're using i18next
   onNavigate: (tab: string) => void;
   onToggleTheme: () => void;
   onLogout: () => void;
 }
 
 const CommandCenter: React.FC<CommandCenterProps> = ({ 
-  isOpen, onClose, rooms, orders, dishes, lang, onNavigate, onToggleTheme, onLogout 
+  isOpen, onClose, rooms, orders, dishes, onNavigate, onToggleTheme, onLogout 
 }) => {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
-  const t = (key: string) => getTranslation(lang, key);
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (isOpen) {

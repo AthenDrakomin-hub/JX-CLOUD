@@ -104,6 +104,6 @@ INSERT INTO public.system_config (id, hotel_name) VALUES ('global', '江西云�
 
 -- 7. 初始化用户 (根管理员和员工)
 INSERT INTO public.users (id, username, email, name, role) VALUES 
-('admin-root', 'AthenDrakomin', 'athendrakomin@proton.me', '系统总监', 'admin'),
+('admin-root', 'admin', 'admin@example.com', '系统总监', 'admin'),
 ('staff-user', 'staff', 'staff@jxcloud.com', '普通员工', 'staff')
 ON CONFLICT (email) DO NOTHING;

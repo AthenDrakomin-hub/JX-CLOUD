@@ -114,7 +114,7 @@ export const INITIAL_CATEGORIES: Category[] = [
 export const INITIAL_DISHES: Dish[] = dishesData;
 
 export const INITIAL_USERS: User[] = [
-  { id: 'admin-root', username: 'AthenDrakomin', email: 'athendrakomin@proton.me', role: UserRole.ADMIN, name: '系统总监', isOnline: false, isEnvLocked: true }
+  { id: 'admin-root', username: 'admin', email: 'admin@example.com', role: UserRole.ADMIN, name: '系统总监', isOnline: false, isEnvLocked: true }
 ];
 
 export const COLORS = { primary: '#2563eb', success: '#22c55e', danger: '#ef4444', warning: '#f59e0b' };

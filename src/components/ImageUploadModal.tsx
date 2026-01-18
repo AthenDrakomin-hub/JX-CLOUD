@@ -49,7 +49,8 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
       }, 200);
 
       const path = await s3Service.uploadFile(file);
-      const imageUrl = `https://db.zlbemopcgjohrnyyiwvs.supabase.co/storage/v1/object/public/jiangxiyunchu/${path}`;
+      // Use the s3Service to get the proper public URL instead of hardcoded URL
+      const imageUrl = await s3Service.getPublicUrl(path);
       
       clearInterval(interval);
       setUploadProgress(100);

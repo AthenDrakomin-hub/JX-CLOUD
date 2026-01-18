@@ -12,7 +12,6 @@ import LegalFooter from './LegalFooter';
 const AuthPage: React.FC = () => {
   const { t, i18n } = useTranslation();
   const [email, setEmail] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [isPasskeyLoading, setIsPasskeyLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sysTime, setSysTime] = useState(new Date().toLocaleTimeString());
@@ -34,53 +33,79 @@ const AuthPage: React.FC = () => {
     }
   }, [i18n]);
 
-  // 严格匹配根管理员邮箱进行上帝模式旁路注入
-  const isMasterUser = email.trim().toLowerCase() === 'athendrakomin@proton.me';
+  // 检查用户是否为管理员（基于后端会话数据）
+  const [isAdminUser, setIsAdminUser] = useState(false);
+  const [isMasterUser, setIsMasterUser] = useState(false); // Add missing variable
+  
+  // 根据会话数据更新管理员状态
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      try {
+        const session = await authClient.getSession();
+        const userRole = session?.user?.role;
+        setIsAdminUser(userRole === 'admin');
+        setIsMasterUser(userRole === 'admin'); // Set master user status
+      } catch (error) {
+        setIsAdminUser(false);
+        setIsMasterUser(false);
+      }
+    };
+    checkAdminStatus();
+  }, [email]);
 
   useEffect(() => {
     const timer = setInterval(() => setSysTime(new Date().toLocaleTimeString()), 1000);
     return () => clearInterval(timer);
   }, []);
 
+  const handleMasterLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log('Passkey login started...', { email });
+    
+    setIsPasskeyLoading(true);
+    setError(null);
+
+    try {
+      // 异步加载增强的认证客户端（包含 WebAuthn 插件）
+      const enhancedClient = await getEnhancedAuthClient();
+      
+      // Call passkey login with the provided email
+      await enhancedClient.signIn.passkey({
+        email,
+      });
+      
+      console.log('Passkey sign in successful');
+      window.location.href = "/";
+    } catch (err: any) {
+      console.error('Passkey login error:', err);
+      // 检查是否是跨设备场景（没有指纹硬件）或不支持的错误
+      if (err.name === 'NotAllowedError' || 
+          err.name === 'NotSupportedError' ||
+          err.message?.includes('platform authenticator not available') ||
+          err.message?.includes('cross-device') || 
+          err.name === 'InvalidStateError' ||
+          err.message?.includes('operation denied') ||
+          err.message?.includes('no credentials') ||
+          err.message?.includes('No available authenticator') ||
+          err.message?.includes('SecurityError') ||
+          err.message?.includes('The operation either timed out or was not allowed')) {
+        // 显示跨设备验证提示和扫码指引
+        setError('🔄 跨设备认证已激活！请使用手机扫描屏幕上的二维码，在手机上完成指纹验证。\n\n📱 操作步骤：\n1. 打开手机相机或微信扫码\n2. 点击链接跳转到手机验证页面\n3. 使用手机指纹完成登录');
+      } else if (err.message !== 'User canceled') {
+        // 其他错误情况
+        setError(`${t('auth_passkey_error')}: ${err.message || err.name || '未知错误'}`);
+      }
+    } finally {
+      setIsPasskeyLoading(false);
+    }
+  };
+
   const toggleLanguage = () => {
     const newLang = i18n.language === 'en' ? 'zh' : 'en';
     i18n.changeLanguage(newLang);
   };
 
-  const handleMasterLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Login started...', { email, isMasterUser });
-    
-    setIsLoading(true);
-    setError(null);
 
-    try {
-      // For now, use a simple approach to verify API connectivity
-      console.log('Attempting sign in with email...', email);
-      
-      // Use email sign in without password for OTP-based flow
-      const result = await authClient.signIn.email({
-        email,
-        password: '' // Empty password for OTP flow
-      });
-      
-      if (result.error) {
-        console.error('Sign in error response:', result.error);
-        setError(result.error.message || 'Login failed');
-        setIsLoading(false);
-        return;
-      }
-      
-      console.log('Sign in initiated successfully, check your email');
-      // Show success message instead of redirecting immediately
-      setError('Verification email sent. Please check your inbox.');
-      setIsLoading(false);
-    } catch (err) {
-      console.error('Login network error:', err);
-      setError(t('error') + ': ' + (err instanceof Error ? err.message : 'Network error'));
-      setIsLoading(false);
-    }
-  };
 
   const handlePasskeyLogin = async () => {
     setIsPasskeyLoading(true);
@@ -96,16 +121,21 @@ const AuthPage: React.FC = () => {
       window.location.href = "/";
     } catch (err: any) {
       console.log('Passkey login error:', err);
-      // 检查是否是跨设备场景（没有指纹硬件）
+      // 检查是否是跨设备场景（没有指纹硬件）或不支持的错误
       if (err.name === 'NotAllowedError' || 
+          err.name === 'NotSupportedError' ||
+          err.message?.includes('platform authenticator not available') ||
           err.message?.includes('cross-device') || 
           err.name === 'InvalidStateError' ||
           err.message?.includes('operation denied') ||
-          err.message?.includes('no credentials')) {
-        // 显示跨设备验证提示
-        setError('🔄 跨设备认证已激活！请使用手机扫描屏幕上的二维码，在手机上完成指纹验证。');
+          err.message?.includes('no credentials') ||
+          err.message?.includes('No available authenticator') ||
+          err.message?.includes('SecurityError') ||
+          err.message?.includes('The operation either timed out or was not allowed')) {
+        // 显示跨设备验证提示和扫码指引
+        setError('🔄 跨设备认证已激活！请使用手机扫描屏幕上的二维码，在手机上完成指纹验证。\n\n📱 操作步骤：\n1. 打开手机相机或微信扫码\n2. 点击链接跳转到手机验证页面\n3. 使用手机指纹完成登录');
       } else if (err.message !== 'User canceled') {
-        // 弹出错误信息 for debugging
+        // 其他错误情况
         alert(`Passkey Login Failed: ${err.name || 'Unknown Error'} - ${err.message || 'No message'}`);
         setError(`${t('auth_passkey_error')}: ${err.message || err.name || '未知错误'}`);
       }
@@ -122,13 +152,13 @@ const AuthPage: React.FC = () => {
         
         <div className="relative z-10 animate-fade-up">
           <div className="flex items-center gap-4">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-1000 ${isMasterUser ? 'bg-amber-500 shadow-[0_0_50px_rgba(245,158,11,0.6)] animate-pulse' : 'bg-blue-600 shadow-[0_0_30px_rgba(37,99,235,0.4)]'}`}>
-              {isMasterUser ? <Zap size={28} className="text-white" /> : <Shield size={28} className="text-white" />}
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-1000 ${isAdminUser ? 'bg-amber-500 shadow-[0_0_50px_rgba(245,158,11,0.6)] animate-pulse' : 'bg-blue-600 shadow-[0_0_30px_rgba(37,99,235,0.4)]'}`}>
+              {isAdminUser ? <Zap size={28} className="text-white" /> : <Shield size={28} className="text-white" />}
             </div>
             <div>
               <h1 className="text-2xl font-black tracking-tighter uppercase leading-none">JX CLOUD</h1>
               <p className="text-[9px] font-bold text-blue-400 uppercase tracking-[0.3em] mt-1">
-                {isMasterUser ? t('master_identity') : t('intel_node')}
+                {isAdminUser ? t('master_identity') : t('intel_node')}
               </p>
             </div>
           </div>
@@ -138,7 +168,7 @@ const AuthPage: React.FC = () => {
           <div className="space-y-4 max-w-md">
             <h2 className="text-6xl font-black tracking-tighter leading-tight italic">
               {t('digital_driven')} <br/>
-              <span className={isMasterUser ? 'text-amber-500' : 'text-blue-500'}>{t('cloud_kitchen')}</span>
+              <span className={isAdminUser ? 'text-amber-500' : 'text-blue-500'}>{t('cloud_kitchen')}</span>
             </h2>
             <p className="text-slate-400 font-medium leading-relaxed">
               {t('auth_description')}
@@ -151,14 +181,14 @@ const AuthPage: React.FC = () => {
                    <Activity size={14} />
                    <span className="text-[9px] font-black uppercase tracking-widest">{t('auth_protocol')}</span>
                 </div>
-                <p className="text-xl font-bold tracking-tight">{isMasterUser ? 'BYPASS_ACTIVE' : t('stable_status')}</p>
+                <p className="text-xl font-bold tracking-tight">{isAdminUser ? 'BYPASS_ACTIVE' : t('stable_status')}</p>
              </div>
              <div className="p-6 rounded-3xl bg-white/5 border border-white/5 backdrop-blur-md space-y-2">
                 <div className="flex items-center gap-2 text-blue-400">
                    <Zap size={14} />
                    <span className="text-[9px] font-black uppercase tracking-widest">{t('mode')}</span>
                 </div>
-                <p className="text-xl font-bold tracking-tight">{isMasterUser ? 'GOD_MODE' : 'STANDARD'}</p>
+                <p className="text-xl font-bold tracking-tight">{isAdminUser ? 'GOD_MODE' : 'STANDARD'}</p>
              </div>
           </div>
         </div>
@@ -175,7 +205,7 @@ const AuthPage: React.FC = () => {
 
       {/* 右侧登录表单面板 */}
       <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-8 relative">
-        <div className={`absolute top-1/4 right-0 w-96 h-96 blur-[120px] rounded-full animate-pulse transition-colors duration-1000 ${isMasterUser ? 'bg-amber-600/20' : 'bg-blue-600/10'}`} />
+        <div className={`absolute top-1/4 right-0 w-96 h-96 blur-[120px] rounded-full animate-pulse transition-colors duration-1000 ${isAdminUser ? 'bg-amber-600/20' : 'bg-blue-600/10'}`} />
         
         {/* 语言切换按钮 */}
         <div className="absolute top-8 right-8 z-20">
@@ -190,11 +220,11 @@ const AuthPage: React.FC = () => {
 
         <div className="w-full max-w-md space-y-12 relative z-10">
           <div className="space-y-2 text-center lg:text-left">
-            <h2 className={`text-4xl font-black tracking-tight ${isMasterUser ? 'text-amber-500' : ''}`}>
-              {isMasterUser ? t('master_auth_title') : t('auth_title')}
+            <h2 className={`text-4xl font-black tracking-tight ${isMasterUser ? 'text-amber-500' : 'text-blue-500'}`}>
+              生物识别登录
             </h2>
             <p className="text-sm text-slate-500 font-bold uppercase tracking-widest">
-              {isMasterUser ? t('master_auth_subtitle') : t('auth_subtitle')}
+              使用指纹或面部识别安全登录
             </p>
           </div>
 
@@ -204,7 +234,7 @@ const AuthPage: React.FC = () => {
                <div className={`absolute -inset-1 rounded-[2.5rem] blur opacity-20 group-hover:opacity-40 transition duration-1000 ${isMasterUser ? 'bg-gradient-to-r from-amber-500 to-orange-600' : 'bg-gradient-to-r from-blue-600 to-indigo-600'}`}></div>
                <button 
                 onClick={handlePasskeyLogin}
-                disabled={isPasskeyLoading || isLoading}
+                disabled={isPasskeyLoading || !email}
                 className="relative w-full p-10 bg-slate-900 hover:bg-slate-800 border border-white/5 rounded-[2rem] transition-all flex items-center justify-between group active:scale-[0.98]"
                >
                  <div className="flex items-center gap-6">
@@ -214,11 +244,11 @@ const AuthPage: React.FC = () => {
                     <div className="text-left">
                        <p className="text-xl font-black text-white leading-none mb-2">
                          {t('auth_passkey_entry')}
-                         {isPasskeyLoading && <span className="ml-2 text-sm text-blue-400">(等待跨设备验证...)</span>}
+                         {isPasskeyLoading && <span className="ml-2 text-sm text-blue-400">(等待验证...)</span>}
                        </p>
                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
                          {t('auth_passkey_desc')}
-                         {!isPasskeyLoading && <span className="block text-blue-400 mt-1">📱 支持跨设备扫码验证</span>}
+                         {!isPasskeyLoading && <span className="block text-blue-400 mt-1">📱 支持手机扫码跨设备验证</span>}
                        </p>
                     </div>
                  </div>
@@ -226,17 +256,10 @@ const AuthPage: React.FC = () => {
                </button>
             </div>
 
-            {/* 分割线 */}
-            <div className="flex items-center gap-6">
-               <div className="h-[1px] flex-1 bg-white/5" />
-               <span className="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em]">或使用邮箱登录</span>
-               <div className="h-[1px] flex-1 bg-white/5" />
-            </div>
-
-            {/* 2. 邮箱+验证码登录 */}
-            <form onSubmit={handleMasterLogin} className="space-y-6">
+            {/* 纯净的指纹登录流程 */}
+            <div className="space-y-6">
               <div className="space-y-4">
-                 <div className={`relative group border-2 rounded-[1.5rem] transition-all duration-500 ${isMasterUser ? 'border-amber-500 bg-amber-500/5 ring-8 ring-amber-500/5' : 'border-white/5 bg-white/[0.01]'}`}>
+                 <div className={`relative group border-2 rounded-[1.5rem] transition-all duration-500 border-white/5 bg-white/[0.01]`}>
                     <div className="absolute left-6 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-white/5 border border-white/5 text-slate-500 group-focus-within:text-blue-500 transition-all">
                        <User size={18} />
                     </div>
@@ -245,14 +268,9 @@ const AuthPage: React.FC = () => {
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder={t('email_placeholder')}
+                      placeholder="请输入管理员邮箱"
                       className="w-full pl-20 pr-6 py-6 bg-transparent rounded-2xl text-white text-lg font-bold outline-none focus:bg-white/[0.02] transition-all" 
                     />
-                    {isMasterUser && (
-                      <div className="absolute right-6 top-1/2 -translate-y-1/2 animate-in zoom-in">
-                        <CheckCircle2 size={20} className="text-amber-500" />
-                      </div>
-                    )}
                  </div>
               </div>
 
@@ -264,18 +282,50 @@ const AuthPage: React.FC = () => {
               )}
 
               <button 
-                type="submit" 
-                disabled={isLoading || !email}
-                className={`w-full h-20 rounded-[1.5rem] font-black text-xs uppercase tracking-[0.4em] flex items-center justify-center space-x-4 transition-all shadow-2xl active-scale-95 disabled:bg-slate-800/50 disabled:text-slate-600 ${isMasterUser ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 ring-4 ring-amber-500/20' : 'bg-slate-800 text-slate-400'}`}
+                type="button" 
+                onClick={handleMasterLogin}
+                disabled={isPasskeyLoading || !email}
+                className={`w-full h-20 rounded-[1.5rem] font-black text-xs uppercase tracking-[0.4em] flex items-center justify-center space-x-4 transition-all shadow-2xl active-scale-95 disabled:bg-slate-800/50 disabled:text-slate-600 bg-slate-800 text-slate-400`}
               >
-                {isLoading ? <Loader2 size={24} className="animate-spin" /> : (
+                {isPasskeyLoading ? <Loader2 size={24} className="animate-spin" /> : (
                   <>
-                    <span>{isMasterUser ? `${t('master_inject_btn')} (v4.2-DB-READY)` : `${t('auth_verify')} (v4.2-DB-READY)`}</span>
+                    <span>🔐 指纹登录</span>
                     <ArrowRight size={20} />
                   </>
                 )}
               </button>
-            </form>
+
+              {/* Dev 跳过按钮 - 仅在开发环境显示 */}
+              {process.env.NODE_ENV === 'development' && (
+                <button 
+                  type="button"
+                  onClick={() => {
+                    // Dev 环境直接登录 - 更简单的实现
+                    const mockUser = {
+                      id: 'dev-user-1',
+                      email: email || 'dev@example.com',
+                      name: 'Developer User',
+                      role: 'admin'
+                    };
+                    
+                    // 设置本地存储
+                    localStorage.setItem('jx_dev_bypass', 'true');
+                    localStorage.setItem('jx_dev_user', JSON.stringify(mockUser));
+                    
+                    // 显示成功提示
+                    alert(`开发模式登录成功！\n用户: ${mockUser.email}\n角色: ${mockUser.role}\n正在跳转到主页...`);
+                    
+                    // 延迟刷新页面以显示提示
+                    setTimeout(() => {
+                      window.location.reload();
+                    }, 1500);
+                  }}
+                  className="w-full h-12 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold text-sm mt-4 transition-colors"
+                >
+                  🛠️ Dev 跳过指纹 (生产环境删除)
+                </button>
+              )}
+            </div>
           </div>
 
           {/* 底部状态 */}

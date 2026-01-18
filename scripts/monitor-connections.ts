@@ -1,5 +1,5 @@
 // 连接池监控和优化脚本
-process.env.DATABASE_URL = "postgresql://postgres.zlbemopcgjohrnyyiwvs:BUAu5RXUctzLUjSc@aws-1-ap-south-1.pooler.supabase.com:6543/postgres?pgbouncer=true&uselibpqcompat=true&sslmode=require";
+// 从环境变量读取数据库URL
 
 import { Pool } from 'pg';
 import * as dotenv from 'dotenv';
