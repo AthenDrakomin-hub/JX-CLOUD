@@ -68,9 +68,7 @@ const AuthPage: React.FC = () => {
 
     try {
       // 使用新的 Passkey 登录方法
-      await signInWithPasskey({
-        email,
-      });
+      await signInWithPasskey();
       
       console.log('Passkey sign in successful');
       window.location.href = "/";

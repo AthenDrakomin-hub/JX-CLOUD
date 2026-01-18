@@ -18,6 +18,7 @@
     "db:sync": "tsx src/scripts/force-sync-auth.ts"
   },
   "dependencies": {
+    "@better-auth/passkey": "^1.4.15",
     "@supabase/supabase-js": "^2.39.0",
     "@types/pg": "^8.16.0",
     "better-auth": "^1.4.15",

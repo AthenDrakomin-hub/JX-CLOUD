@@ -1,6 +1,7 @@
 import { createAuthClient } from "better-auth/client";
 import type { AuthClient as BetterAuthClient } from "better-auth/client";
 import { useState, useEffect } from "react";
+import { passkeyClient } from "@better-auth/passkey/client";
 
 /**
  * 江西云厨 - 身份验证客户端
@@ -40,32 +41,38 @@ const getBaseURL = () => {
   return process.env.BETTER_AUTH_URL || 'https://localhost:3008';
 };
 
+// Passkey 客户端插件配置
+const passkeyPlugin = passkeyClient();
+
 // 创建认证客户端 - 与服务端配置保持一致
 export const authClient = createAuthClient({
   baseURL: getBaseURL(),
-  fetch: noCacheFetch
+  fetch: noCacheFetch,
+  plugins: [passkeyPlugin]
 });
 
-// ✅ 提供类型安全的辅助函数（使用安全检查）
-export const signInWithPasskey = async (options?: any) => {
+// ✅ 提供类型安全的辅助函数（使用类型守卫）
+export const signInWithPasskey = async () => {
   if ('passkey' in authClient.signIn && typeof authClient.signIn.passkey === 'function') {
-    return authClient.signIn.passkey(options);
-  } else {
-    // 如果 passkey 方法不可用，抛出错误提示用户
-    throw new Error('Passkey authentication is not available. Please ensure the service worker is registered and WebAuthn is supported in your browser.');
+    return authClient.signIn.passkey();
   }
+  throw new Error('Passkey authentication is not available. Please ensure the passkey plugin is properly initialized.');
 };
 
 export const signUpWithPasskey = async () => {
   if ('passkey' in authClient.signUp && typeof authClient.signUp.passkey === 'function') {
     return authClient.signUp.passkey();
-  } else {
-    throw new Error('Passkey registration is not available. Please ensure the service worker is registered and WebAuthn is supported in your browser.');
   }
+  throw new Error('Passkey registration is not available. Please ensure the passkey plugin is properly initialized.');
 };
 
 // 导出基础认证方法
 export const { useSession, signIn, signOut, signUp } = authClient;
+
+// 导出增强认证客户端（用于生物识别设置）
+export const getEnhancedAuthClient = async () => {
+  return authClient;
+};
 
 // 开发环境会话Hook
 export const useDevSession = () => {
