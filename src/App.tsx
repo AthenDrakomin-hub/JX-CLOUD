@@ -177,17 +177,22 @@ export default function App() {
     return <GuestEntry />;
   }
 
-  if (isAuthLoading && !localStorage.getItem('jx_root_authority_bypass')) {
+  if (isAuthLoading) {
+    // 即使有 bypass 标志，也要等待认证状态加载完成
     return <div className="h-screen bg-[#020617] flex flex-col items-center justify-center space-y-6"><div className="w-16 h-16 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" /><p className="text-[10px] font-black text-blue-500 uppercase tracking-widest">JX CLOUD SECURE LINK...</p></div>;
   }
 
-  if (!session?.user) {
+  // 明确检查认证状态，确保在生产环境中行为一致
+  if (!session?.data?.user) {
     return <AuthPage />;
   }
 
   const handleLogout = async () => {
+    console.log('开始执行登出操作');
     localStorage.removeItem('jx_root_authority_bypass');
+    // safeSignOut 已经处理了重定向，所以我们只需要调用它
     await signOut(); // This is now safeSignOut which handles redirection internally
+    console.log('登出操作完成');
   };
   
   // 检查是否为管理员且需要绑定生物识别

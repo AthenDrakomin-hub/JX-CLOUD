@@ -36,11 +36,19 @@ export const safeSignOut = async () => {
   try {
     // 1. 调用 Better Auth 官方退出接口
     await authClient.signOut();
-    // 2. 强制清除所有认证相关存储（兜底方案）
-    if (typeof window !== 'undefined') {
+  } catch (error) {
+    console.error('Better Auth 退出接口失败:', error);
+    // 即使官方接口失败，也要继续执行清理操作
+  }
+  
+  // 2. 强制清除所有认证相关存储（兜底方案）
+  if (typeof window !== 'undefined') {
+    try {
+      // 清除 Better Auth 相关存储
       sessionStorage.removeItem('better-auth.session');
       localStorage.removeItem('better-auth.session');
       localStorage.removeItem('better-auth.user');
+      
       // 清除任何可能的认证相关存储
       Object.keys(localStorage).forEach(key => {
         if (key.includes('better-auth') || key.includes('auth')) {
@@ -52,25 +60,18 @@ export const safeSignOut = async () => {
           sessionStorage.removeItem(key);
         }
       });
+    } catch (error) {
+      console.error('清除认证存储失败:', error);
     }
-    // 3. 强制跳转到登录页，避免 React 路由状态残留
-    // 使用完整的 URL 确保正确重定向
-    const loginUrl = typeof window !== 'undefined' 
-      ? `${window.location.protocol}//${window.location.host}/auth`
-      : '/auth';
-    window.location.href = loginUrl;
-  } catch (error) {
-    console.error('退出登录失败:', error);
-    // 即使出错也强制清除状态，避免死锁
-    if (typeof window !== 'undefined') {
-      sessionStorage.clear();
-      localStorage.clear();
-    }
-    const loginUrl = typeof window !== 'undefined' 
-      ? `${window.location.protocol}//${window.location.host}/auth`
-      : '/auth';
-    window.location.href = loginUrl;
   }
+  
+  // 3. 立即重定向到登录页，避免 React 状态问题
+  const loginUrl = typeof window !== 'undefined' 
+    ? `${window.location.origin}/auth`
+    : '/auth';
+  
+  // 直接赋值而不是 replace，确保立即跳转
+  window.location.href = loginUrl;
 };
 
 // ✅ 修复：添加缺失的 getEnhancedAuthClient 函数并正确导出
