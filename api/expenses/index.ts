@@ -1,7 +1,7 @@
 // api/expenses/index.ts - 费用管理API端点
 import { db } from '../../src/services/db.server.js';
 import { expenses as expensesTable } from '../../drizzle/schema.js';
-import { eq, and, gte, lte } from 'drizzle-orm';
+import { eq, and, gte, lte, desc } from 'drizzle-orm';
 import { authenticateUser, hasPartnerAccess, getUserPartnerId } from '../middleware/auth-middleware.js';
 
 export const config = {
@@ -48,7 +48,7 @@ export default async function handler(request: Request) {
       const expenses = await db.select()
         .from(expensesTable)
         .where(and(...conditions))
-        .orderBy(expensesTable.date.desc());
+        .orderBy(desc(expensesTable.date));
       
       return new Response(JSON.stringify(expenses), {
         status: 200,
@@ -93,16 +93,18 @@ export default async function handler(request: Request) {
       }
       
       // 获取目标费用的partnerId
-      const targetExpense = await db.query.expenses.findFirst({
-        where: eq(expensesTable.id, expenseId)
-      });
+      const targetExpenseResult = await db.select().from(expensesTable)
+        .where(eq(expensesTable.id, expenseId))
+        .limit(1);
       
-      if (!targetExpense) {
+      if (targetExpenseResult.length === 0) {
         return new Response(JSON.stringify({ error: 'Expense not found' }), {
           status: 404,
           headers: { 'Content-Type': 'application/json' }
         });
       }
+      
+      const targetExpense = targetExpenseResult[0];
       
       // 验证用户是否有权更新目标费用
       const currentPartnerId = getUserPartnerId(currentUser);
@@ -152,16 +154,18 @@ export default async function handler(request: Request) {
       }
       
       // 获取目标费用的partnerId
-      const targetExpense = await db.query.expenses.findFirst({
-        where: eq(expensesTable.id, expenseId)
-      });
+      const targetExpenseResult = await db.select().from(expensesTable)
+        .where(eq(expensesTable.id, expenseId))
+        .limit(1);
       
-      if (!targetExpense) {
+      if (targetExpenseResult.length === 0) {
         return new Response(JSON.stringify({ error: 'Expense not found' }), {
           status: 404,
           headers: { 'Content-Type': 'application/json' }
         });
       }
+      
+      const targetExpense = targetExpenseResult[0];
       
       // 验证用户是否有权删除目标费用
       const currentPartnerId = getUserPartnerId(currentUser);

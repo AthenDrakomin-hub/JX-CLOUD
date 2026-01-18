@@ -144,6 +144,7 @@ export const orders = pgTable('orders', {
   cashReceived: numeric('cash_received'),
   cashChange: numeric('cash_change'),
   isPrinted: boolean('is_printed').default(false),
+  partnerId: text('partner_id'), // 多租户隔离字段
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
@@ -166,6 +167,7 @@ export const ingredients = pgTable('ingredients', {
   stock: numeric('stock').default('0'),
   minStock: numeric('min_stock').default('10'),
   category: text('category'),
+  partnerId: text('partner_id'), // 多租户隔离字段
   lastRestocked: timestamp('last_restocked').defaultNow(),
 });
 
@@ -175,6 +177,7 @@ export const expenses = pgTable('expenses', {
   category: text('category'),
   description: text('description'),
   date: timestamp('date').defaultNow(),
+  partnerId: text('partner_id'), // 多租户隔离字段
   createdAt: timestamp('created_at').defaultNow(),
 });
 

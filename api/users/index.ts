@@ -35,6 +35,13 @@ export default async function handler(request: Request) {
       }
       
       // 强制使用partnerId进行过滤，防止跨租户数据访问
+      if (!requestedPartnerId) {
+        return new Response(JSON.stringify({ error: 'Partner ID is required' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      
       const users = await db.select()
         .from(businessUsers)
         .where(eq(businessUsers.partnerId, requestedPartnerId));

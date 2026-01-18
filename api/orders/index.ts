@@ -39,7 +39,11 @@ export default async function handler(request: Request) {
       let conditions: any[] = [eq(ordersTable.partnerId, currentPartnerId)]; // 强制过滤当前用户的partnerId
       
       if (status) {
-        conditions.push(eq(ordersTable.status, status));
+        // 验证 status 是否为有效值
+        const validStatuses = ['pending', 'confirmed', 'preparing', 'ready_for_delivery', 'delivered', 'completed', 'cancelled'];
+        if (validStatuses.includes(status)) {
+          conditions.push(eq(ordersTable.status, status as any));
+        }
       }
       if (roomNumber) {
         conditions.push(eq(ordersTable.tableId, roomNumber));
@@ -93,16 +97,18 @@ export default async function handler(request: Request) {
       }
       
       // 获取目标订单的partnerId
-      const targetOrder = await db.query.orders.findFirst({
-        where: eq(ordersTable.id, orderId)
-      });
+      const targetOrderResult = await db.select().from(ordersTable)
+        .where(eq(ordersTable.id, orderId))
+        .limit(1);
       
-      if (!targetOrder) {
+      if (targetOrderResult.length === 0) {
         return new Response(JSON.stringify({ error: 'Order not found' }), {
           status: 404,
           headers: { 'Content-Type': 'application/json' }
         });
       }
+      
+      const targetOrder = targetOrderResult[0];
       
       // 验证用户是否有权更新目标订单
       const currentPartnerId = getUserPartnerId(currentUser);
@@ -152,16 +158,18 @@ export default async function handler(request: Request) {
       }
       
       // 获取目标订单的partnerId
-      const targetOrder = await db.query.orders.findFirst({
-        where: eq(ordersTable.id, orderId)
-      });
+      const targetOrderResult = await db.select().from(ordersTable)
+        .where(eq(ordersTable.id, orderId))
+        .limit(1);
       
-      if (!targetOrder) {
+      if (targetOrderResult.length === 0) {
         return new Response(JSON.stringify({ error: 'Order not found' }), {
           status: 404,
           headers: { 'Content-Type': 'application/json' }
         });
       }
+      
+      const targetOrder = targetOrderResult[0];
       
       // 验证用户是否有权更新目标订单状态
       const currentPartnerId = getUserPartnerId(currentUser);
@@ -219,16 +227,18 @@ export default async function handler(request: Request) {
       }
       
       // 获取目标订单的partnerId
-      const targetOrder = await db.query.orders.findFirst({
-        where: eq(ordersTable.id, orderId)
-      });
+      const targetOrderResult = await db.select().from(ordersTable)
+        .where(eq(ordersTable.id, orderId))
+        .limit(1);
       
-      if (!targetOrder) {
+      if (targetOrderResult.length === 0) {
         return new Response(JSON.stringify({ error: 'Order not found' }), {
           status: 404,
           headers: { 'Content-Type': 'application/json' }
         });
       }
+      
+      const targetOrder = targetOrderResult[0];
       
       // 验证用户是否有权删除目标订单
       const currentPartnerId = getUserPartnerId(currentUser);
