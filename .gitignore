@@ -42,3 +42,27 @@ supabase/.temp/
 # 性能报告
 stats.html
 test-db-connection.ts
+
+# 证书文件
+*.pem
+*.key
+*.crt
+*.cer
+*.p12
+*.pfx
+
+# 本地日志文件
+*.log
+debug.log
+error.log
+access.log
+
+# 本地配置备份
+*.bak
+*.old
+*.orig
+
+# 临时文件
+*.tmp
+*.temp
+Thumbs.db
