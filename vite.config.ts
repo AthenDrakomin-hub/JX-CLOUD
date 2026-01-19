@@ -28,8 +28,8 @@ export default defineConfig({
           betterauth: ['better-auth/react', 'better-auth/client/plugins'],
           supabase: ['@supabase/supabase-js'],
           recharts: ['recharts'],
-          lucide: ['lucide-react'],
-          vendor: ['postgres', 'drizzle-orm']
+          lucide: ['lucide-react']
+          // 移除了vendor: ['postgres', 'drizzle-orm']，因为这些不应该在前端使用
         }
       }
     }
