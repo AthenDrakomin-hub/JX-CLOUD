@@ -1,5 +1,6 @@
 import { createAuthClient } from "better-auth/react";
 import { anonymousClient } from "better-auth/client/plugins";
+import { passkeyClient } from "better-auth/client/plugins";
 
 /**
  * 江西云厨 - 身份验证客户端 (Security Protocol v2.5)
@@ -16,7 +17,8 @@ const getAuthBaseURL = () => {
 const authClientInternal = createAuthClient({
     baseURL: getAuthBaseURL(),
     plugins: [
-        anonymousClient()
+        anonymousClient(),
+        passkeyClient()
     ]
 }) as any;
 
