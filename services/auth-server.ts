@@ -3,7 +3,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "./db.server.js";
 import * as schema from "../schema.js";
-import { passkey } from "better-auth/plugins/passkey";
+import { passkey } from "better-auth/plugins";
 
 /**
  * 江西云厨 - 服务端认证核心 (Passkey/WebAuthn Only)
