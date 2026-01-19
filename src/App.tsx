@@ -19,7 +19,7 @@ import Toast, { ToastType } from './components/Toast';
 import { useSession, safeSignOut } from './services/frontend/auth-client.frontend';
 import { api } from './services/api';
 import { supabase, isDemoMode } from './services/supabaseClient';
-import { notificationService } from './services/notification';
+import { notificationService } from './services/frontend/notification.frontend';
 import { 
   HotelRoom, Order, Dish, OrderStatus, 
   Expense, Partner, Category, SystemConfig, User, UserRole, Language 

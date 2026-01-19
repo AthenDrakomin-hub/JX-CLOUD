@@ -5,7 +5,7 @@ import {
   Image as ImageIcon, Check, Loader2, Sparkles, Filter, 
   ExternalLink, Eye, Maximize2, X, Download, FileType
 } from 'lucide-react';
-import { s3Service, S3File } from '../services/s3Service';
+import { s3Service, S3File } from '../services/frontend/s3Service.frontend';
 import { Language, getTranslation } from '../constants/translations';
 import OptimizedImage from './OptimizedImage';
 

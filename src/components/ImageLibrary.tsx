@@ -11,7 +11,7 @@ import {
   Tag, Edit3, ExternalLink, RefreshCcw
 } from 'lucide-react';
 import { api } from '../services/api';
-import { s3Service, S3File } from '../services/s3Service';
+import { s3Service, S3File } from '../services/frontend/s3Service.frontend';
 import OptimizedImage from './OptimizedImage';
 
 // Fix: Simplified ImageLibraryProps by removing unused and non-existent MaterialImage related properties.

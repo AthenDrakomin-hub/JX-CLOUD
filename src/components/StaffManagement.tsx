@@ -7,7 +7,7 @@ import {
   Handshake, Percent, Users, Key, Link, Copy, Sparkles,
   CheckCircle2, ShieldCheck, ChevronRight, ChefHat, Box, LayoutDashboard, Fingerprint, Loader2
 } from 'lucide-react';
-import authClient from '../services/auth-client';
+import authClient from '../services/frontend/auth-client.frontend';
 import PartnerManagement from './PartnerManagement';
 
 interface StaffManagementProps {

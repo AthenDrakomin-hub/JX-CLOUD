@@ -1,10 +1,10 @@
 
-import { supabase, isDemoMode } from './supabaseClient.js';
+import { supabase, isDemoMode } from '../../services/supabaseClient.js';
 import { 
   Partner, Order, Dish, OrderStatus, SystemConfig, UserRole, 
   Category, Ingredient, PaymentMethodConfig, HotelRoom, User, Expense
-} from '../types.js';
-import { INITIAL_DISHES, INITIAL_CATEGORIES, INITIAL_PAYMENT_METHODS } from '../constants.js';
+} from '../../types.js';
+import { INITIAL_DISHES, INITIAL_CATEGORIES, INITIAL_PAYMENT_METHODS } from '../../constants.js';
 
 /**
  * 江西云厨 - Supabase Edge Functions API 网关

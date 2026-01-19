@@ -1,5 +1,5 @@
 
-import { supabase } from "./supabaseClient";
+import { supabase } from "../../../services/supabaseClient.js";
 
 /**
  * 针对生产环境 Web 端优化的存储服务

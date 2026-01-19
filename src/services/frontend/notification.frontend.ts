@@ -1,5 +1,5 @@
 
-import { Order } from '../types';
+import { Order } from '../../types.js';
 
 export type NotificationType = 'NEW_ORDER' | 'ORDER_UPDATE' | 'GENERAL';
 

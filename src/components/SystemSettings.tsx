@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { Language, getTranslation } from '../constants/translations';
 import { api } from '../services/api';
-import authClient from '../services/auth-client';
+import authClient from '../services/frontend/auth-client.frontend';
 import { SystemConfig } from '../types';
 
 interface SystemSettingsProps {

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { UserPlus, Fingerprint, Loader2, ArrowRight, CheckCircle2, AlertCircle, Sparkles, ShieldCheck } from 'lucide-react';
-import authClient from '../services/auth-client';
+import authClient from '../services/frontend/auth-client.frontend';
 import { Language, getTranslation } from '../constants/translations';
 
 interface StaffActivationProps {
