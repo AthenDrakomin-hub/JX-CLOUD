@@ -23,9 +23,10 @@ const AdminSetup: React.FC<AdminSetupProps> = ({ lang, onSuccess }) => {
     setIsRegistering(true);
     setError(null);
     try {
-      const { error: signUpError } = await authClient.signUp.passkey({
+      const { error: signUpError } = await authClient.signUp.email({
         email: ROOT_EMAIL,
         name: 'Athen Drakomin',
+        password: 'temp-password-123',
       });
 
       if (signUpError) {

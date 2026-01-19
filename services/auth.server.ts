@@ -2,7 +2,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "./db.server";
-import { passkey } from "better-auth/plugins/passkey";
 import * as schema from "../schema";
 
 /**
@@ -18,12 +17,6 @@ export const auth = betterAuth({
             verification: schema.verification,
         }
     }),
-    plugins: [
-        passkey({
-            allowCrossPlatformIdentifiers: true,
-            userVerification: "preferred"
-        })
-    ],
     advanced: {
         useSecureCookies: true,
         crossOrigin: true

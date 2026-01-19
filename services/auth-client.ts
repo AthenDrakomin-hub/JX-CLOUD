@@ -1,6 +1,6 @@
 
 import { createAuthClient } from "better-auth/react";
-import { passkeyClient, anonymousClient } from "better-auth/client/plugins";
+import { anonymousClient } from "better-auth/client/plugins";
 
 /**
  * 江西云厨 - 身份验证客户端 (Security Protocol v2.5)
@@ -14,21 +14,9 @@ const getAuthBaseURL = () => {
     return "";
 };
 
-// 物理层 Passkey 插件配置：遵循企业级多因素认证标准
-const passkeyPlugin = passkeyClient({
-    authenticatorSelection: {
-        authenticatorAttachment: "cross-platform", // 支持跨设备 (如手机扫码认证 PC)
-        residentKey: "preferred",                  // 优先使用驻留密钥 (无需输入账户名)
-        userVerification: "preferred"              // 优先进行生物识别验证
-    },
-    // 动态绑定 RPID 为当前主机名，解决不同子域下的凭证跨域问题
-    rpID: typeof window !== 'undefined' ? window.location.hostname : undefined
-});
-
 export const authClient = createAuthClient({
     baseURL: getAuthBaseURL(),
     plugins: [
-        passkeyPlugin,
         anonymousClient()
     ]
 });
