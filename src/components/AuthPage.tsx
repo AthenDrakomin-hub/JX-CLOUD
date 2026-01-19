@@ -5,7 +5,7 @@ import {
   Fingerprint, Key, CheckCircle2,
   ShieldAlert, Smartphone, Monitor, Info, Lock, Sparkles
 } from 'lucide-react';
-import authClient from '../services/frontend/auth-client.frontend';
+import { signIn } from '../services/frontend/auth-client.frontend';
 import { api } from '../services/api';
 import { Language, getTranslation } from '../constants/translations';
 import { QRCodeSVG } from 'qrcode.react';
@@ -50,15 +50,36 @@ const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang }) => {
     }
     setError(null);
     setIsPasskeyLoading(true);
+    
     try {
-      const { error: signInError } = await (authClient.signIn as any).passkey({ email, callbackURL: "/" });
-      if (signInError) {
-        if (signInError.message?.includes('NotFoundError') || (signInError as any).name === 'NotFoundError') {
+      // 首先尝试Passkey认证
+      const signInResult = await signIn.passkey({
+        email,
+        redirectTo: "/"
+      });
+      
+      if (signInResult?.error) {
+        // 检查错误类型来决定下一步
+        if (signInResult.error.message?.includes('NotFoundError') || 
+            signInResult.error.name === 'NotFoundError' ||
+            signInResult.error.message?.includes('No passkey') ||
+            signInResult.error.message?.includes('not registered')) {
+          // 如果没有找到passkey，转到注册选择阶段
           setAuthStage('register_choice');
+        } else {
+          // 其他错误，显示错误信息
+          setError(signInResult.error.message || t('auth_passkey_error'));
         }
+      } else {
+        // 成功登录，不需要额外操作，因为Better-Auth会自动重定向
+        console.log("Passkey authentication successful");
       }
-    } catch (err) {
-      setError(t('auth_passkey_error'));
+    } catch (err: any) {
+      console.error("Authentication error:", err);
+      // 捕获到异常，可能是网络错误或其他问题
+      setError(err.message || t('auth_passkey_error'));
+      // 如果是网络错误或其他原因，也可能需要转到注册选择
+      setAuthStage('register_choice');
     } finally {
       setIsPasskeyLoading(false);
     }
@@ -82,8 +103,9 @@ const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang }) => {
       } else {
         setError(result.message || t('auth_registration_error'));
       }
-    } catch (err) {
-      setError(t('auth_network_error'));
+    } catch (err: any) {
+      console.error("Registration request error:", err);
+      setError(err.message || t('auth_network_error'));
     } finally {
       setIsPasskeyLoading(false);
     }

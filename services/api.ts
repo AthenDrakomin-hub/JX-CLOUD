@@ -358,5 +358,102 @@ export const api = {
       const text = await file.text();
       console.log("Mock import for:", file.name);
     }
+  },
+
+  registration: {
+    // 提交注册请求
+    request: async (email: string, name: string) => {
+      if (isDemoMode || !supabase) {
+        // 模拟成功响应
+        return { success: true, requestId: `demo-${Date.now()}`, message: 'Registration request submitted successfully' };
+      }
+      
+      try {
+        const response = await fetch('/api/auth/request-registration', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email, name }),
+        });
+        
+        const result = await response.json();
+        return result;
+      } catch (error) {
+        console.error('Registration request failed:', error);
+        return { success: false, message: 'Failed to submit registration request' };
+      }
+    },
+    
+    // 获取所有注册请求
+    getAll: async () => {
+      if (isDemoMode || !supabase) {
+        // 返回模拟数据
+        return [];
+      }
+      
+      try {
+        const response = await fetch('/api/auth/registration-requests', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        const result = await response.json();
+        return result.requests || [];
+      } catch (error) {
+        console.error('Failed to get registration requests:', error);
+        return [];
+      }
+    },
+    
+    // 批准注册请求
+    approve: async (requestId: string) => {
+      if (isDemoMode || !supabase) {
+        // 模拟成功响应
+        return { success: true, message: 'Registration approved successfully' };
+      }
+      
+      try {
+        const response = await fetch('/api/auth/approve-registration', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ requestId }),
+        });
+        
+        const result = await response.json();
+        return result;
+      } catch (error) {
+        console.error('Failed to approve registration:', error);
+        return { success: false, message: 'Failed to approve registration' };
+      }
+    },
+    
+    // 拒绝注册请求
+    reject: async (requestId: string) => {
+      if (isDemoMode || !supabase) {
+        // 模拟成功响应
+        return { success: true, message: 'Registration rejected successfully' };
+      }
+      
+      try {
+        const response = await fetch('/api/auth/reject-registration', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ requestId }),
+        });
+        
+        const result = await response.json();
+        return result;
+      } catch (error) {
+        console.error('Failed to reject registration:', error);
+        return { success: false, message: 'Failed to reject registration' };
+      }
+    }
   }
 };

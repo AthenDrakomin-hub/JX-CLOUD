@@ -11,8 +11,8 @@ import { INITIAL_DISHES, INITIAL_CATEGORIES, INITIAL_PAYMENT_METHODS } from '../
  * 完全基于 Supabase Edge Functions，无 Node.js 依赖
  */
 
-// API基础URL配置 - 统一指向Supabase Edge Functions
-const SUPABASE_PROJECT_URL = 'https://zlbemopcgjohrnyyiwvs.supabase.co';
+// API基础URL配置 - 动态获取Supabase URL
+const SUPABASE_PROJECT_URL = import.meta.env.VITE_SUPABASE_URL || 'https://zlbemopcgjohrnyyiwvs.supabase.co';
 const API_BASE_URL = `${SUPABASE_PROJECT_URL}/functions/v1/api`;
 
 // API客户端配置

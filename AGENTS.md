@@ -21,7 +21,7 @@ This is the **JX Cloud Terminal** - a comprehensive hospitality management syste
 ## Core Business Modules
 
 - **📈 Dashboard**: Real-time business metrics with T+1 automatic revenue sharing logic
-- ** bells Hub**: 67+ physical node control with dynamic QR generation and POS manual ordering
+- **🛎️ Station Hub**: 67+ physical node control with dynamic QR generation and POS manual ordering
 - **👨‍🍳 Order Matrix**: Enterprise KDS kitchen display system with thermal printing and fulfillment tracking
 - **📦 Supply Chain**: High-precision inventory alerts, bilingual dish records, backup/recovery
 - **🖼️ Visual Assets**: Supabase S3 protocol cloud gallery for product images
@@ -436,3 +436,22 @@ npm run dev
 - Use Drizzle Studio to analyze slow queries
 - Monitor Supabase dashboard for resource utilization
 - Check for unoptimized real-time subscriptions
+
+## Package.json Scripts Reference
+
+The following scripts are available in package.json:
+- `dev`: Starts the Vite development server
+- `build`: Builds the production bundle
+- `type-check`: Runs TypeScript type checking
+- `preview`: Previews the production build locally
+
+## Additional Dependencies
+
+Key dependencies include:
+- `@supabase/supabase-js`: Supabase JavaScript client
+- `better-auth`: Authentication library with Passkey support
+- `drizzle-orm`: Type-safe SQL toolkit
+- `lucide-react`: Icon library
+- `react`: Frontend library
+- `recharts`: Charting library
+- `qrcode.react`: QR code generation
