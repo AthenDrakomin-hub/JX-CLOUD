@@ -6,6 +6,8 @@ This file provides guidance to Qoder (qoder.com) when working with code in this 
 
 This is the **JX Cloud Terminal** - a comprehensive hospitality management system designed for modern hotels. It includes modules for QR ordering, Kitchen Display System (KDS), financial auditing, and multi-tenant security using PostgreSQL Row Level Security (RLS).
 
+**Architecture**: Unified Supabase Edge Functions implementation with Better-Auth powered biometric authentication.
+
 ## Tech Stack
 
 - **Frontend**: React 19, Tailwind CSS, Lucide Icons
@@ -27,13 +29,22 @@ This is the **JX Cloud Terminal** - a comprehensive hospitality management syste
 
 ## Key Architecture Patterns
 
+- **Unified Edge Architecture**: All API requests routed through Supabase Edge Functions for consistent global performance
 - **Physical Multi-tenant Isolation**: All business tables (Dishes, Orders, Expenses) bound to `partner_id`
 - **JWT Physical Anchor**: Database extracts `auth.jwt()->'partner_id'`, preventing unauthorized cross-partner access
 - **Runtime Alignment**: Drizzle ORM type derivation ensures frontend `camelCase` maps to DB `snake_case`
 - **Biometric Authentication**: Full FIDO2 standard integration supporting fingerprint/face recognition
 - **Dual User System**: Separation between auth users (Better-Auth) and business users (application-specific)
+- **Physical Contract Mapping**: Consistent mapping between frontend camelCase and backend snake_case (e.g., `tableId` ↔ `table_id`, `partnerId` ↔ `partner_id`, `nameEn` ↔ `name_en`)
+- **Clean Code Separation**: Frontend code (`src/`) separated from backend services (`services/`) and edge functions (`supabase/functions/`)
 
 ## API Structure
+
+### Supabase Edge Functions API (Primary)
+All API requests are handled through Supabase Edge Functions for optimal global performance:
+- **Main Gateway**: `supabase/functions/api.ts` - Handles all business logic
+- **Authentication**: `supabase/functions/auth.ts` - Better-Auth integration
+- **Health Checks**: Built-in diagnostics and monitoring
 
 ### Authentication APIs
 - `/api/auth/sign-in`: Traditional login/biometric handshake
@@ -41,6 +52,12 @@ This is the **JX Cloud Terminal** - a comprehensive hospitality management syste
 - `/api/auth/passkey/*`: FIDO2 credential registration and challenge verification
 - `/api/auth/session`: High-security session management
 - `/api/auth/test-passkey`: Test endpoint for passkey functionality
+
+### Registration Management APIs
+- `/api/auth/request-registration`: Submit new user registration requests
+- `/api/auth/approve-registration`: Approve pending registrations
+- `/api/auth/reject-registration`: Reject registration requests
+- `/api/auth/registration-requests`: Get list of pending registrations
 
 ### System APIs
 - `/api/health`: Edge node health check
@@ -57,16 +74,17 @@ This is the **JX Cloud Terminal** - a comprehensive hospitality management syste
 - Payments: `api.payments.getAll()` / `create()` / `update()` / `delete()` / `toggle()` - Payment method management
 - Ingredients: `api.ingredients.getAll()` / `create()` / `update()` / `delete()` - Inventory management
 - Archive: `api.archive.exportData()` / `importData()` - Data backup and restore
+- Rooms: `api.rooms.getAll()` / `updateStatus()` - Hotel room status management
 
 ## Passkey Authentication Configuration
 
 The system implements FIDO2/WebAuthn passkey authentication using Better-Auth with the following configuration:
 
-- Server-side: `services/auth-server.ts` includes passkey table in schema for database operations
-- Client-side: `services/auth-client.ts` connects to the auth server for passkey functionality
-- Database: Schema includes `passkey` table with proper relations to `user` table
-- API Routes: Handled through Vercel API at `api/index.ts` which delegates to auth handler
-- Supabase Integration: Uses Drizzle ORM adapter for PostgreSQL database operations
+- **Frontend Client**: `src/services/frontend/auth-client.frontend.ts` - Better-Auth React client
+- **Server Integration**: `supabase/functions/auth.ts` - Edge Functions authentication handler
+- **Database Schema**: Includes `passkey` table with proper relations to `user` table
+- **Supabase Integration**: Uses Drizzle ORM adapter for PostgreSQL database operations
+- **API Routing**: All auth requests handled through Supabase Edge Functions unified gateway
 
 ## Environment Variables
 
@@ -83,6 +101,15 @@ Critical variables that must be configured:
 - `npm run build`: Build production bundle (Vite)
 - `npm run type-check`: Type check without emitting (TSC)
 - `npm run preview`: Preview production build locally
+- `npx drizzle-kit generate`: Generate database migration files
+- `npx drizzle-kit migrate`: Apply database migrations
+- `npx drizzle-kit studio`: Open Drizzle Studio for database management
+
+## Additional Useful Commands
+
+- `npm outdated`: Check for outdated dependencies
+- `npm audit`: Security audit of dependencies
+- `npm list`: Show dependency tree
 
 ## Database Setup
 
@@ -95,11 +122,18 @@ Critical variables that must be configured:
 - `schema.ts`: Drizzle ORM schema definitions with RLS policies
 - `types.ts`: Core TypeScript interfaces and enums
 - `constants.ts`: Initial data and configuration values
-- `App.tsx`: Main application component with routing logic
-- `middleware.ts`: Vercel edge middleware for authentication
-- `services/api.ts`: Unified API service layer
+- `src/App.tsx`: Main application component with routing logic
+- `src/services/frontend/`: Frontend-specific service implementations
+- `services/`: Server-side service implementations (Node.js environment)
+- `supabase/functions/api.ts`: Primary Supabase Edge Functions API gateway
+- `supabase/functions/auth.ts`: Authentication service implementation
+- `services/auth-server.ts`: Better-Auth server configuration
+- `services/db.server.ts`: Database connection and Drizzle setup
 - `components/`: React components organized by functionality
 - `scripts/`: Utility scripts for database management, translation handling, and deployment
+- `database_setup.sql`: SQL script for RLS policy activation and table creation
+- `src/components/AdminSetup.tsx`: Biometric admin credential setup
+- `src/components/CommandCenter.tsx`: Main dashboard routing hub
 
 ## Development Best Practices
 
@@ -113,6 +147,11 @@ Critical variables that must be configured:
 - Implement proper error handling and fallback mechanisms for offline/demonstration mode
 - Follow the physical contract alignment pattern for database mappings (e.g., `tableId` ↔ `table_id`)
 - Maintain the separation between Better-Auth managed tables and application-specific user tables
+- Use the demo mode (`isDemoMode`) for offline development and testing
+- Always validate monetary values using `parseNumeric` to prevent NaN issues
+- Follow the CRUD permissions model for fine-grained access control
+- **Code Organization**: Keep frontend code in `src/`, backend services in `services/`, and edge functions in `supabase/functions/`
+- **Import Conventions**: Frontend imports use `.js` extensions, backend imports omit extensions
 
 ## Testing and Scripts
 
@@ -120,3 +159,15 @@ Critical variables that must be configured:
 - Use `npm run type-check` to validate TypeScript types before deployment
 - Database migration scripts are available in the `scripts/` directory for schema updates
 - Translation validation and population scripts are available for internationalization support
+- Demo mode provides offline functionality for development without database connection
+- Use Supabase client properly with error handling and type safety
+- **Edge Functions Testing**: Test Supabase Edge Functions locally using `supabase functions serve`
+- **Frontend Testing**: Use Vite development server for hot reloading and debugging
+
+## Database Schema Notes
+
+- Authentication tables (`user`, `session`, `account`, `verification`, `passkey`) follow Better-Auth conventions
+- Business tables (`menu_dishes`, `orders`, `users`, `partners`, etc.) include `partner_id` for multi-tenancy
+- All business data is physically isolated by `partner_id` with RLS enforcement
+- Monetary values are stored as `numeric` type in database but converted to `number` in application layer
+- JSONB fields are used for flexible data storage (items in orders, permissions, etc.)

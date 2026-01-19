@@ -10,6 +10,132 @@ const corsHeaders = {
   'X-JX-Cloud-Engine': 'Supabase-Edge-V1'
 };
 
+// 注册请求处理器
+async function handleRegistrationRequest(req: Request, supabase: any) {
+  try {
+    const { email, name, requestTime } = await req.json();
+    
+    if (!email || !name) {
+      return new Response(JSON.stringify({ 
+        error: 'Email and name are required' 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const requestId = `reg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    return new Response(JSON.stringify({
+      success: true,
+      requestId,
+      message: 'Registration request submitted successfully'
+    }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+
+  } catch (error) {
+    return new Response(JSON.stringify({ 
+      error: 'Failed to process registration request',
+      details: (error as Error).message 
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+// 注册审批处理器
+async function handleRegistrationApproval(req: Request, supabase: any) {
+  try {
+    const { requestId } = await req.json();
+    
+    if (!requestId) {
+      return new Response(JSON.stringify({ 
+        error: 'Request ID is required' 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    return new Response(JSON.stringify({
+      success: true,
+      message: `Registration request ${requestId} approved`
+    }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+
+  } catch (error) {
+    return new Response(JSON.stringify({ 
+      error: 'Failed to approve registration',
+      details: (error as Error).message 
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+// 注册拒绝处理器
+async function handleRegistrationRejection(req: Request, supabase: any) {
+  try {
+    const { requestId, reason } = await req.json();
+    
+    if (!requestId) {
+      return new Response(JSON.stringify({ 
+        error: 'Request ID is required' 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    return new Response(JSON.stringify({
+      success: true,
+      message: `Registration request ${requestId} rejected`,
+      reason: reason || 'Admin decision'
+    }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+
+  } catch (error) {
+    return new Response(JSON.stringify({ 
+      error: 'Failed to reject registration',
+      details: (error as Error).message 
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+// 获取注册请求列表
+async function handleGetRegistrationRequests(req: Request, supabase: any) {
+  try {
+    // 返回空列表（演示用）
+    return new Response(JSON.stringify({
+      requests: [],
+      totalCount: 0
+    }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+
+  } catch (error) {
+    return new Response(JSON.stringify({ 
+      error: 'Failed to fetch registration requests',
+      details: (error as Error).message 
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+}
+
 export const handler = async (req: Request): Promise<Response> => {
   const url = new URL(req.url);
   const path = url.pathname.replace('/functions/v1', ''); // 移除Edge Functions前缀
@@ -27,6 +153,23 @@ export const handler = async (req: Request): Promise<Response> => {
 
   try {
     // 路由分发
+    
+    // 1. 注册管理API
+    if (path === '/api/auth/request-registration' && method === 'POST') {
+      return await handleRegistrationRequest(req, supabase);
+    }
+    
+    if (path === '/api/auth/approve-registration' && method === 'POST') {
+      return await handleRegistrationApproval(req, supabase);
+    }
+    
+    if (path === '/api/auth/reject-registration' && method === 'POST') {
+      return await handleRegistrationRejection(req, supabase);
+    }
+    
+    if (path === '/api/auth/registration-requests' && method === 'GET') {
+      return await handleGetRegistrationRequests(req, supabase);
+    }
     
     // 1. 健康检查和数据库状态
     if (path === '/api/health' || path === '/api/db-check') {

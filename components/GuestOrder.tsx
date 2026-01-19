@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Dish, Order, OrderStatus, Category, PaymentMethodConfig } from '../types';
-import { Language, getTranslation } from '../translations';
+import { Dish, Order, OrderStatus, Category, PaymentMethodConfig, Language } from '../types';
+import { getTranslation } from '../translations';
 import { api } from '../services/api';
 import { 
   Plus, Minus, Globe, Search,
@@ -12,6 +12,7 @@ import {
   UtensilsCrossed, ScanLine
 } from 'lucide-react';
 import OptimizedImage from './OptimizedImage';
+import LanguageSelector from './LanguageSelector';
 
 interface GuestOrderProps {
   roomId: string;
@@ -20,11 +21,12 @@ interface GuestOrderProps {
   onSubmitOrder: (order: Partial<Order>) => Promise<void>;
   lang: Language;
   onToggleLang: () => void;
+  onChangeLang?: (lang: Language) => void;
   onRescan: () => void;
 }
 
 const GuestOrder: React.FC<GuestOrderProps> = ({ 
-  roomId, dishes = [], categories = [], onSubmitOrder, lang, onToggleLang, onRescan
+  roomId, dishes = [], categories = [], onSubmitOrder, lang, onToggleLang, onChangeLang, onRescan
 }) => {
   const [cart, setCart] = useState<{ [dishId: string]: number }>({});
   const [isCheckout, setIsCheckout] = useState(false);
@@ -149,9 +151,13 @@ const GuestOrder: React.FC<GuestOrderProps> = ({
           </div>
         </div>
         <div className="flex items-center gap-2">
-            <button onClick={onToggleLang} className="w-10 h-10 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center text-slate-600 transition-all active:scale-95">
-                <Globe size={18} />
-            </button>
+            {onChangeLang ? (
+              <LanguageSelector currentLanguage={lang} onChange={onChangeLang} />
+            ) : (
+              <button onClick={onToggleLang} className="w-10 h-10 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center text-slate-600 transition-all active:scale-95">
+                  <Globe size={18} />
+              </button>
+            )}
             <button onClick={onRescan} className="w-10 h-10 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center text-slate-600 transition-all active:scale-95">
                 <ScanLine size={18} />
             </button>

@@ -12,6 +12,7 @@ dist-ssr
 .env
 .env.local
 .env.*.local
+.env.production.local
 
 # 系统与编辑器
 .DS_Store
@@ -24,11 +25,57 @@ Thumbs.db
 *.sln
 *.sw?
 
-# Vercel 本地缓存
+# 构建工具缓存
 .vercel
+.next
+.nuxt
+.svelte-kit
 
-# 日志
+# Supabase 相关
+.supabase
+supabase/.temp
+supabase/.branches
+
+# 数据库相关
+.drizzle
+migrations/*.sql
+database/*.sql
+
+# 日志文件
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+*.log
+
+# TypeScript
+*.tsbuildinfo
+
+# 测试覆盖率
+coverage/
+.nyc_output/
+
+# 开发工具
+.env.test
+.env.development
+.env.staging
+
+# 临时文件
+tmp/
+temp/
+*.tmp
+*.temp
+
+# IDE 配置 (可选)
+# .vscode/
+# .idea/
+
+# OS 生成文件
+desktop.ini
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

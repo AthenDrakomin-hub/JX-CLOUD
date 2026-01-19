@@ -1,5 +1,5 @@
 // src/services/i18n.ts
-import { Language } from '../constants/translations';
+import { Language } from '../constants/translations.js';
 
 // 本地缓存配置
 const CACHE_PREFIX = 'jx_i18n_cache';
@@ -59,7 +59,7 @@ const loadTranslations = async (language: Language, namespace: string = 'common'
     
     // 如果数据库加载失败，回退到静态翻译
     try {
-      const staticTranslationsModule = await import('../constants/translations');
+      const staticTranslationsModule = await import('../constants/translations.js');
       const staticTranslations = staticTranslationsModule.translations[language] || staticTranslationsModule.translations.zh;
       
       // 仅缓存静态翻译，避免每次都尝试数据库
@@ -124,7 +124,7 @@ export const tSync = (key: string, params?: Record<string, any>, namespace: stri
   
   // 如果缓存不可用，回退到静态翻译
   try {
-    const staticTranslationsModule = require('../constants/translations');
+    const staticTranslationsModule = require('../constants/translations.js');
     const staticTranslations = staticTranslationsModule.translations[language] || staticTranslationsModule.translations.zh;
     let translation = staticTranslations[key] || key;
     

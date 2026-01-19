@@ -1,11 +1,13 @@
 # 🏨 江西云厨终端系统 (JX CLOUD Terminal)
 
-[![Deployment: Vercel](https://img.shields.io/badge/Deployment-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com)
-[![Database: Supabase](https://img.shields.io/badge/Database-Supabase-emerald?style=for-the-badge&logo=supabase)](https://supabase.com)
+[![Deployment: Supabase](https://img.shields.io/badge/Deployment-Supabase-black?style=for-the-badge&logo=supabase)](https://supabase.com)
+[![Database: PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-336791?style=for-the-badge&logo=postgresql)](https://postgresql.org)
 [![Auth: Better--Auth](https://img.shields.io/badge/Auth-Better--Auth-blue?style=for-the-badge&logo=auth0)](https://better-auth.com)
 [![Engine: React 19](https://img.shields.io/badge/Engine-React_19-61DAFB?style=for-the-badge&logo=react)](https://react.dev)
 
 **江西云厨 (JX CLOUD)** 是一款专为超现代化酒店设计的全栈管理生态系统。本系统集成了客房点餐（QR Ordering）、订单调度矩阵（KDS）与财务审计中枢。基于 **PostgreSQL RLS (Row Level Security)** 实现物理级多租户隔离，确保联营商户数据的安全性与合规性。
+
+**全新架构**: 统一采用 Supabase Edge Functions 作为 API 网关，结合 Better-Auth 生物识别认证，实现全球边缘部署和毫秒级响应。
 
 ---
 
@@ -22,29 +24,38 @@
 
 ## 🛡️ 安全架构 (Security & RLS)
 
-系统采用 **物理层隔离 (Physical Isolation)** 策略：
+系统采用 **边缘计算安全架构**：
 
-1.  **行级安全 (RLS)**：所有业务表（Dishes, Orders, Expenses）强制绑定 `partner_id`。
-2.  **JWT 物理锚点**：数据库自动提取 `auth.jwt() -> 'partner_id'`，非管理员用户无法越权访问其它商户数据。
-3.  **运行时对齐**：使用 Drizzle ORM 推导类型，确保前端 `camelCase` 属性与数据库 `snake_case` 列名 100% 镜像映射。
-4.  **生物识别 (Passkey)**：全面集成 FIDO2 标准，支持指纹/面部识别替代传统密码。
+1.  **统一API网关**: 所有请求通过 Supabase Edge Functions 处理，实现全球就近接入。
+2.  **行级安全 (RLS)**：所有业务表（Dishes, Orders, Expenses）强制绑定 `partner_id`。
+3.  **JWT 物理锚点**：数据库自动提取 `auth.jwt() -> 'partner_id'`，非管理员用户无法越权访问其它商户数据。
+4.  **运行时对齐**：使用 Drizzle ORM 推导类型，确保前端 `camelCase` 属性与数据库 `snake_case` 列名 100% 镜像映射。
+5.  **生物识别 (Passkey)**：全面集成 FIDO2 标准，支持指纹/面部识别替代传统密码。
 
 ---
 
-## 🛰️ API 概览 (API Blueprint)
+## 🛰️ API 架构 (API Architecture)
+
+### 统一边缘API网关 (Unified Edge API Gateway)
+所有API请求统一通过 **Supabase Edge Functions** 处理：
+- **主入口**: `supabase/functions/api.ts` - 处理所有业务逻辑
+- **认证服务**: `supabase/functions/auth.ts` - Better-Auth集成
+- **注册管理**: 支持用户注册审批流程
 
 ### 1. 认证与准入 (Auth API)
 *   `/api/auth/sign-in`：传统登录/生物识别握手。
 *   `/api/auth/passkey/*`：FIDO2 凭证注册与挑战验证。
 *   `/api/auth/session`：高安全性会话管理。
+*   `/api/auth/request-registration`：用户注册申请。
+*   `/api/auth/approve-registration`：管理员审批注册。
 
 ### 2. 系统诊断 (System API)
-*   `/api/health`：Edge 节点健康检查。
+*   `/api/health`：边缘节点健康检查。
 *   `/api/db-check`：数据库延迟与 RLS 策略合规性实时审计。
 *   `/api/system/status`：系统运行快照（订单量、连接数）。
 
 ### 3. 数据网关 (Business API)
-通过 `services/api.ts` 统一调用的核心接口：
+通过边缘函数统一调用的核心接口：
 *   **配置**：`api.config.get()` / `update()` - 全局店名、主题、字体族。
 *   **菜品**：`api.dishes.getAll()` / `create()` / `update()` - 物理隔离菜单库。
 *   **订单**：`api.orders.create()` / `updateStatus()` - 实时流水。
@@ -55,11 +66,30 @@
 
 ## 🚀 技术栈 (Tech Stack)
 
--   **Frontend**: React 19 (Strict Mode) + Tailwind CSS + Lucide Icons.
--   **Backend**: Supabase (PostgreSQL 15 / Edge Functions / Storage S3).
--   **Auth**: Better-Auth (Passkey / Multi-Factor).
--   **ORM**: Drizzle ORM (Schema-first definition).
--   **Realtime**: Supabase Realtime (Websocket channel for KDS).
+-   **Frontend**: React 19 (Strict Mode) + Tailwind CSS + Lucide Icons
+-   **Backend**: Supabase Edge Functions (全球边缘部署) + PostgreSQL 15 + Storage S3
+-   **Auth**: Better-Auth with Passkey/FIDO2 biometric support
+-   **ORM**: Drizzle ORM (Schema-first definition)
+-   **Realtime**: Supabase Realtime (WebSocket channels for KDS)
+-   **Architecture**: Unified Edge Computing with automatic scaling
+
+## 📁 项目结构 (Project Structure)
+
+```
+jx-cloud-enterprise-hospitality-suite/
+├── src/                    # 前端代码 (React Components & Services)
+│   ├── components/        # React 组件
+│   ├── constants/         # 前端常量
+│   └── services/
+│       └── frontend/      # 前端专用服务
+├── services/              # 后端服务 (Node.js 环境)
+│   ├── auth-server.ts     # Better-Auth 服务端
+│   ├── db.server.ts       # 数据库连接
+│   └── api.ts             # API 服务层
+└── supabase/functions/    # Supabase Edge Functions (统一API网关)
+    ├── api.ts             # 主API网关
+    └── auth.ts            # 认证服务
+```
 
 ---
 
@@ -73,10 +103,26 @@
 | `DATABASE_URL` | Drizzle 物理连接（端口 6543 事务池） |
 | `BETTER_AUTH_SECRET` | 会话签名密钥（32位） |
 
+### 开发命令
+```bash
+# 启动开发服务器
+npm run dev
+
+# 构建生产版本
+npm run build
+
+# 类型检查
+npm run type-check
+
+# 部署边缘函数
+supabase functions deploy
+```
+
 ### 初始化步骤
 1.  执行 `database_setup.sql` 激活 RLS 策略。
 2.  访问 `/auth/admin-setup` 绑定首个根管理员（Root）生物凭证。
 3.  通过 `Supply Chain -> Categories` 部署分类架构。
+4.  配置 Supabase Edge Functions 环境变量。
 
 ---
 

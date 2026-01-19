@@ -6,13 +6,42 @@ init.sql
 # 开发文档与示例
 README.md
 .env.example
+.env.production.template
 
-# 测试与工具
-api/init-dishes.ts
+# 测试与调试工具
 components/DebugTools.tsx
+components/DevHub.tsx
+scripts/
 
 # 日志文件
 *.log
 
-# 忽略非生产环境日志
-*.log
+# 本地开发配置
+.env.local
+.env.*.local
+
+# 构建产物
+dist/
+dist-ssr/
+
+# 依赖
+node_modules/
+
+# IDE 配置
+.vscode/
+.idea/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# Supabase 本地文件
+supabase/.temp
+supabase/.branches
+
+# 数据库迁移文件 (如果不需要)
+migrations/
+.drizzle/
+
+# 元数据文件
+metadata.json

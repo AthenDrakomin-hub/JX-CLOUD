@@ -1,17 +1,17 @@
 
-import { supabase, isDemoMode } from './supabaseClient';
+import { supabase, isDemoMode } from './supabaseClient.js';
 import { 
   Partner, Order, Dish, OrderStatus, SystemConfig, UserRole, 
   Category, Ingredient, PaymentMethodConfig, HotelRoom, User, Expense
-} from '../types';
-import { INITIAL_DISHES, INITIAL_CATEGORIES, INITIAL_PAYMENT_METHODS } from '../constants';
+} from '../types.js';
+import { INITIAL_DISHES, INITIAL_CATEGORIES, INITIAL_PAYMENT_METHODS } from '../constants.js';
 
 /**
  * 江西云厨 - Supabase Edge Functions API 网关
  * 完全基于 Supabase Edge Functions，无 Node.js 依赖
  */
 
-// API基础URL配置 - 指向Supabase Edge Functions
+// API基础URL配置 - 统一指向Supabase Edge Functions
 const SUPABASE_PROJECT_URL = 'https://zlbemopcgjohrnyyiwvs.supabase.co';
 const API_BASE_URL = `${SUPABASE_PROJECT_URL}/functions/v1`;
 

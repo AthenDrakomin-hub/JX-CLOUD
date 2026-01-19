@@ -27,6 +27,7 @@ import {
 import { getTranslation } from './translations';
 import { Bell, Command, Loader2, ShieldCheck, Wifi, WifiOff, AlertTriangle, X, Lock } from 'lucide-react';
 import ErrorBoundary from './components/ErrorBoundary';
+import LanguageSelector from './components/LanguageSelector';
 
 const App: React.FC = () => {
   const { data: remoteSession, isPending: isAuthLoading } = useSession();
@@ -89,8 +90,17 @@ const App: React.FC = () => {
 
   const t = useCallback((key: string, params?: any) => getTranslation(lang, key, params), [lang]);
 
-  const toggleLanguage = useCallback(() => {
-    setLang(p => p === 'zh' ? 'en' : p === 'en' ? 'fil' : 'zh');
+  const changeLanguage = useCallback(async (lng: Language) => {
+    setLang(lng);
+    localStorage.setItem('language', lng);
+    
+    // Clear related caches so new language translations are fetched on next access
+    const namespaces = ['common', 'auth', 'orders', 'menu', 'financial_hub', 'users', 'settings'];
+    namespaces.forEach(ns => {
+      const cacheKey = `jx_i18n_cache:${lng}:${ns}`;
+      localStorage.removeItem(cacheKey);
+      localStorage.removeItem(`${cacheKey}:timestamp`);
+    });
   }, []);
 
   const [rooms, setRooms] = useState<HotelRoom[]>([]);
@@ -179,7 +189,8 @@ const App: React.FC = () => {
             setToast({ message: t('success'), type: 'success' });
           }}
           lang={lang}
-          onToggleLang={toggleLanguage}
+          onToggleLang={() => changeLanguage(lang === 'zh' ? 'en' : lang === 'en' ? 'fil' : 'zh')}
+          onChangeLang={changeLanguage}
           onRescan={() => window.location.href = window.location.origin}
         />
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
@@ -205,13 +216,13 @@ const App: React.FC = () => {
   }
 
   if (!session?.user) {
-    return <AuthPage lang={lang} onToggleLang={toggleLanguage} />;
+    return <AuthPage lang={lang} onToggleLang={() => changeLanguage(lang === 'zh' ? 'en' : lang === 'en' ? 'fil' : 'zh')} onChangeLang={changeLanguage} />;
   }
 
   return (
     <ErrorBoundary lang={lang}>
       <div className={`min-h-screen transition-colors duration-500 ${config?.theme === 'dark' ? 'dark bg-slate-950' : 'bg-slate-50'}`} style={{ fontFamily: config?.fontFamily || 'Plus Jakarta Sans' }}>
-        <Sidebar currentTab={currentTab} setCurrentTab={setCurrentTab} currentUser={session.user} onLogout={safeSignOut} lang={lang} onToggleLang={toggleLanguage} isCollapsed={isSidebarCollapsed} onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)} />
+        <Sidebar currentTab={currentTab} setCurrentTab={setCurrentTab} currentUser={session.user} onLogout={safeSignOut} lang={lang} onToggleLang={() => changeLanguage(lang === 'zh' ? 'en' : lang === 'en' ? 'fil' : 'zh')} onChangeLang={changeLanguage} isCollapsed={isSidebarCollapsed} onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)} />
         
         <main className={`transition-all duration-500 min-h-screen ${isSidebarCollapsed ? 'ml-24' : 'ml-72'}`}>
           <header className="sticky top-0 z-50 px-10 py-6 bg-white/40 dark:bg-slate-950/40 backdrop-blur-xl flex items-center justify-between border-b border-white/10 no-print">
@@ -219,7 +230,10 @@ const App: React.FC = () => {
                <button onClick={() => setIsCommandOpen(true)} className="flex items-center space-x-3 px-6 py-2.5 bg-slate-950 dark:bg-white text-white dark:text-slate-900 rounded-xl font-black text-[9px] uppercase tracking-widest shadow-xl hover:scale-105 transition-transform active-scale-95"><Command size={14} /><span>{t('search')} ⌘K</span></button>
                <div className={`flex items-center space-x-2 px-4 py-2 rounded-xl border ${isRealtimeActive ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>{isRealtimeActive ? <Wifi size={12} className="animate-pulse" /> : <WifiOff size={12} />}<span className="text-[8px] font-black uppercase">{isRealtimeActive ? t('sync_active') : t('sync_offline')}</span></div>
             </div>
-            <button onClick={() => setIsNotifOpen(true)} className="w-11 h-11 bg-white dark:bg-slate-900 rounded-xl flex items-center justify-center text-slate-400 relative shadow-sm hover:text-blue-600 transition-colors"><Bell size={18} />{notifications.some(n => !n.read) && <div className="absolute top-3 right-3 w-2 h-2 bg-blue-600 rounded-full animate-ping" />}</button>
+            <div className="flex items-center space-x-4">
+              <LanguageSelector currentLanguage={lang} onChange={changeLanguage} />
+              <button onClick={() => setIsNotifOpen(true)} className="w-11 h-11 bg-white dark:bg-slate-900 rounded-xl flex items-center justify-center text-slate-400 relative shadow-sm hover:text-blue-600 transition-colors"><Bell size={18} />{notifications.some(n => !n.read) && <div className="absolute top-3 right-3 w-2 h-2 bg-blue-600 rounded-full animate-ping" />}</button>
+            </div>
           </header>
           
           <div className="p-10 lg:p-12 max-w-[1600px] mx-auto min-h-[calc(100vh-100px)] relative">
@@ -269,7 +283,7 @@ const App: React.FC = () => {
                 {currentTab === 'images' && <ImageManagement lang={lang} />}
                 {currentTab === 'financial_hub' && <FinancialCenter orders={orders} expenses={expenses} partners={partners} currentUser={session.user as any} onAddExpense={async(ex)=>{ await api.expenses.create(ex); refreshData(); }} onDeleteExpense={async(id)=>{ await api.expenses.delete(id); refreshData(); }} onAddPartner={async(p)=>{ await api.partners.create(p); refreshData(); }} onUpdatePartner={async(p)=>{ await api.partners.update(p); refreshData(); }} onDeletePartner={async(id)=>{ await api.partners.delete(id); refreshData(); }} lang={lang} />}
                 {currentTab === 'users' && <StaffManagement users={users} partners={partners} currentUser={session.user} onRefresh={refreshData} onAddUser={async(u)=>{ await api.users.upsert(u); refreshData(); }} onUpdateUser={async(u)=>{ await api.users.upsert(u); refreshData(); }} onDeleteUser={async(id)=>{ await api.users.delete(id); refreshData(); }} onAddPartner={async(p)=>{ await api.partners.create(p); refreshData(); }} onUpdatePartner={async(p)=>{ await api.partners.update(p); refreshData(); }} onDeletePartner={async(id)=>{ await api.partners.delete(id); refreshData(); }} lang={lang} />}
-                {currentTab === 'settings' && <SystemSettings lang={lang} onChangeLang={setLang} onUpdateConfig={async(c)=>{ await api.config.update(c); refreshData(); }} />}
+                {currentTab === 'settings' && <SystemSettings lang={lang} onChangeLang={changeLanguage} onUpdateConfig={async(c)=>{ await api.config.update(c); refreshData(); }} />}
                 {currentTab === 'menu' && <DatabaseManagement lang={lang} />}
               </>
             )}

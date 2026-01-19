@@ -5,7 +5,7 @@ import {
   Fingerprint, Key, CheckCircle2,
   ShieldAlert, Smartphone, Monitor, Info, Lock, Sparkles
 } from 'lucide-react';
-import authClient from '../services/auth-client';
+import authClient from '../services/frontend/auth-client.frontend';
 import { api } from '../services/api';
 import { Language, getTranslation } from '../constants/translations';
 import { QRCodeSVG } from 'qrcode.react';

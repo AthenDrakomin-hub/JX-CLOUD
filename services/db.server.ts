@@ -1,7 +1,7 @@
 
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
-import * as schema from '../schema.js';
+import * as schema from '../schema';
 
 /**
  * 江西云厨 - 物理连接中枢 (Server-side Only)

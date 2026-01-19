@@ -1,8 +1,21 @@
-# Supabase
+# Supabase 本地开发文件
 .branches
 .temp
+.functions
+.web
 
-# dotenvx
+# 环境配置
 .env.keys
 .env.local
 .env.*.local
+
+# 日志文件
+*.log
+logs/
+
+# 缓存文件
+.cache/
+.tmp/
+
+# 测试文件
+test-results/

@@ -9,13 +9,15 @@ import authClient from '../services/auth-client';
 import { Language, getTranslation } from '../translations';
 import { QRCodeSVG } from 'qrcode.react';
 import LegalFooter from './LegalFooter';
+import LanguageSelector from './LanguageSelector';
 
 interface AuthPageProps {
   lang: Language;
   onToggleLang: () => void;
+  onChangeLang?: (lang: Language) => void;
 }
 
-const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang }) => {
+const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang, onChangeLang }) => {
   const [email, setEmail] = useState('');
   const [isPasskeyLoading, setIsPasskeyLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -166,9 +168,13 @@ const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang }) => {
 
       <div className="flex-1 flex flex-col items-center justify-center p-6 relative">
         <div className="absolute top-8 right-8">
-           <button onClick={onToggleLang} className="px-5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black text-slate-400 hover:text-white hover:bg-white/10 transition-all uppercase tracking-widest">
-             {lang === 'zh' ? 'Switch to English' : '切换至中文模式'}
-           </button>
+           {onChangeLang ? (
+             <LanguageSelector currentLanguage={lang} onChange={onChangeLang} />
+           ) : (
+             <button onClick={onToggleLang} className="px-5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black text-slate-400 hover:text-white hover:bg-white/10 transition-all uppercase tracking-widest">
+               {lang === 'zh' ? 'Switch to English' : '切换至中文模式'}
+             </button>
+           )}
         </div>
 
         <div className="w-full max-w-sm space-y-12 animate-fade-up">

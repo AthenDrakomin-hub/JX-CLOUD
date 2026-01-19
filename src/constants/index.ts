@@ -1,5 +1,5 @@
 
-import { RoomStatus, Dish, User, UserRole, CRUDPermissions, AppModule, Partner, Category, PaymentMethodConfig } from '../types';
+import { RoomStatus, Dish, User, UserRole, CRUDPermissions, AppModule, Partner, Category, PaymentMethodConfig } from '../types.js';
 
 /**
  * 江西云厨 - 核心资产档案 (Dishes Registry v10.5)

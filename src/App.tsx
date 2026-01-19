@@ -16,7 +16,7 @@ import AdminSetup from './components/AdminSetup';
 import StaffActivation from './components/StaffActivation';
 import GuestOrder from './components/GuestOrder';
 import Toast, { ToastType } from './components/Toast';
-import { useSession, safeSignOut } from './services/auth-client';
+import { useSession, safeSignOut } from './services/frontend/auth-client.frontend';
 import { api } from './services/api';
 import { supabase, isDemoMode } from './services/supabaseClient';
 import { notificationService } from './services/notification';
