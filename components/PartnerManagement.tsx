@@ -127,7 +127,7 @@ const PartnerManagement: React.FC<PartnerManagementProps> = ({
                <div className="flex flex-wrap gap-2">{(partner.authorizedCategories || []).map(catId => (<span key={catId} className="px-4 py-1.5 bg-slate-100 border border-slate-200 rounded-full text-[9px] font-black text-slate-600 uppercase tracking-widest">{getCatDisplay(catId)}</span>))}</div>
             </div>
             <div className="mt-8 pt-6 border-t border-slate-50 flex items-center justify-between">
-               <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest">加入时间: {new Date(partner.joinedAt).toLocaleDateString()}</span>
+               <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest">加入时间: {partner.joinedAt ? new Date(partner.joinedAt).toLocaleDateString() : 'N/A'}</span>
                <div className="flex items-center gap-1.5"><ShieldCheck size={14} className="text-blue-500" /><span className="text-[9px] font-black text-slate-400 uppercase">Verified Merchant</span></div>
             </div>
           </div>

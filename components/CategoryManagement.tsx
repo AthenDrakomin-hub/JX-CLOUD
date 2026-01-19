@@ -29,7 +29,7 @@ const CategoryRow: React.FC<CategoryRowProps> = ({
   index, item, depth, control, onRemove, onMove, onAddChild, lang 
 }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const { register, setValue } = useForm<FormValues>({ control });
+  const { register, setValue } = useForm<FormValues>();
 
   // Get current name for local display while not editing
   const currentName = useWatch({
@@ -57,14 +57,14 @@ const CategoryRow: React.FC<CategoryRowProps> = ({
           <div className="flex-1 flex gap-2">
             <div className="flex-1 grid grid-cols-2 gap-2">
               <input 
-                {...control.register(`categories.${index}.name` as const)}
+                {...register(`categories.${index}.name` as const)}
                 autoFocus
                 className="px-4 py-2 bg-white border border-blue-500 rounded-lg outline-none text-sm font-bold shadow-sm"
                 placeholder="中文名称"
               />
               <input 
                 // Fix: Changed name_en to nameEn to match Category interface
-                {...control.register(`categories.${index}.nameEn` as const)}
+                {...register(`categories.${index}.nameEn` as const)}
                 className="px-4 py-2 bg-white border border-blue-500 rounded-lg outline-none text-sm font-bold shadow-sm"
                 placeholder="English Name"
               />

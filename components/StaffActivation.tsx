@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { UserPlus, Fingerprint, Loader2, ArrowRight, CheckCircle2, AlertCircle, Sparkles, ShieldCheck } from 'lucide-react';
-import { authClient } from '../services/auth-client';
+import authClient from '../services/auth-client';
 import { Language, getTranslation } from '../translations';
 
 interface StaffActivationProps {
@@ -32,7 +32,7 @@ const StaffActivation: React.FC<StaffActivationProps> = ({ token, lang, onSucces
     setIsRegistering(true);
     setError(null);
     try {
-      const { error: signUpError } = await authClient.signUp.passkey({
+      const { error: signUpError } = await (authClient.signUp as any).passkey({
         email: info.email,
         name: info.name,
       });

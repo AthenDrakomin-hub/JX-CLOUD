@@ -5,7 +5,7 @@ import {
   Fingerprint, Key, CheckCircle2,
   ShieldAlert, Smartphone, Monitor, Info, Lock, Sparkles
 } from 'lucide-react';
-import { authClient } from '../services/auth-client';
+import authClient from '../services/auth-client';
 import { Language, getTranslation } from '../translations';
 import { QRCodeSVG } from 'qrcode.react';
 import LegalFooter from './LegalFooter';
@@ -50,7 +50,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang }) => {
     setError(null);
     setIsPasskeyLoading(true);
     try {
-      const { error: signInError } = await authClient.signIn.passkey({ email, callbackURL: "/" });
+      const { error: signInError } = await (authClient.signIn as any).passkey({ email, callbackURL: "/" });
       if (signInError) {
         if (signInError.message?.includes('NotFoundError') || (signInError as any).name === 'NotFoundError') {
           setAuthStage('register_choice');
@@ -72,7 +72,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang }) => {
     setIsPasskeyLoading(true);
     setError(null);
     try {
-      const { error: signUpError } = await authClient.signUp.passkey({ email, name: email.split('@')[0] });
+      const { error: signUpError } = await (authClient.signUp as any).passkey({ email, name: email.split('@')[0] });
       if (signUpError) setError(signUpError.message);
       else window.location.href = '/';
     } catch (err) {

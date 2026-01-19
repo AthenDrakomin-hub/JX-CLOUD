@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { Language, getTranslation } from '../translations';
 import { api } from '../services/api';
-import { authClient } from '../services/auth-client';
+import authClient from '../services/auth-client';
 import { SystemConfig } from '../types';
 
 interface SystemSettingsProps {
@@ -32,7 +32,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, onChangeLang, onU
   const refreshPasskeys = useCallback(async () => {
     setIsLoadingPasskeys(true);
     try {
-      const { data, error } = await authClient.passkey.listPasskeys();
+      const { data, error } = await (authClient as any).passkey.listPasskeys();
       if (!error) setPasskeys(data || []);
     } finally {
       setIsLoadingPasskeys(false);
@@ -75,7 +75,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, onChangeLang, onU
   const handleRevokePasskey = async (id: string) => {
     if (!confirm("⚠️ 确定吊销此设备的 Passkey 证书？吊销后该设备将无法通过生物识别快速登录。")) return;
     try {
-      await authClient.passkey.deletePasskey({ id });
+      await (authClient as any).passkey.deletePasskey({ id });
       refreshPasskeys();
     } catch (err) {
       alert("吊销失败");

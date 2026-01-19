@@ -1,4 +1,3 @@
-
 import { createAuthClient } from "better-auth/react";
 import { anonymousClient } from "better-auth/client/plugins";
 
@@ -14,12 +13,21 @@ const getAuthBaseURL = () => {
     return "";
 };
 
-export const authClient = createAuthClient({
+const authClientInternal = createAuthClient({
     baseURL: getAuthBaseURL(),
     plugins: [
         anonymousClient()
     ]
-});
+}) as any;
+
+// 导出方法
+export const useSession = authClientInternal.useSession;
+export const signIn = authClientInternal.signIn;
+export const signOut = authClientInternal.signOut;
+export const signUp = authClientInternal.signUp;
+
+// 导出内部客户端实例
+export default authClientInternal;
 
 /**
  * 生产级安全登出协议
@@ -27,7 +35,7 @@ export const authClient = createAuthClient({
  */
 export const safeSignOut = async () => {
     try {
-        await authClient.signOut();
+        await authClientInternal.signOut;
         // 物理清除敏感存储
         sessionStorage.removeItem('better-auth.session');
         localStorage.removeItem('better-auth.session');
@@ -41,5 +49,3 @@ export const safeSignOut = async () => {
         window.location.reload();
     }
 };
-
-export const { useSession, signIn, signOut, signUp } = authClient;

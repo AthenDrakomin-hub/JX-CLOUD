@@ -7,7 +7,7 @@ import {
   Handshake, Percent, Users, Key, Link, Copy, Sparkles,
   CheckCircle2, ShieldCheck, ChevronRight, ChefHat, Box, LayoutDashboard, Fingerprint, Loader2
 } from 'lucide-react';
-import { authClient } from '../services/auth-client';
+import authClient from '../services/auth-client';
 import PartnerManagement from './PartnerManagement';
 
 interface StaffManagementProps {
@@ -111,7 +111,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({
     e.stopPropagation();
     setIsPasskeyLoading(true);
     try {
-      const { error } = await authClient.passkey.addPasskey();
+      const { error } = await (authClient as any).passkey.addPasskey();
       if (error) alert(t('error') + ": " + error.message);
       else alert(t('success'));
     } catch (e) {

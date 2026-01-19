@@ -21,7 +21,7 @@ const LegalFooter: React.FC<LegalFooterProps> = ({ lang }) => {
       privacy: 'Privacy Policy',
       copyright: 'JX-Cloud R&D Team © 2025'
     },
-    tl: {
+    fil: {
       ip: 'Ari-arian',
       disclaimer: 'Pagpapaubaya',
       privacy: 'Patakaran sa Privacy',

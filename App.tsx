@@ -158,14 +158,14 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (isDemoMode || !supabase || !session?.user || routeState.roomId) return;
-    const channel = supabase.channel('orders_realtime_v12').on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+    const channel = supabase.channel('orders_realtime_v12').on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload: any) => {
         if (payload.eventType === 'INSERT') {
           const updatedOrder = { ...payload.new, totalAmount: Number((payload.new as any).total_amount) } as any;
           setOrders(prev => [updatedOrder, ...prev]);
           notificationService.broadcastOrderVoice(updatedOrder, lang);
           setToast({ message: t('new_order_toast', { room: updatedOrder.room_id }), type: 'success' });
         } else { refreshData(); }
-    }).subscribe(s => setIsRealtimeActive(s === 'SUBSCRIBED'));
+    }).subscribe((s: any) => setIsRealtimeActive(s === 'SUBSCRIBED'));
     return () => { supabase.removeChannel(channel); };
   }, [session, lang, t, refreshData, routeState.roomId]);
 

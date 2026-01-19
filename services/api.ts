@@ -142,7 +142,7 @@ export const api = {
     getAll: async (): Promise<Category[]> => {
       if (isDemoMode || !supabase) return INITIAL_CATEGORIES;
       const { data } = await supabase.from('menu_categories').select('*').order('display_order');
-      return (data || []).map(c => ({
+      return (data || []).map((c: any) => ({
         id: c.id, name: c.name, nameEn: c.name_en, code: c.code,
         level: c.level, displayOrder: c.display_order, isActive: c.is_active,
         parentId: c.parent_id, partnerId: c.partner_id
@@ -163,7 +163,7 @@ export const api = {
     getAll: async (): Promise<HotelRoom[]> => {
       if (isDemoMode || !supabase) return [];
       const { data } = await supabase.from('rooms').select('*').order('id');
-      return (data || []).map(r => ({ id: r.id, status: r.status }));
+      return (data || []).map((r: any) => ({ id: r.id, status: r.status }));
     },
     updateStatus: async (id: string, status: string) => {
       if (isDemoMode || !supabase) return;
@@ -175,7 +175,7 @@ export const api = {
     getAll: async (): Promise<Partner[]> => {
       if (isDemoMode || !supabase) return [];
       const { data } = await supabase.from('partners').select('*').order('name');
-      return (data || []).map(p => ({
+      return (data || []).map((p: any) => ({
         id: p.id, name: p.name, ownerName: p.owner_name, status: p.status,
         commissionRate: parseNumeric(p.commission_rate), balance: parseNumeric(p.balance),
         authorizedCategories: p.authorized_categories || [], joinedAt: p.created_at
@@ -210,7 +210,7 @@ export const api = {
     getAll: async (): Promise<User[]> => {
       if (isDemoMode || !supabase) return [];
       const { data } = await supabase.from('users').select('*').order('name');
-      return (data || []).map(u => ({
+      return (data || []).map((u: any) => ({
         id: u.id, email: u.email, name: u.name, role: u.role as UserRole,
         partnerId: u.partner_id, isActive: u.is_active
       }));
@@ -233,7 +233,7 @@ export const api = {
     getAll: async (): Promise<Expense[]> => {
       if (isDemoMode || !supabase) return [];
       const { data } = await supabase.from('expenses').select('*').order('date', { ascending: false });
-      return (data || []).map(e => ({ id: e.id, description: e.description, amount: parseNumeric(e.amount), category: e.category, date: e.date }));
+      return (data || []).map((e: any) => ({ id: e.id, description: e.description, amount: parseNumeric(e.amount), category: e.category, date: e.date }));
     },
     create: async (data: Expense) => {
       if (isDemoMode || !supabase) return;
@@ -251,7 +251,7 @@ export const api = {
       if (isDemoMode || !supabase) return [];
       const { data } = await supabase.from('ingredients').select('*').order('name');
       // Fix: Mapped last_restocked to lastRestocked to match Ingredient interface
-      return (data || []).map(i => ({ 
+      return (data || []).map((i: any) => ({ 
         id: i.id, 
         name: i.name, 
         unit: i.unit, 
@@ -291,7 +291,7 @@ export const api = {
       if (isDemoMode || !supabase) return INITIAL_PAYMENT_METHODS;
       const { data } = await supabase.from('payment_methods').select('*').order('sort_order');
       if (!data || data.length === 0) return INITIAL_PAYMENT_METHODS;
-      return data.map(p => ({
+      return data.map((p: any) => ({
         id: p.id, name: p.name, nameEn: p.name_en, currency: p.currency,
         currencySymbol: p.currency_symbol, exchangeRate: parseNumeric(p.exchange_rate),
         isActive: p.is_active, paymentType: p.payment_type, sortOrder: p.sort_order,

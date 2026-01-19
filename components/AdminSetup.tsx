@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Shield, Fingerprint, Loader2, ArrowRight, CheckCircle2, AlertCircle, Key, Lock } from 'lucide-react';
-import { authClient } from '../services/auth-client';
+import authClient from '../services/auth-client';
 import { Language, getTranslation } from '../translations';
 
 interface AdminSetupProps {
