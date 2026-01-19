@@ -44,20 +44,26 @@ const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang }) => {
 
   const handleInitialAuth = async () => {
     if (!email) {
-      setError(lang === 'zh' ? "请输入授权邮箱" : "Enter authorized email");
+      setError(t('enter_authorized_email'));
       return;
     }
     setError(null);
     setIsPasskeyLoading(true);
     try {
-      const { error: signInError } = await (authClient.signIn as any).passkey({ email, callbackURL: "/" });
-      if (signInError) {
-        if (signInError.message?.includes('NotFoundError') || (signInError as any).name === 'NotFoundError') {
-          setAuthStage('register_choice');
+      // 检查 passkey 方法是否存在
+      if (authClient.signIn && typeof authClient.signIn.passkey === 'function') {
+        const { error: signInError } = await authClient.signIn.passkey({ email, callbackURL: "/" });
+        if (signInError) {
+          if (signInError.message?.includes('NotFoundError') || (signInError as any).name === 'NotFoundError') {
+            setAuthStage('register_choice');
+          }
         }
+      } else {
+        // 如果 passkey 方法不存在，显示错误
+        setError(t('auth_passkey_not_supported'));
       }
-    } catch (err) {
-      setError(t('auth_passkey_error'));
+    } catch (err: any) {
+      setError(err.message || t('auth_passkey_error'));
     } finally {
       setIsPasskeyLoading(false);
     }
@@ -72,11 +78,16 @@ const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang }) => {
     setIsPasskeyLoading(true);
     setError(null);
     try {
-      const { error: signUpError } = await (authClient.signUp as any).passkey({ email, name: email.split('@')[0] });
-      if (signUpError) setError(signUpError.message);
-      else window.location.href = '/';
-    } catch (err) {
-      setError(t('auth_passkey_error'));
+      // 检查 passkey 方法是否存在
+      if (authClient.signUp && typeof authClient.signUp.passkey === 'function') {
+        const { error: signUpError } = await authClient.signUp.passkey({ email, name: email.split('@')[0] });
+        if (signUpError) setError(signUpError.message);
+        else window.location.href = '/';
+      } else {
+        setError(t('auth_passkey_not_supported'));
+      }
+    } catch (err: any) {
+      setError(err.message || t('auth_passkey_error'));
     } finally {
       setIsPasskeyLoading(false);
     }
@@ -219,14 +230,14 @@ const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang }) => {
                 <Lock size={48} className="text-blue-500 animate-pulse" />
               </div>
               <div className="space-y-3">
-                <h3 className="text-3xl font-black text-white uppercase italic tracking-tighter">{lang === 'zh' ? '初始化生物凭证' : 'Initialize Credentials'}</h3>
+                <h3 className="text-3xl font-black text-white uppercase italic tracking-tighter">{t('auth_register_init')}</h3>
                 <p className="text-sm text-slate-500 px-8 leading-relaxed font-medium">
-                  账户 <span className="text-blue-400 font-bold">[{email}]</span> 尚未锚定硬件。现在启动原生安全协议执行身份锁定吗？
+                  {t('auth_account_not_bound').replace('{email}', email)}
                 </p>
               </div>
               <div className="space-y-4 pt-6">
                 <button onClick={handleRegisterStart} className="w-full py-7 bg-blue-600 hover:bg-blue-500 text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.4em] shadow-[0_20px_60px_rgba(37,99,235,0.4)] transition-all active:scale-95">
-                  {lang === 'zh' ? '开始安全初始化' : 'START SECURE INITIALIZATION'}
+                  {t('start_secure_init')}
                 </button>
                 <button onClick={() => setAuthStage('input')} className="text-[10px] text-slate-600 font-black uppercase tracking-[0.4em] hover:text-white transition-colors">{t('cancel')}</button>
               </div>
@@ -248,15 +259,15 @@ const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang }) => {
                     <QRCodeSVG value={handoffUrl} size={180} level="H" />
                   </div>
                   <p className="text-[12px] text-slate-400 font-medium leading-relaxed px-6 italic">
-                    请使用具备生物识别硬件的手机。完成后，本页面将感知凭证状态并自动刷新。
+                    {t('auth_scan_instruction')}
                   </p>
                </div>
                <div className="flex flex-col gap-5">
                   <button onClick={() => setAuthStage('register_choice')} className="w-full py-5 bg-white/5 border border-white/10 text-slate-500 rounded-2xl font-black text-[11px] uppercase flex items-center justify-center gap-3 hover:text-white transition-all shadow-lg active:scale-[0.98]">
                     <Monitor size={16} />
-                    <span>仍在此设备尝试</span>
+                    <span>{t('try_on_this_device')}</span>
                   </button>
-                  <button onClick={() => setAuthStage('input')} className="text-center text-[10px] font-black text-slate-700 uppercase tracking-[0.3em] hover:text-slate-400 transition-colors">取消注册</button>
+                  <button onClick={() => setAuthStage('input')} className="text-center text-[10px] font-black text-slate-700 uppercase tracking-[0.3em] hover:text-slate-400 transition-colors">{t('cancel_registration')}</button>
                </div>
             </div>
           )}
