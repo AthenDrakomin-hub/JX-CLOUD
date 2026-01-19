@@ -1,15 +1,11 @@
+
 {
   "compilerOptions": {
-    "target": "ES2022",
+    "target": "ESNext",
     "useDefineForClassFields": true,
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
-    
-    /* 核心修复：彻底关闭 JS 检查 */
     "allowJs": false,
-    "checkJs": false,
     "skipLibCheck": true,
-    "maxNodeModuleJsDepth": 0,
-    
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "strict": true,
@@ -20,29 +16,8 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "types": ["node"],
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"],
-      "@src/*": ["src/*"],
-      "@components/*": ["components/*"],
-      "@services/*": ["services/*"],
-      "@utils/*": ["utils/*"],
-      "@types": ["src/types"],
-      "@types/*": ["src/types/*"],
-      "@constants": ["src/constants"],
-      "@constants/*": ["src/constants/*"],
-      "@translations": ["src/translations"],
-      "@translations/*": ["src/translations/*"]
-    }
+    "types": ["node"]
   },
-  "include": ["**/*.ts", "**/*.tsx", "api/**/*.ts", "src/types/**/*.d.ts", "src/**/*.d.ts"],
-  "exclude": [
-    "node_modules", 
-    "dist", 
-    ".vercel",
-    "**/*.js",
-    "**/*.cjs",
-    "**/*.mjs"
-  ]
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules", "dist", ".vercel"]
 }

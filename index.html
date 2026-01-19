@@ -1,13 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="zh" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover">
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
   <title>江西云厨终端系统 - JX CLOUD Terminal</title>
-  <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
   
@@ -124,10 +121,13 @@
     "next/": "https://esm.sh/next@^16.1.2/",
     "postgres": "https://esm.sh/postgres@^3.4.8",
     "@vercel/edge": "https://esm.sh/@vercel/edge@^1.2.2",
-    "react-hook-form": "https://esm.sh/react-hook-form@7.54.2?deps=react@19.0.0,react-dom@19.0.0"
+    "react-hook-form": "https://esm.sh/react-hook-form@7.54.2?deps=react@19.0.0,react-dom@19.0.0",
+    "drizzle-kit": "https://esm.sh/drizzle-kit@^0.31.8",
+    "better-auth": "https://esm.sh/better-auth@^1.4.15"
   }
 }
 </script>
+<link rel="stylesheet" href="/index.css">
 </head>
 <body>
   <div id="root">
@@ -136,29 +136,7 @@
       <div style="font-size: 10px; opacity: 0.5; letter-spacing: 0.2em;">BOOTING SECURE SHELL...</div>
     </div>
   </div>
-  <script type="module" src="/src/index.tsx"></script>
-<script>
-  // 🔧 早期清理不需要的 hash（在应用加载前）
-  (function() {
-    const unwantedHashes = ['#welcome-shown', '#welcome', '#home'];
-    if (unwantedHashes.includes(window.location.hash)) {
-      console.log('🔧 Early cleaning unwanted hash:', window.location.hash);
-      const newUrl = window.location.pathname + window.location.search;
-      window.history.replaceState(null, '', newUrl);
-    }
-  })();
-  
-  // 检测 URL 参数并在必要时重定向到合适的页面
-  window.addEventListener('load', () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const roomParam = urlParams.get('room');
-    
-    // 如果有 room 参数，保持在当前页面（App.tsx 会处理）
-    if (roomParam) {
-      // 让 App.tsx 处理访客模式
-      console.log('Guest mode detected, room:', roomParam);
-    }
-  });
-</script>
+  <script type="module" src="index.tsx"></script>
+<script type="module" src="/index.tsx"></script>
 </body>
 </html>

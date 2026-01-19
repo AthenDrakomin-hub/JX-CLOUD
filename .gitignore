@@ -1,69 +1,34 @@
-# 生产环境严禁上传
+
+# 依赖
+node_modules
+.pnpm-store
+
+# 编译产物
+dist
+dist-ssr
+*.local
+
+# 环境变量 (极其重要：严禁上传至 GitHub)
 .env
 .env.local
 .env.*.local
 
-# 编译产物
-dist/
-.vercel/
-.vite/
-
-# 临时与备份文件
-*.backup
-*.tmp
-_backup/
-tools/
-
-# 系统与日志
-node_modules/
-npm-debug.log*
+# 系统与编辑器
 .DS_Store
-
-# 依赖与构建
-.vite/
-.supabase/
-
-# 环境变量 (绝对禁止上传)
-.env
-.env.*
-!.env.example
-
-# 数据库与脚本残留
-sql/backup/          # SQL备份
-scripts/*.local.ts   # 本地测试脚本
-supabase/.temp/
-
-# 操作系统与IDE
-.DS_Store
-.vscode/
-.idea/
-*.log
-
-# 性能报告
-stats.html
-test-db-connection.ts
-
-# 证书文件
-*.pem
-*.key
-*.crt
-*.cer
-*.p12
-*.pfx
-
-# 本地日志文件
-*.log
-debug.log
-error.log
-access.log
-
-# 本地配置备份
-*.bak
-*.old
-*.orig
-
-# 临时文件
-*.tmp
-*.temp
 Thumbs.db
+.vscode
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Vercel 本地缓存
 .vercel
+
+# 日志
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
