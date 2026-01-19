@@ -4,7 +4,6 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 import { betterAuth } from 'https://esm.sh/better-auth@1.4.15/supabase';
 import { drizzle } from 'https://esm.sh/drizzle-orm@0.45.1/supabase';
 import * as schema from '../../../drizzle/schema.js';
-import { passkey } from 'https://esm.sh/better-auth@1.4.15/supabase/plugins';
 
 // 获取环境变量
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -33,18 +32,7 @@ const auth = betterAuth({
   advanced: {
     useSecureCookies: true,
     crossOrigin: true
-  },
-  plugins: [
-    passkey({
-      rpName: "江西云厨",
-      rpID: Deno.env.get('NODE_ENV') === 'production' 
-        ? 'jiangxijiudian.store' 
-        : 'localhost',
-      origin: Deno.env.get('NODE_ENV') === 'production'
-        ? 'https://jiangxijiudian.store'
-        : 'http://localhost:3002',
-    })
-  ]
+  }
 });
 
 // 导出处理函数

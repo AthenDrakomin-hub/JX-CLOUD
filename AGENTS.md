@@ -62,8 +62,8 @@ This is the **JX Cloud Terminal** - a comprehensive hospitality management syste
 
 The system implements FIDO2/WebAuthn passkey authentication using Better-Auth with the following configuration:
 
-- Server-side: `services/auth-server.ts` includes passkey plugin with proper RP (Relying Party) configuration
-- Client-side: `services/auth-client.ts` includes passkey client plugin
+- Server-side: `services/auth-server.ts` includes passkey table in schema for database operations
+- Client-side: `services/auth-client.ts` connects to the auth server for passkey functionality
 - Database: Schema includes `passkey` table with proper relations to `user` table
 - API Routes: Handled through Vercel API at `api/index.ts` which delegates to auth handler
 - Supabase Integration: Uses Drizzle ORM adapter for PostgreSQL database operations
