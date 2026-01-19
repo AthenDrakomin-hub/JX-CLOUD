@@ -11,9 +11,8 @@ README.md
 api/init-dishes.ts
 components/DebugTools.tsx
 
-# 排除源代码中的类型定义或配置文件 (如果不需要在运行时存在)
-tsconfig.json
-vite.config.ts
+# 日志文件
+*.log
 
 # 忽略非生产环境日志
 *.log
