@@ -1,52 +1,39 @@
-
-# 数据库初始化脚本 (部署后不再需要)
-database_setup.sql
-init.sql
-
-# Supabase CLI 工具 (本地开发用)
+# 本地开发工具和大文件
 supabase.exe
 supabase.tar.gz
 
-# 开发文档与示例
-README.md
+# 环境变量文件（安全考虑）
+.env
+.env.local
+.env.*.local
+.env.production.local
 .env.example
 .env.production.template
-docs/
 
-# 测试与调试工具
-components/DebugTools.tsx
-components/DevHub.tsx
-scripts/
+# 构建产物（Vercel会重新构建）
+dist/
+dist-ssr/
+
+# 依赖（Vercel会安装）
+node_modules/
+
+# IDE和系统文件
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
 
 # 日志文件
 *.log
 
-# 本地开发配置
-.env.local
-.env.*.local
-
-# 构建产物
-dist/
-dist-ssr/
-
-# 依赖
-node_modules/
-
-# IDE 配置
-.vscode/
-.idea/
-
-# 系统文件
-.DS_Store
-Thumbs.db
-
-# Supabase 本地文件
+# Supabase本地文件
 supabase/.temp
 supabase/.branches
 
-# 数据库迁移文件 (如果不需要)
-migrations/
-.drizzle/
+# TypeScript构建信息
+*.tsbuildinfo
 
-# 元数据文件
-metadata.json
+# 测试覆盖率
+coverage/
+.nyc_output/
