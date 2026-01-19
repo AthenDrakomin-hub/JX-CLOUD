@@ -1,8 +1,8 @@
 
-import { pgTable, text, numeric, timestamp, integer, boolean, jsonb, uuid } from 'drizzle-orm/pg-core';
+import { pgTable, text, numeric, timestamp, integer, boolean, jsonb } from 'drizzle-orm/pg-core';
 
 /**
- * 1. 认证表 (Physical Audit Table)
+ * 1. 认证核心表 (Better-Auth Required)
  */
 export const user = pgTable('user', {
   id: text('id').primaryKey(),
@@ -11,14 +11,63 @@ export const user = pgTable('user', {
   emailVerified: boolean('email_verified').notNull().default(false),
   image: text('image'),
   role: text('role').default('user'),
-  partnerId: text('partner_id'), // 物理隔离核心字段
+  partnerId: text('partner_id'), 
   modulePermissions: jsonb('module_permissions'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
+export const session = pgTable('session', {
+  id: text('id').primaryKey(),
+  expiresAt: timestamp('expires_at').notNull(),
+  token: text('token').notNull().unique(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  ipAddress: text('ip_address'),
+  userAgent: text('user_agent'),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+});
+
+export const account = pgTable('account', {
+  id: text('id').primaryKey(),
+  accountId: text('account_id').notNull(),
+  providerId: text('provider_id').notNull(),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  accessToken: text('access_token'),
+  refreshToken: text('refresh_token'),
+  idToken: text('id_token'),
+  accessTokenExpiresAt: timestamp('access_token_expires_at'),
+  refreshTokenExpiresAt: timestamp('refresh_token_expires_at'),
+  scope: text('scope'),
+  password: text('password'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+export const verification = pgTable('verification', {
+  id: text('id').primaryKey(),
+  identifier: text('identifier').notNull(),
+  value: text('value').notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+export const passkey = pgTable('passkey', {
+  id: text('id').primaryKey(),
+  name: text('name'),
+  publicKey: text('public_key').notNull(),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  credentialId: text('credential_id').notNull().unique(),
+  counter: integer('counter').notNull().default(0),
+  deviceType: text('device_type').notNull(),
+  backedUp: boolean('backed_up').notNull().default(false),
+  transports: text('transports'),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
 /**
- * 2. 业务用户表 (Business Registry)
+ * 2. 业务用户与配置 (Business Logic)
  */
 export const users = pgTable('users', {
   id: text('id').primaryKey(),
@@ -36,31 +85,28 @@ export const users = pgTable('users', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
-/**
- * 3. 核心业务表 (Core Operations)
- */
 export const menuDishes = pgTable('menu_dishes', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
-  nameEn: text('name_en'), // 镜像对齐 name_en
+  nameEn: text('name_en'), 
   description: text('description'),
   tags: text('tags').array(),
-  price: numeric('price').notNull(), // DB存 numeric(10,2)
-  categoryId: text('category_id'), // 镜像对齐 category_id
+  price: numeric('price').notNull(), 
+  categoryId: text('category_id'), 
   stock: integer('stock').default(99),
   imageUrl: text('image_url'),
   isAvailable: boolean('is_available').default(true),
   isRecommended: boolean('is_recommended').default(false),
-  partnerId: text('partner_id'), // RLS 物理锚点
+  partnerId: text('partner_id'),
   createdAt: timestamp('created_at').defaultNow(),
 });
 
 export const orders = pgTable('orders', {
   id: text('id').primaryKey(),
-  tableId: text('table_id').notNull(), // 镜像对齐 table_id
+  tableId: text('table_id').notNull(),
   customerId: text('customer_id'),
   items: jsonb('items').default('[]'),
-  totalAmount: numeric('total_amount').default('0'), // 镜像对齐 total_amount
+  totalAmount: numeric('total_amount').default('0'),
   status: text('status').default('pending'),
   paymentMethod: text('payment_method'),
   paymentProof: text('payment_proof'),
@@ -70,43 +116,6 @@ export const orders = pgTable('orders', {
   partnerId: text('partner_id'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
-});
-
-export const partners = pgTable('partners', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
-  ownerName: text('owner_name'),
-  contact: text('contact'),
-  email: text('email'),
-  status: text('status').default('active'),
-  commissionRate: numeric('commission_rate').default('0.15'),
-  balance: numeric('balance').default('0'),
-  authorizedCategories: text('authorized_categories').array(),
-  createdAt: timestamp('created_at').defaultNow(),
-});
-
-export const systemConfig = pgTable('system_config', {
-  id: text('id').primaryKey().default('global'),
-  hotelName: text('hotel_name').default('江西云厨酒店'),
-  version: text('version').default('8.8.0'),
-  theme: text('theme').default('light'),
-  autoPrintOrder: boolean('auto_print_order').default(true),
-  ticketStyle: text('ticket_style').default('standard'),
-  fontFamily: text('font_family').default('Plus Jakarta Sans'),
-  updatedAt: timestamp('updated_at').defaultNow(),
-});
-
-export const menuCategories = pgTable('menu_categories', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
-  nameEn: text('name_en'),
-  code: text('code'),
-  level: integer('level').default(1),
-  displayOrder: integer('display_order').default(0),
-  isActive: boolean('is_active').default(true),
-  parentId: text('parent_id'),
-  partnerId: text('partner_id'), 
-  createdAt: timestamp('created_at').defaultNow(),
 });
 
 export const paymentMethods = pgTable('payment_methods', {

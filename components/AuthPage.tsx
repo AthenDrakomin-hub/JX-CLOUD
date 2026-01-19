@@ -90,17 +90,13 @@ const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang }) => {
 
   return (
     <div className="h-screen bg-slate-950 flex font-sans text-slate-100 overflow-hidden relative selection:bg-blue-500/30">
-      {/* 动态微光背景 */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 blur-[120px] rounded-full animate-pulse" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] bg-emerald-600/5 blur-[100px] rounded-full" />
       
-      {/* 噪点纹理层 */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3%3Cfilter id='noiseFilter'%3%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }} />
 
-      {/* 左侧视觉区 */}
       <div className="hidden lg:flex w-[45%] relative flex-col justify-between p-20 border-r border-white/5 bg-black/20 backdrop-blur-3xl shrink-0">
         <div className="relative z-10 space-y-32">
-          {/* Logo 区域 */}
           <div className="flex items-center gap-5">
             <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center shadow-[0_0_40px_rgba(37,99,235,0.4)] border border-blue-400/20">
               <Shield size={32} className="text-white" />
@@ -114,11 +110,9 @@ const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang }) => {
             </div>
           </div>
           
-          {/* Slogan 与技术描述重排 */}
           <div className="space-y-12">
             <div className="relative">
               <span className="absolute -top-16 -left-4 text-[140px] font-black text-white/[0.02] select-none uppercase tracking-tighter">JX-CORE</span>
-              
               <h2 className="text-8xl font-black italic leading-[0.8] text-white tracking-tighter drop-shadow-2xl">
                 {t('digital_driven')} <br/>
                 <span className="text-blue-500 translate-x-8 inline-block mt-4">{t('cloud_kitchen')}</span>
@@ -144,7 +138,6 @@ const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang }) => {
           </div>
         </div>
 
-        {/* 系统状态条 */}
         <div className="flex items-center justify-between relative z-10">
            <div className="flex gap-10 text-[9px] font-black text-slate-700 uppercase tracking-[0.3em]">
               <div className="flex items-center gap-2 group cursor-default">
@@ -160,7 +153,6 @@ const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang }) => {
         </div>
       </div>
 
-      {/* 右侧表单准入区 */}
       <div className="flex-1 flex flex-col items-center justify-center p-6 relative">
         <div className="absolute top-8 right-8">
            <button onClick={onToggleLang} className="px-5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black text-slate-400 hover:text-white hover:bg-white/10 transition-all uppercase tracking-widest">
