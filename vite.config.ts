@@ -7,7 +7,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     target: 'esnext',
-    chunkSizeWarningLimit: 500,
+    chunkSizeWarningLimit: 1000, // 调整警告阈值
     cssCodeSplit: true,
     minify: 'terser',
     terserOptions: {
@@ -22,14 +22,14 @@ export default defineConfig({
     },
     rollupOptions: {
       output: {
-        manualChunks(id) {
-          if (id.includes('node_modules')) {
-            if (id.includes('react')) return 'vendor-core';
-            if (id.includes('lucide')) return 'vendor-icons';
-            if (id.includes('recharts') || id.includes('d3')) return 'vendor-viz';
-            if (id.includes('supabase') || id.includes('better-auth')) return 'vendor-auth';
-            return 'vendor-others';
-          }
+        // 手动分割大模块，减小首屏体积
+        manualChunks: {
+          react: ['react', 'react-dom'],
+          betterauth: ['better-auth/react', 'better-auth/client/plugins'],
+          supabase: ['@supabase/supabase-js'],
+          recharts: ['recharts'],
+          lucide: ['lucide-react'],
+          vendor: ['postgres', 'drizzle-orm']
         }
       }
     }
