@@ -90,7 +90,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang }) => {
 
   return (
     <div className="h-screen bg-slate-950 flex font-sans text-slate-100 overflow-hidden relative selection:bg-blue-500/30">
-      {/* 动态光斑背景 */}
+      {/* 动态微光背景 */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 blur-[120px] rounded-full animate-pulse" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] bg-emerald-600/5 blur-[100px] rounded-full" />
       
@@ -99,7 +99,8 @@ const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang }) => {
 
       {/* 左侧视觉区 */}
       <div className="hidden lg:flex w-[45%] relative flex-col justify-between p-20 border-r border-white/5 bg-black/20 backdrop-blur-3xl shrink-0">
-        <div className="relative z-10 space-y-24">
+        <div className="relative z-10 space-y-32">
+          {/* Logo 区域 */}
           <div className="flex items-center gap-5">
             <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center shadow-[0_0_40px_rgba(37,99,235,0.4)] border border-blue-400/20">
               <Shield size={32} className="text-white" />
@@ -113,47 +114,53 @@ const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang }) => {
             </div>
           </div>
           
-          <div className="space-y-10">
+          {/* Slogan 与技术描述重排 */}
+          <div className="space-y-12">
             <div className="relative">
-              <span className="absolute -top-12 -left-4 text-[120px] font-black text-white/[0.02] select-none uppercase tracking-tighter">Genesis</span>
-              <h2 className="text-7xl font-black italic leading-[0.85] text-white tracking-tighter drop-shadow-2xl">
+              <span className="absolute -top-16 -left-4 text-[140px] font-black text-white/[0.02] select-none uppercase tracking-tighter">JX-CORE</span>
+              
+              <h2 className="text-8xl font-black italic leading-[0.8] text-white tracking-tighter drop-shadow-2xl">
                 {t('digital_driven')} <br/>
-                <span className="text-blue-500 translate-x-4 inline-block mt-2">{t('cloud_kitchen')}</span>
+                <span className="text-blue-500 translate-x-8 inline-block mt-4">{t('cloud_kitchen')}</span>
               </h2>
             </div>
-            <div className="flex gap-8 items-start max-w-md animate-fade-up">
-              <div className="w-px h-24 bg-gradient-to-b from-blue-500 to-transparent shrink-0 opacity-50" />
-              <div className="space-y-4">
-                <p className="text-slate-400 text-lg font-medium leading-relaxed italic">
+            
+            <div className="flex gap-8 items-start max-w-lg animate-fade-up">
+              <div className="w-px h-28 bg-gradient-to-b from-blue-500 via-blue-500/50 to-transparent shrink-0 opacity-40" />
+              <div className="space-y-5">
+                <p className="text-slate-400 text-lg font-medium leading-relaxed italic tracking-tight">
                   {t('auth_description')}
                 </p>
                 <div className="flex items-center gap-4">
                   <div className="px-3 py-1 bg-white/5 rounded-lg border border-white/10 flex items-center gap-2">
                     <Sparkles size={12} className="text-blue-400" />
-                    <span className="text-[8px] font-black uppercase text-slate-500 tracking-widest">v8.8 PRO EDITION</span>
+                    <span className="text-[8px] font-black uppercase text-slate-500 tracking-widest">v8.8 SYSTEM ENGINE</span>
                   </div>
+                  <div className="w-8 h-[1px] bg-slate-800" />
+                  <span className="text-[8px] font-black text-slate-700 uppercase tracking-widest">RLS_ENFORCED</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
+        {/* 系统状态条 */}
         <div className="flex items-center justify-between relative z-10">
            <div className="flex gap-10 text-[9px] font-black text-slate-700 uppercase tracking-[0.3em]">
               <div className="flex items-center gap-2 group cursor-default">
                 <Globe size={12} className="group-hover:text-blue-500 transition-colors" /> 
-                NODE: HK_EAST_V2
+                EDGE_NODE: South-China-Alpha
               </div>
               <div className="flex items-center gap-2">
                 <Monitor size={12} /> 
-                {sysTime}
+                SECURE_TIME: {sysTime}
               </div>
            </div>
-           <div className="w-12 h-[1px] bg-slate-800" />
+           <div className="w-16 h-[1px] bg-slate-800" />
         </div>
       </div>
 
-      {/* 右侧准入区 */}
+      {/* 右侧表单准入区 */}
       <div className="flex-1 flex flex-col items-center justify-center p-6 relative">
         <div className="absolute top-8 right-8">
            <button onClick={onToggleLang} className="px-5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black text-slate-400 hover:text-white hover:bg-white/10 transition-all uppercase tracking-widest">
@@ -193,7 +200,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang }) => {
                 <button 
                   onClick={handleInitialAuth} 
                   disabled={isPasskeyLoading} 
-                  className="w-full p-8 bg-slate-900/80 hover:bg-slate-800 border border-white/10 rounded-[3rem] flex items-center justify-between group active-scale transition-all shadow-2xl relative overflow-hidden"
+                  className="w-full p-8 bg-slate-900/80 hover:bg-slate-800 border border-white/10 rounded-[3rem] flex items-center justify-between group active:scale-[0.98] transition-all shadow-2xl relative overflow-hidden"
                 >
                   <div className="flex items-center gap-6 relative z-10">
                     <div className="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center border border-blue-500/30 group-hover:border-blue-500 transition-all">
@@ -253,7 +260,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang }) => {
                   </p>
                </div>
                <div className="flex flex-col gap-5">
-                  <button onClick={() => setAuthStage('register_choice')} className="w-full py-5 bg-white/5 border border-white/10 text-slate-500 rounded-2xl font-black text-[11px] uppercase flex items-center justify-center gap-3 hover:text-white transition-all shadow-lg active-scale">
+                  <button onClick={() => setAuthStage('register_choice')} className="w-full py-5 bg-white/5 border border-white/10 text-slate-500 rounded-2xl font-black text-[11px] uppercase flex items-center justify-center gap-3 hover:text-white transition-all shadow-lg active:scale-[0.98]">
                     <Monitor size={16} />
                     <span>仍在此设备尝试</span>
                   </button>
