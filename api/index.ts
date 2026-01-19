@@ -1,6 +1,6 @@
 
 import { createClient } from '@supabase/supabase-js';
-import { auth } from '../services/auth.server';
+import { auth } from '../services/auth.server.js';
 
 /**
  * 江西云厨 - 统一全栈 API 网关
