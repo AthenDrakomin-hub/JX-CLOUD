@@ -1,5 +1,5 @@
 import { createAuthClient } from "better-auth/react";
-import { passkeyClient, anonymousClient } from "better-auth/client/plugins";
+import { passkeyClient, anonymousClient } from "better-auth/react/plugins";
 
 /**
  * 江西云厨 - 身份验证客户端 (Security Protocol v2.5)
