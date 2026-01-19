@@ -53,17 +53,18 @@ export const verification = pgTable('verification', {
   updatedAt: timestamp('updated_at').defaultNow(),
 });
 
-export const passkey = pgTable('passkey', {
+export const passkey = pgTable('passkeys', {
   id: text('id').primaryKey(),
-  name: text('name'),
-  publicKey: text('public_key').notNull(),
   userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
   credentialId: text('credential_id').notNull().unique(),
+  publicKey: text('public_key').notNull(),
   counter: integer('counter').notNull().default(0),
   deviceType: text('device_type').notNull(),
-  backedUp: boolean('backed_up').notNull().default(false),
-  transports: text('transports'),
+  transports: jsonb('transports'),
+  lastUsedAt: timestamp('last_used_at'),
+  expiresAt: timestamp('expires_at'),
   createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 /**

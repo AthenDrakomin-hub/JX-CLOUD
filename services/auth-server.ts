@@ -15,8 +15,13 @@ export const auth = betterAuth({
             session: schema.session,
             account: schema.account,
             verification: schema.verification,
+            passkey: schema.passkey,
         }
     }),
+    emailAndPassword: {
+        enabled: true,
+    },
+    socialProviders: {},
     advanced: {
         useSecureCookies: true,
         crossOrigin: true
