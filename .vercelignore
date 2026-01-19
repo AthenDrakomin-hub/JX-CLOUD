@@ -3,10 +3,15 @@
 database_setup.sql
 init.sql
 
+# Supabase CLI 工具 (本地开发用)
+supabase.exe
+supabase.tar.gz
+
 # 开发文档与示例
 README.md
 .env.example
 .env.production.template
+docs/
 
 # 测试与调试工具
 components/DebugTools.tsx

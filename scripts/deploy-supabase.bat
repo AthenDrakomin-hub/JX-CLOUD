@@ -46,7 +46,7 @@ if %errorlevel% neq 0 (
 
 REM 4. 部署通用API函数
 echo 📤 部署通用API函数...
-npx supabase functions deploy api/index
+npx supabase functions deploy api
 
 if %errorlevel% neq 0 (
     echo ❌ API函数部署失败

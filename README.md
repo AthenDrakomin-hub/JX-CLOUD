@@ -93,6 +93,17 @@ jx-cloud-enterprise-hospitality-suite/
 
 ---
 
+## 📚 文档结构
+
+### 文档组织
+所有项目文档已整理至 `docs/` 目录中，包含：
+- **验证报告**: 生产环境功能检查、验证报告、准备状态等
+- **部署文档**: Edge Functions 部署清单和指南  
+- **项目文档**: 文档清单、结构说明、汇总和快速参考指南
+- **工具脚本**: 生产环境验证脚本和数据库连接测试脚本
+
+详见 `docs/` 目录获取完整文档。
+
 ## 📦 部署与开发 (Deployment)
 
 ### 环境变量 (Critical)
@@ -114,9 +125,17 @@ npm run build
 # 类型检查
 npm run type-check
 
+# 预览生产构建
+npm run preview
+
 # 部署边缘函数
 supabase functions deploy
 ```
+
+### 部署准备
+- 所有功能已验证，系统完全准备部署到生产环境
+- 详见 `docs/PRODUCTION_READINESS_FINAL.md` 获取完整的生产准备状态报告
+- 详见 `docs/DEPLOYMENT_FUNCTIONS.md` 获取详细的 Edge Functions 部署指南
 
 ### 初始化步骤
 1.  执行 `database_setup.sql` 激活 RLS 策略。

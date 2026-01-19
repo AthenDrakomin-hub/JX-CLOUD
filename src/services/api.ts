@@ -13,7 +13,7 @@ import { INITIAL_DISHES, INITIAL_CATEGORIES, INITIAL_PAYMENT_METHODS } from '../
 
 // API基础URL配置 - 统一指向Supabase Edge Functions
 const SUPABASE_PROJECT_URL = 'https://zlbemopcgjohrnyyiwvs.supabase.co';
-const API_BASE_URL = `${SUPABASE_PROJECT_URL}/functions/v1`;
+const API_BASE_URL = `${SUPABASE_PROJECT_URL}/functions/v1/api`;
 
 // API客户端配置
 const createApiClient = () => {

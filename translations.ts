@@ -1,4 +1,3 @@
-
 export type Language = 'zh' | 'en' | 'fil';
 
 export const translations = {
@@ -52,8 +51,7 @@ export const translations = {
     cancel_registration: '取消注册',
     auth_scan_instruction: '请使用具备生物识别硬件的手机。完成后，本页面将感知凭证状态并自动刷新。',
     auth_passkey_not_supported: '生物识别登录功能暂不可用，请稍后重试',
-    // ... 保持原有翻译
-    save: '保存', cancel: '取消', delete: '删除', edit: '编辑', add: '新增', search: '搜索', confirm: '确认', refresh: '刷新',
+    save: '保存', delete: '删除', edit: '编辑', add: '新增', search: '搜索', confirm: '确认', refresh: '刷新',
     success: '操作成功', error: '系统错误',
     new_order_toast: '新订单来自: {room}', sync_active: '实时同步中', sync_offline: '离线模式'
   },
@@ -105,8 +103,7 @@ export const translations = {
     cancel_registration: 'Cancel Registration',
     auth_scan_instruction: 'Please use a mobile phone with biometric hardware. After completion, this page will detect credential status and auto-refresh.',
     auth_passkey_not_supported: 'Biometric login is currently unavailable, please try again later',
-    // ... 保持原有翻译
-    save: 'Save', cancel: 'Cancel', delete: 'Delete', edit: 'Edit', add: 'Add', search: 'Search', confirm: 'Confirm', refresh: 'Refresh',
+    save: 'Save', delete: 'Delete', edit: 'Edit', add: 'Add', search: 'Search', confirm: 'Confirm', refresh: 'Refresh',
     success: 'Success', error: 'Error',
     new_order_toast: 'New Order: {room}', sync_active: 'Synced', sync_offline: 'Offline'
   },
@@ -158,8 +155,7 @@ export const translations = {
     cancel_registration: 'Kanselahin ang Pagrehistro',
     auth_scan_instruction: 'Mangyaring gumamit ng mobile phone na may biometric hardware. Matapos, tiktikan ng page na ito ang status ng kredensyal at mag-aawtomatikong i-reload.',
     auth_passkey_not_supported: 'Hindi available ang biometric login, mangyaring subukan muli mamaya',
-    // ... 保持原有翻译
-    save: 'Save', cancel: 'Cancel', delete: 'Delete', edit: 'Edit', add: 'Add', search: 'Search', confirm: 'Confirm', refresh: 'Refresh',
+    save: 'Save', delete: 'Delete', edit: 'Edit', add: 'Add', search: 'Search', confirm: 'Confirm', refresh: 'Refresh',
     success: 'Success', error: 'Error',
     new_order_toast: 'New Order: {room}', sync_active: 'Synced', sync_offline: 'Offline'
   }

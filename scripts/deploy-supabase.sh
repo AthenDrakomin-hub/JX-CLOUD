@@ -20,7 +20,7 @@ npx supabase functions deploy api/auth/\[...betterAuth\]
 
 # 4. 部署通用API函数
 echo "📤 部署通用API函数..."
-npx supabase functions deploy api/index
+npx supabase functions deploy api
 
 # 5. 验证部署
 echo "✅ 验证部署状态..."
