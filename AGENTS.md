@@ -37,6 +37,53 @@ This is the **JX Cloud Terminal** - a comprehensive hospitality management syste
 - **🖼️ Visual Assets**: Supabase S3 protocol cloud gallery for product images
 - **🔐 RBAC**: Fine-grained module-level permissions (C/R/U/D) with biometric login
 
+## Development Commands
+
+### Essential Commands
+```bash
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Type checking
+npm run type-check
+
+# Preview production build
+npm run preview
+
+# Run tests
+npm run test
+
+# Watch tests
+npm run test:watch
+
+# Test coverage
+npm run test:coverage
+
+# Validate database schema
+npm run validate-db
+```
+
+### Supabase Commands
+```bash
+# Deploy edge functions
+supabase functions deploy
+
+# Local development
+supabase start
+
+# Stop local development
+supabase stop
+
+# Link to production project
+supabase link
+
+# Generate types from database
+supabase gen types typescript --project-id YOUR_PROJECT_ID > types.gen.ts
+```
+
 ## High-Level Architecture Overview
 
 ### System Architecture Layers
@@ -92,3 +139,60 @@ This is the **JX Cloud Terminal** - a comprehensive hospitality management syste
 - Edge functions isolated in `supabase/functions/`
 - Shared types and constants properly exported/imported
 - Import convention: frontend uses `.js` extensions, backend omits extensions
+
+## Testing Strategy
+
+### Unit Testing
+- Jest for unit tests
+- React Testing Library for component tests
+- Test files located alongside source files with `.test.tsx` extension
+
+### Test Commands
+```bash
+# Run all tests
+npm run test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Generate coverage report
+npm run test:coverage
+```
+
+## Deployment Guidelines
+
+### Environment Variables
+Required environment variables for deployment:
+```
+VITE_SUPABASE_URL=your-supabase-url
+VITE_SUPABASE_ANON_KEY=your-anon-key
+VITE_BETTER_AUTH_URL=your-better-auth-url
+DATABASE_URL=your-database-url
+BETTER_AUTH_SECRET=your-auth-secret
+```
+
+### Vercel Deployment
+1. Push code to Git repository
+2. Import project in Vercel dashboard
+3. Set required environment variables
+4. Automatic deployment triggered on push
+
+## Code Organization Standards
+
+### File Naming Conventions
+- Components: PascalCase (`UserProfile.tsx`)
+- Services: camelCase (`userService.ts`)
+- Constants: UPPER_SNAKE_CASE (`API_ENDPOINTS.ts`)
+- Test files: `[filename].test.tsx`
+
+### Import Conventions
+- Frontend imports use `.js` extensions
+- Backend imports omit extensions
+- Absolute imports preferred over relative when possible
+- Group imports: external libraries, internal modules, local imports
+
+### Type Safety
+- Strict TypeScript with `strict: true`
+- Interface definitions in `types.ts`
+- Schema-first approach with Drizzle ORM
+- Runtime validation for API payloads
