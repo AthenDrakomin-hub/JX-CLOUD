@@ -87,7 +87,7 @@ This is the **JX Cloud Terminal** - a comprehensive hospitality management syste
 
 ### Supabase Edge Functions API (Primary)
 All API requests are handled through Supabase Edge Functions for optimal global performance:
-- **Main Gateway**: `supabase/functions/api.ts` - Handles all business logic
+- **Main Gateway**: `supabase/functions/api/index.ts` - Handles all business logic
 - **Authentication**: `supabase/functions/auth.ts` - Better-Auth integration
 - **Health Checks**: Built-in diagnostics and monitoring
 
@@ -139,6 +139,7 @@ Critical variables that must be configured:
 - `DATABASE_URL`: Drizzle physical connection (port 6543 transaction pool)
 - `BETTER_AUTH_SECRET`: Session signing key (32 chars)
 - `BETTER_AUTH_URL`: Base URL for auth callbacks (production deployments)
+- `SUPABASE_SERVICE_ROLE_KEY`: Service role key for Edge Functions
 
 ## Development Commands
 
@@ -148,10 +149,10 @@ Critical variables that must be configured:
 - `npm run type-check`: Type check without emitting (TSC) - Validate TypeScript types
 - `npm run preview`: Preview production build locally
 
-### Enhanced Development Workflow
-- `npm run dev -- --host`: Expose development server to network for mobile testing
-- `npm run build -- --mode production`: Force production build mode
-- `npm run type-check -- --watch`: Watch mode for continuous type checking during development
+### Testing
+- `npm run test`: Run all tests using Jest
+- `npm run test:watch`: Run tests in watch mode
+- `npm run test:coverage`: Run tests with coverage report
 
 ### Database Management
 - `npx drizzle-kit generate`: Generate database migration files from schema changes
@@ -170,23 +171,17 @@ Critical variables that must be configured:
 - `supabase start`: Start local Supabase development environment
 - `supabase stop`: Stop local Supabase development environment
 
-### Testing and Quality
-- `npm run type-check`: Validate TypeScript types across entire codebase
-- `npm outdated`: Check for outdated dependencies requiring updates
-- `npm audit`: Security audit of all dependencies
-- `npm list`: Display complete dependency tree structure
-
-### Environment Management
-- Copy `.env.example` to `.env.local` for local development configuration
-- Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` for frontend connectivity
-- Configure `DATABASE_URL` for Drizzle ORM database operations
-- Set `BETTER_AUTH_SECRET` for session security (32-character random string)
-
-## Additional Useful Commands
-
+### Dependency Management
 - `npm outdated`: Check for outdated dependencies
 - `npm audit`: Security audit of dependencies
 - `npm list`: Show dependency tree
+
+## Additional Useful Commands
+
+- `npm run type-check`: Validate TypeScript types across entire codebase
+- `npm run test`: Run all tests using Jest
+- `npm run test:watch`: Watch mode for continuous testing during development
+- `npm run test:coverage`: Generate test coverage reports
 
 ## Critical Development Workflows
 
@@ -260,7 +255,8 @@ npm run dev
 │   ├── db.server.ts             # Database connection and Drizzle setup
 │   └── auth-server.ts           # Better-Auth server configuration
 ├── supabase/functions/           # Edge Functions deployment
-│   ├── api.ts                   # Main API gateway (primary entry point)
+│   ├── api/                     # Main API gateway files
+│   │   └── index.ts             # Main API gateway (primary entry point)
 │   ├── auth.ts                  # Authentication handlers
 │   └── better-auth.ts           # Better-Auth integration layer
 ├── database/                     # Database migration files
@@ -334,7 +330,7 @@ npm run dev
 ## Common Development Tasks
 
 ### Adding New API Endpoints
-1. Define the endpoint in `supabase/functions/api.ts` within the appropriate route handler
+1. Define the endpoint in `supabase/functions/api/index.ts` within the appropriate route handler
 2. Add corresponding service method in `services/api.ts`
 3. Create frontend service wrapper in `src/services/api.ts`
 4. Update types in `types.ts` if new interfaces are needed
@@ -436,22 +432,3 @@ npm run dev
 - Use Drizzle Studio to analyze slow queries
 - Monitor Supabase dashboard for resource utilization
 - Check for unoptimized real-time subscriptions
-
-## Package.json Scripts Reference
-
-The following scripts are available in package.json:
-- `dev`: Starts the Vite development server
-- `build`: Builds the production bundle
-- `type-check`: Runs TypeScript type checking
-- `preview`: Previews the production build locally
-
-## Additional Dependencies
-
-Key dependencies include:
-- `@supabase/supabase-js`: Supabase JavaScript client
-- `better-auth`: Authentication library with Passkey support
-- `drizzle-orm`: Type-safe SQL toolkit
-- `lucide-react`: Icon library
-- `react`: Frontend library
-- `recharts`: Charting library
-- `qrcode.react`: QR code generation
