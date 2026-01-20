@@ -392,7 +392,7 @@ export const api = {
   },
 
   registration: {
-    // 修复：使用API网关调用注册请求
+    // 修复：使用auth函数调用注册请求
     request: async (email: string, name: string) => {
       if (isDemoMode || !supabase) {
         // 模拟成功响应
@@ -400,8 +400,18 @@ export const api = {
       }
       
       try {
-        // 通过API网关调用注册请求
-        const result = await callApiGateway('request-registration', { email, name, requestTime: new Date().toISOString() });
+        const response = await fetch('https://zlbemopcgjohrnyyiwvs.supabase.co/functions/v1/auth/request-registration', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            email, 
+            name
+          }),
+        });
+        
+        const result = await response.json();
         return result;
       } catch (error) {
         console.error('Registration request failed:', error);
@@ -409,7 +419,7 @@ export const api = {
       }
     },
     
-    // 修复：使用API网关获取注册请求
+    // 修复：使用auth函数获取注册请求
     getAll: async () => {
       if (isDemoMode || !supabase) {
         // 返回模拟数据
@@ -417,15 +427,23 @@ export const api = {
       }
       
       try {
-        const result = await callApiGateway('get-registration-requests');
-        return result.data?.requests || [];
+        // 使用GET方法获取注册请求列表
+        const response = await fetch('https://zlbemopcgjohrnyyiwvs.supabase.co/functions/v1/auth/registration-requests', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        const result = await response.json();
+        return Array.isArray(result) ? result : [];
       } catch (error) {
         console.error('Failed to get registration requests:', error);
         return [];
       }
     },
     
-    // 修复：使用API网关批准注册请求
+    // 修复：使用auth函数批准注册请求
     approve: async (requestId: string) => {
       if (isDemoMode || !supabase) {
         // 模拟成功响应
@@ -433,11 +451,15 @@ export const api = {
       }
       
       try {
-        const result = await callApiGateway('approve-registration', { 
-          requestId, 
-          approved: true, 
-          adminId: 'current_admin_id' // 这里需要从会话中获取当前管理员ID
+        const response = await fetch('https://zlbemopcgjohrnyyiwvs.supabase.co/functions/v1/auth/approve-registration', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ requestId }),
         });
+        
+        const result = await response.json();
         return result;
       } catch (error) {
         console.error('Failed to approve registration:', error);
@@ -445,7 +467,7 @@ export const api = {
       }
     },
     
-    // 修复：使用API网关拒绝注册请求
+    // 修复：使用auth函数拒绝注册请求
     reject: async (requestId: string) => {
       if (isDemoMode || !supabase) {
         // 模拟成功响应
@@ -453,11 +475,15 @@ export const api = {
       }
       
       try {
-        const result = await callApiGateway('approve-registration', { 
-          requestId, 
-          approved: false, 
-          adminId: 'current_admin_id' // 这里需要从会话中获取当前管理员ID
+        const response = await fetch('https://zlbemopcgjohrnyyiwvs.supabase.co/functions/v1/auth/reject-registration', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ requestId }),
         });
+        
+        const result = await response.json();
         return result;
       } catch (error) {
         console.error('Failed to reject registration:', error);
