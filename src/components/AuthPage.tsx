@@ -48,14 +48,40 @@ const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang }) => {
       setError(lang === 'zh' ? "请输入授权邮箱" : "Enter authorized email");
       return;
     }
+    
+    // 首先检查浏览器是否支持WebAuthn
+    if (!window.isSecureContext) {
+      setError("Passkey认证需要安全上下文 (HTTPS)");
+      setAuthStage('register_choice');
+      return;
+    }
+    
+    if (typeof PublicKeyCredential === "undefined" || !PublicKeyCredential) {
+      setError("当前浏览器不支持Passkey认证");
+      setAuthStage('register_choice');
+      return;
+    }
+    
     setError(null);
     setIsPasskeyLoading(true);
     
     try {
-      // 首先尝试Passkey认证
+      // 检查平台验证器是否可用
+      const isPasskeySupported = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable?.();
+      
+      if (isPasskeySupported === false) {
+        console.log("Passkey authenticator not available, proceeding to registration");
+        setAuthStage('register_choice');
+        setIsPasskeyLoading(false);
+        return;
+      }
+      
+      // 尝试Passkey登录
       const signInResult = await signIn.passkey({
-        email,
-        redirectTo: "/"
+        options: {
+          email,
+        },
+        callbackURL: "/"
       });
       
       if (signInResult?.error) {

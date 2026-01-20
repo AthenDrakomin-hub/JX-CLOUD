@@ -7,13 +7,26 @@ import { anonymousClient } from "better-auth/client/plugins";
  */
 
 const getAuthBaseURL = () => {
-    // 使用 Vercel 部署的应用地址作为 Better-Auth 基础URL
+    // 使用 Supabase Edge Functions 作为 Better-Auth 基础URL
     const envUrl = (import.meta as any).env?.VITE_BETTER_AUTH_URL || (process.env as any)?.VITE_BETTER_AUTH_URL;
     if (envUrl) return envUrl;
     
+    // 从 VITE_SUPABASE_URL 构建 Better-Auth URL
+    const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL || (process.env as any)?.VITE_SUPABASE_URL;
+    if (supabaseUrl) {
+        // 从 Supabase URL 构建对应的 Edge Function URL
+        try {
+            const urlObj = new URL(supabaseUrl);
+            const projectId = urlObj.hostname.split('.')[0]; // 提取项目ID
+            return `https://${projectId}.supabase.co/functions/v1/better-auth`;
+        } catch (e) {
+            console.warn("Could not parse SUPABASE_URL, falling back to default");
+        }
+    }
+    
     // 回退到当前域名
-    if (typeof window !== 'undefined') return window.location.origin;
-    return "https://www.jiangxijiudian.store";
+    if (typeof window !== 'undefined') return window.location.origin + '/functions/v1/better-auth';
+    return "https://www.jiangxijiudian.store/functions/v1/better-auth";
 };
 
 const authClientInternal = createAuthClient({
