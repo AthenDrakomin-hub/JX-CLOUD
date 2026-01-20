@@ -113,6 +113,17 @@ jx-cloud-enterprise-hospitality-suite/
 | `VITE_SUPABASE_ANON_KEY` | 前端匿名 Key |
 | `DATABASE_URL` | Drizzle 物理连接（端口 6543 事务池） |
 | `BETTER_AUTH_SECRET` | 会话签名密钥（32位） |
+| `VITE_BETTER_AUTH_URL` | BetterAuth 服务端点 URL |
+
+### Vercel 部署配置
+当部署到 Vercel 时，请确保设置以下环境变量：
+
+```
+VITE_SUPABASE_URL=https://zlbemopcgjohrnyyiwvs.supabase.co
+VITE_SUPABASE_ANON_KEY=<your-anon-key>
+VITE_BETTER_AUTH_URL=https://zlbemopcgjohrnyyiwvs.supabase.co/functions/v1/better-auth
+VITE_BETTER_AUTH_SECRET=JiangxiJiudianSuperSecret2025Admin
+```
 
 ### 开发命令
 ```bash
@@ -131,6 +142,12 @@ npm run preview
 # 部署边缘函数
 supabase functions deploy
 ```
+
+### 部署到 Vercel
+1. 推送代码到 GitHub/GitLab/Bitbucket
+2. 在 Vercel 仪表板中导入项目
+3. 配置上述环境变量
+4. 自动部署完成
 
 ### 部署准备
 - 所有功能已验证，系统完全准备部署到生产环境
