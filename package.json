@@ -15,9 +15,12 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
     "better-auth": "^1.0.22",
+    "dotenv": "^17.2.3",
     "drizzle-orm": "^0.45.1",
     "lucide-react": "^0.475.0",
+    "pg": "^8.17.1",
     "postgres": "^3.4.8",
+    "postgres-js": "^0.1.0",
     "qrcode.react": "^4.0.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

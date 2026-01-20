@@ -5,7 +5,7 @@ import {
   Fingerprint, Key, CheckCircle2,
   ShieldAlert, Smartphone, Monitor, Info, Lock, Sparkles
 } from 'lucide-react';
-import { signIn } from '../services/frontend/auth-client.frontend';
+import { signIn, signInWithPasskey, initializePasskeyAuth } from '../services/frontend/auth-client.fixed';
 import { api } from '../services/api';
 import { Language, getTranslation } from '../constants/translations';
 import { QRCodeSVG } from 'qrcode.react';
@@ -49,52 +49,20 @@ const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang }) => {
       return;
     }
     
-    // 首先检查浏览器是否支持WebAuthn
-    if (!window.isSecureContext) {
-      setError("Passkey认证需要安全上下文 (HTTPS)");
-      setAuthStage('register_choice');
-      return;
-    }
-    
-    if (typeof PublicKeyCredential === "undefined" || !PublicKeyCredential) {
-      setError("当前浏览器不支持Passkey认证");
-      setAuthStage('register_choice');
-      return;
-    }
-    
     setError(null);
     setIsPasskeyLoading(true);
     
     try {
-      // 检查平台验证器是否可用
-      const isPasskeySupported = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable?.();
+      // 使用修复后的Passkey验证函数
+      const result = await signInWithPasskey(email);
       
-      if (isPasskeySupported === false) {
-        console.log("Passkey authenticator not available, proceeding to registration");
-        setAuthStage('register_choice');
-        setIsPasskeyLoading(false);
-        return;
-      }
-      
-      // 尝试Passkey登录
-      const signInResult = await signIn.passkey({
-        options: {
-          email,
-        },
-        callbackURL: "/"
-      });
-      
-      if (signInResult?.error) {
-        // 检查错误类型来决定下一步
-        if (signInResult.error.message?.includes('NotFoundError') || 
-            signInResult.error.name === 'NotFoundError' ||
-            signInResult.error.message?.includes('No passkey') ||
-            signInResult.error.message?.includes('not registered')) {
-          // 如果没有找到passkey，转到注册选择阶段
+      if (!result.success) {
+        if (result.needsRegistration) {
+          // 如果需要注册Passkey，转到注册选择阶段
           setAuthStage('register_choice');
         } else {
           // 其他错误，显示错误信息
-          setError(signInResult.error.message || t('auth_passkey_error'));
+          setError(result.error?.message || t('auth_passkey_error'));
         }
       } else {
         // 成功登录，不需要额外操作，因为Better-Auth会自动重定向

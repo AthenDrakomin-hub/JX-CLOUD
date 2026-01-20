@@ -379,7 +379,7 @@ export const api = {
     request: async (email: string, name: string) => {
       if (isDemoMode) return { success: true, message: 'Demo mode: Registration request submitted' };
       try {
-        const response = await fetch(`${API_BASE_URL}/auth/request-registration`, {
+        const response = await fetch(`${SUPABASE_PROJECT_URL}/functions/v1/auth/request-registration`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, name, requestTime: new Date().toISOString() })
@@ -393,7 +393,7 @@ export const api = {
     approve: async (requestId: string) => {
       if (isDemoMode) return { success: true, message: 'Demo mode: Registration approved' };
       try {
-        const response = await fetch(`${API_BASE_URL}/auth/approve-registration`, {
+        const response = await fetch(`${SUPABASE_PROJECT_URL}/functions/v1/auth/approve-registration`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ requestId })
@@ -407,7 +407,7 @@ export const api = {
     reject: async (requestId: string) => {
       if (isDemoMode) return { success: true, message: 'Demo mode: Registration rejected' };
       try {
-        const response = await fetch(`${API_BASE_URL}/auth/reject-registration`, {
+        const response = await fetch(`${SUPABASE_PROJECT_URL}/functions/v1/auth/reject-registration`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ requestId, reason: 'Admin decision' })
@@ -421,7 +421,7 @@ export const api = {
     getAll: async () => {
       if (isDemoMode) return [];
       try {
-        const response = await fetch(`${API_BASE_URL}/auth/registration-requests`, {
+        const response = await fetch(`${SUPABASE_PROJECT_URL}/functions/v1/auth/registration-requests`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' }
         });
