@@ -31,11 +31,5 @@
       ]
     }
   ],
-  "regions": ["hnd1"],  // 使用日本东京区域，更接近亚太地区用户
-  "functions": {
-    "supabase/functions/**/*": {
-      "memory": 1024,
-      "maxDuration": 60
-    }
-  }
+  "regions": ["hnd1"]  // 使用日本东京区域，更接近亚太地区用户
 }
