@@ -10,13 +10,11 @@
     "preview": "vite preview",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
-    "validate-db": "node db-validation.js"
+    "test:coverage": "jest --coverage"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
     "better-auth": "^1.0.22",
-    "chalk": "^5.6.2",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.45.1",
     "lucide-react": "^0.475.0",

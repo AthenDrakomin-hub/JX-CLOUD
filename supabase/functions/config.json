@@ -1,0 +1,16 @@
+{
+  "functions": {
+    "better-auth": {
+      "runtime": "deno1"
+    },
+    "api/auth/[...betterAuth]": {
+      "runtime": "deno1"
+    },
+    "api/index": {
+      "runtime": "deno1"
+    }
+  },
+  "global": {
+    "importMap": "./import_map.json"
+  }
+}

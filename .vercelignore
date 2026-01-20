@@ -34,9 +34,6 @@ supabase/.branches
 # TypeScript构建信息
 *.tsbuildinfo
 
-# 测试文件
-tests/
-
 # 测试覆盖率
 coverage/
 .nyc_output/

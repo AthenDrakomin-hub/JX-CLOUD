@@ -1,106 +1,58 @@
-// Supabase Edge Function - Better-Auth Integration
+// Supabase Edge Functions - Better Auth 认证路由
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { betterAuth } from "https://esm.sh/better-auth@1.4.15";
-import { drizzleAdapter } from "https://esm.sh/better-auth@1.4.15/adapters/drizzle";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
+import { betterAuth } from 'https://esm.sh/better-auth@1.4.15/supabase';
+import { drizzle } from 'https://esm.sh/drizzle-orm@0.45.1/supabase';
+import * as schema from '../../../drizzle/schema.js';
 
-// Initialize Supabase client
-const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+// 获取环境变量
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+// 初始化Supabase客户端
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Get database connection info from environment
-const databaseUrl = Deno.env.get("DATABASE_URL");
+// 初始化Drizzle ORM
+const db = drizzle(supabase, { schema });
 
-// Initialize Better-Auth with Drizzle adapter
+// 配置Better Auth
 const auth = betterAuth({
-  database: databaseUrl 
-    ? drizzleAdapter(databaseUrl, {
-        provider: "pg",
-      })
-    : undefined,
-  emailAndPassword: {
-    enabled: false, // We're using passkey only
+  secret: Deno.env.get('BETTER_AUTH_SECRET')!,
+  url: Deno.env.get('BETTER_AUTH_URL')!,
+  database: {
+    connection: db,
+    tables: {
+      user: schema.user,
+      session: schema.session,
+      account: schema.account,
+      verification: schema.verification,
+      passkey: schema.passkey,
+    }
   },
-  socialProviders: {},
-  secret: Deno.env.get("BETTER_AUTH_SECRET") || "JiangxiJiudianSuperSecret2025Admin",
-  origin: Deno.env.get("BETTER_AUTH_URL") || "https://zlbemopcgjohrnyyiwvs.supabase.co",
   advanced: {
     useSecureCookies: true,
     crossOrigin: true
   }
 });
 
+// 导出处理函数
 export const handler = async (req: Request): Promise<Response> => {
-  const url = new URL(req.url);
-  const path = url.pathname.replace("/functions/v1/better-auth", "");
-  const method = req.method;
-
-  // CORS headers
-  const corsHeaders = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "X-Auth-Service": "jx-cloud-better-auth",
-  };
-
-  // Handle preflight requests
-  if (method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: corsHeaders });
-  }
-
-  try {
-    // Health check endpoint
-    if (path === "/health" || path === "/") {
-      return new Response(
-        JSON.stringify({
-          status: "healthy",
-          service: "jx-cloud-better-auth",
-          timestamp: new Date().toISOString(),
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Let Better-Auth handle the request
-    const betterAuthResponse = await auth.handler(req);
-
-    // If Better-Auth handled the request, return its response
-    if (betterAuthResponse) {
-      return betterAuthResponse;
-    }
-
-    // If no response from Better-Auth, return 404
-    return new Response(
-      JSON.stringify({
-        error: "Route not found",
-        path: path,
-        service: "jx-cloud-better-auth",
-      }),
-      {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
-  } catch (error) {
-    console.error("Better-Auth error:", error);
-    return new Response(
-      JSON.stringify({
-        status: "error",
-        message: error.message,
-        service: "jx-cloud-better-auth",
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
-  }
+  // 处理认证请求
+  const response = await auth.handler(req);
+  
+  // 添加CORS头部
+  const headers = new Headers(response.headers);
+  headers.set('Access-Control-Allow-Origin', '*');
+  headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  
+  return new Response(response.body, {
+    status: response.status,
+    headers
+  });
 };
 
+// 兼容Deno serve
 if (import.meta.main) {
   serve(handler);
-};
+}
