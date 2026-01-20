@@ -153,6 +153,88 @@ function logAction(action: string, details: any, userId?: string): void {
 // ==================== API处理器 ====================
 
 /**
+ * 处理注册请求提交
+ */
+async function handleRegistrationRequest(
+  supabase: any,
+  payload: any
+): Promise<Response> {
+  try {
+    const { email, name } = payload;
+    
+    if (!email || !name) {
+      return createErrorResponse('Email and name are required', 400);
+    }
+    
+    // 检查用户是否已存在
+    const { data: existingUser, error: fetchError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .single();
+    
+    if (existingUser) {
+      return createErrorResponse('User with this email already exists', 400);
+    }
+    
+    // 创建注册请求记录
+    const requestId = `reg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    const { data: newRequest, error: insertError } = await supabase
+      .from('users')
+      .insert({
+        email,
+        name,
+        status: 'pending',
+        registration_request_id: requestId,
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+    
+    if (insertError) throw insertError;
+    
+    logAction('REGISTRATION_REQUEST_SUBMITTED', { requestId, email });
+    
+    return createSuccessResponse({
+      success: true,
+      requestId: newRequest.registration_request_id,
+      message: 'Registration request submitted successfully'
+    });
+    
+  } catch (error) {
+    return createErrorResponse(`Registration request failed: ${(error as Error).message}`);
+  }
+}
+
+/**
+ * 获取注册请求列表
+ */
+async function handleGetRegistrationRequests(
+  supabase: any
+): Promise<Response> {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    
+    logAction('REGISTRATION_REQUESTS_FETCHED', { count: data?.length || 0 });
+    
+    return createSuccessResponse({
+      requests: data || [],
+      totalCount: data?.length || 0
+    });
+    
+  } catch (error) {
+    return createErrorResponse(`Fetching registration requests failed: ${(error as Error).message}`);
+  }
+}
+
+/**
  * 系统健康检查
  */
 async function handleHealthCheck(supabase: any): Promise<Response> {
@@ -492,6 +574,14 @@ export const handler = async (req: Request): Promise<Response> => {
     switch (action) {
       case 'health':
         response = await handleHealthCheck(supabase);
+        break;
+        
+      case 'request-registration':
+        response = await handleRegistrationRequest(supabase, payload);
+        break;
+        
+      case 'get-registration-requests':
+        response = await handleGetRegistrationRequests(supabase);
         break;
         
       case 'approve-registration':
