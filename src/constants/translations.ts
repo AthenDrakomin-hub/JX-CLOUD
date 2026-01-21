@@ -52,6 +52,15 @@ export const translations = {
     auth_network_error: '网络连接错误，请稍后重试',
     auth_registration_error: '注册申请提交失败',
 
+    // 管理员设置
+    admin_setup_title: '管理员设置',
+    admin_setup_subtitle: '设置根管理员账户',
+    admin_setup_entity: '管理实体',
+    admin_setup_welcome: '欢迎使用管理员初始化向导',
+    admin_setup_btn: '绑定生物凭证',
+    admin_setup_done: '初始化完成',
+    admin_setup_redirect: '即将跳转到登录页面',
+
     // 通用操作
     save: '保存', cancel: '取消', delete: '删除', edit: '编辑', add: '添加', 
     search: '搜索', confirm: '确认', refresh: '刷新',
@@ -107,6 +116,15 @@ export const translations = {
     auth_network_error: 'Network connection error, please try again later',
     auth_registration_error: 'Failed to submit registration request',
 
+    // Admin setup
+    admin_setup_title: 'Admin Setup',
+    admin_setup_subtitle: 'Setup Root Administrator Account',
+    admin_setup_entity: 'Admin Entity',
+    admin_setup_welcome: 'Welcome to the Admin Initialization Wizard',
+    admin_setup_btn: 'Bind Biometric Credential',
+    admin_setup_done: 'Initialization Complete',
+    admin_setup_redirect: 'Redirecting to login page',
+
     // Common operations
     save: 'Save', cancel: 'Cancel', delete: 'Delete', edit: 'Edit', add: 'Add',
     search: 'Search', confirm: 'Confirm', refresh: 'Refresh',
@@ -161,6 +179,15 @@ export const translations = {
     back_to_login: 'Back to Login',
     auth_network_error: 'Network connection error, please try again later',
     auth_registration_error: 'Failed to submit registration request',
+
+    // Admin setup
+    admin_setup_title: 'Setup ng Admin',
+    admin_setup_subtitle: 'Setup ng Root Administrator Account',
+    admin_setup_entity: 'Entity ng Admin',
+    admin_setup_welcome: 'Maligayang pagdating sa Admin Initialization Wizard',
+    admin_setup_btn: 'I-bind ang Biometric Credential',
+    admin_setup_done: 'Tapos na ang Initialization',
+    admin_setup_redirect: 'I-redirect patungo sa login page',
 
     // Common operations
     save: 'Save', cancel: 'Cancel', delete: 'Delete', edit: 'Edit', add: 'Add',

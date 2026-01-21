@@ -1,4 +1,3 @@
-
 {
   "version": 2,
   "framework": "vite",
@@ -17,8 +16,26 @@
       "headers": [
         { "key": "X-Content-Type-Options", "value": "nosniff" },
         { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "X-JX-Cloud-Version", "value": "8.8.0" }
+        { "key": "X-JX-Cloud-Version", "value": "8.8.0" },
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, PUT, DELETE, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization, X-Client-Info" }
+      ]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, PUT, DELETE, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization, X-Client-Info" }
       ]
     }
-  ]
+  ],
+  "regions": ["hnd1"],  // 使用日本东京区域，更接近亚太地区用户
+  "functions": {
+    "supabase/functions/**/*": {
+      "memory": 1024,
+      "maxDuration": 60
+    }
+  }
 }
