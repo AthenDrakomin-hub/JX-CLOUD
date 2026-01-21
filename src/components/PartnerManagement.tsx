@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Partner, UserRole, Category } from '../types';
+import { Partner, UserRole, Category } from '../../types';
 import { translations, Language } from '../constants/translations';
 import { 
   Users, DollarSign, Plus, Search, Edit3, Trash2, ShieldCheck, 
@@ -39,13 +39,13 @@ const PartnerManagement: React.FC<PartnerManagementProps> = ({
   const filteredPartners = useMemo(() => {
     return (partners || []).filter(p => 
       (p.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
-      (p.ownerName || '').toLowerCase().includes(searchTerm.toLowerCase())
+      (p.owner_name || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [partners, searchTerm]);
 
   const handleOpenModal = (partner: Partner | null = null) => {
     setEditingPartner(partner);
-    setSelectedCats(partner?.authorizedCategories || []);
+    setSelectedCats(partner?.authorized_categories || []);
     setIsModalOpen(true);
   };
 
@@ -64,9 +64,9 @@ const PartnerManagement: React.FC<PartnerManagementProps> = ({
       commissionRate: Number(formData.get('commissionRate')) / 100,
       authorizedCategories: selectedCats,
       status: (formData.get('status') as any) || 'active',
-      totalSales: editingPartner?.totalSales || 0,
+      totalSales: editingPartner?.total_sales || 0,
       balance: editingPartner?.balance || 0,
-      joinedAt: editingPartner?.joinedAt || new Date().toISOString()
+      joinedAt: editingPartner?.joined_at || new Date().toISOString()
     };
     if (editingPartner) await onUpdatePartner(partnerData);
     else await onAddPartner(partnerData);
@@ -119,7 +119,7 @@ const PartnerManagement: React.FC<PartnerManagementProps> = ({
                <button onClick={() => handleOpenModal(partner)} className="p-3 text-slate-300 hover:text-slate-950 hover:bg-slate-50 rounded-xl transition-all"><Edit3 size={18} /></button>
             </div>
             <div className="grid grid-cols-2 gap-4 mb-8">
-               <div className="bg-slate-50 p-6 rounded-[2rem]"><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">佣金比 (Rate)</p><p className="text-2xl font-black text-slate-900">{(partner.commissionRate * 100).toFixed(0)}%</p></div>
+               <div className="bg-slate-50 p-6 rounded-[2rem]"><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">佣金比 (Rate)</p><p className="text-2xl font-black text-slate-900">{(partner.commission_rate * 100).toFixed(0)}%</p></div>
                <div className="bg-slate-50 p-6 rounded-[2rem]"><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">待结余额</p><p className="text-2xl font-black text-emerald-600">{C}{Math.round(partner.balance || 0).toLocaleString()}</p></div>
             </div>
             <div className="flex-1">

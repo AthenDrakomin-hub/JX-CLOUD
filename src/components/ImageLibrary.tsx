@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react';
-// Fix: Removed 'MaterialImage' as it's not exported from '../types'.
-import { Ingredient } from '../types';
+// Fix: Removed 'MaterialImage' as it's not exported from '../../types'.
+import { Ingredient } from '../../types';
 import { translations, Language } from '../constants/translations';
 import { 
   Plus, Trash2, Copy, Search, X, 
@@ -197,7 +197,7 @@ const ImageLibrary: React.FC<ImageLibraryProps> = ({ lang }) => {
       {activeTab === 'inventory' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
            {filteredIngs.map((ing, idx) => {
-             const isLowStock = ing.stock <= ing.minStock;
+             const isLowStock = ing.stock <= ing.min_stock;
              return (
                <div key={ing.id} className="bg-white p-8 rounded-[3.5rem] border border-slate-50 shadow-sm hover:shadow-2xl transition-all duration-700 group relative overflow-hidden animate-in fade-in slide-in-from-bottom-8" style={{ animationDelay: `${idx * 50}ms` }}>
                   {isLowStock && (
@@ -240,7 +240,7 @@ const ImageLibrary: React.FC<ImageLibraryProps> = ({ lang }) => {
                      <div className="flex items-center space-x-2">
                         <History size={14} className="text-slate-300" />
                         {/* Fix: Use lastRestocked instead of last_restocked to match Ingredient interface */}
-                        <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">最近入库: {ing.lastRestocked ? new Date(ing.lastRestocked).toLocaleDateString() : '—'}</span>
+                        <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">最近入库: {ing.last_restocked ? new Date(ing.lastRestocked).toLocaleDateString() : '—'}</span>
                      </div>
                      <div className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${isLowStock ? 'bg-red-600 text-white border-transparent shadow-[0_0_15px_rgba(239,68,68,0.3)]' : 'bg-emerald-50 border-emerald-100 text-emerald-600'}`}>
                         {isLowStock ? '库存危急' : '量足安全'}

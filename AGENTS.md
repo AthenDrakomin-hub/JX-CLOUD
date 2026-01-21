@@ -2,433 +2,269 @@
 
 This file provides guidance to Qoder (qoder.com) when working with code in this repository.
 
-## Project Overview
+## 项目概述
 
-This is the **JX Cloud Terminal** - a comprehensive hospitality management system designed for modern hotels. It includes modules for QR ordering, Kitchen Display System (KDS), financial auditing, and multi-tenant security using PostgreSQL Row Level Security (RLS).
+**江西云厨 (JX CLOUD)** 是一款专为现代化酒店设计的全栈管理生态系统。系统集成了客房点餐（QR Ordering）、订单调度矩阵（KDS）与财务审计中枢。基于 PostgreSQL RLS (Row Level Security) 实现物理级多租户隔离，确保联营商户数据的安全性与合规性。
 
-**Architecture**: Unified Supabase Edge Functions implementation with Better-Auth powered biometric authentication.
+## 项目概述
 
-## Tech Stack
+**江西云厨 (JX CLOUD)** 是一款专为现代化酒店设计的全栈管理生态系统。系统集成了客房点餐（QR Ordering）、订单调度矩阵（KDS）与财务审计中枢。基于 PostgreSQL RLS (Row Level Security) 实现物理级多租户隔离，确保联营商户数据的安全性与合规性。
 
-- **Frontend**: React 19, Tailwind CSS, Lucide Icons
-- **Backend**: Supabase (PostgreSQL 15, Edge Functions, Storage S3)
-- **Authentication**: Better-Auth with Passkey/FIDO2 biometric support
-- **ORM**: Drizzle ORM (schema-first definition)
-- **Realtime**: Supabase Realtime (WebSocket channels for KDS)
-- **Build Tool**: Vite
-- **Package Manager**: npm
+## 架构概览
 
-## Core Business Modules
+### 技术栈
+- **前端**: React 19 (Strict Mode) + Vite + Tailwind CSS + Lucide Icons
+- **后端**: Supabase Edge Functions + PostgreSQL 15 + Storage S3
+- **认证**: Better-Auth with Passkey/FIDO2 生物识别支持
+- **ORM**: Drizzle ORM (Schema-first 定义)
+- **实时通信**: Supabase Realtime (WebSocket channels for KDS)
+- **架构**: 统一边缘计算与自动扩展
+- **测试**: Jest + React Testing Library + jsdom
+- **类型检查**: TypeScript (严格模式)
 
-- **📈 Dashboard**: Real-time business metrics with T+1 automatic revenue sharing logic
-- **🛎️ Station Hub**: 67+ physical node control with dynamic QR generation and POS manual ordering
-- **👨‍🍳 Order Matrix**: Enterprise KDS kitchen display system with thermal printing and fulfillment tracking
-- **📦 Supply Chain**: High-precision inventory alerts, bilingual dish records, backup/recovery
-- **🖼️ Visual Assets**: Supabase S3 protocol cloud gallery for product images
-- **🔐 RBAC**: Fine-grained module-level permissions (C/R/U/D) with biometric login
+### 核心模块
+- **仪表盘 (Dashboard)**: 实时业务指标监控，支持联营商户T+1自动结算逻辑
+- **工位中心 (Station Hub)**: 67+ 物理节点管控，支持二维码动态生成
+- **调度矩阵 (Order Matrix)**: 企业级KDS厨房显示系统，支持热敏打印自动分单
+- **供应链资产 (Supply Chain)**: 高精度库存预警，中英文双语菜品档案
+- **视觉资源 (Visual Assets)**: 基于Supabase S3协议的云端图库
+- **组织授权 (RBAC)**: 细粒度的模块级权限控制，支持生物识别认证
 
-## High-Level Architecture Overview
+### 项目结构
+```
+jx-cloud-enterprise-hospitality-suite/
+├── src/                          # 前端代码 (React Components & Services)
+│   ├── components/               # React 组件 (主要业务组件)
+│   │   ├── AuthPage.tsx          # 认证页面
+│   │   ├── Dashboard.tsx         # 仪表盘
+│   │   ├── MenuManagement.tsx    # 菜品管理
+│   │   ├── OrderManagement.tsx   # 订单管理
+│   │   ├── SupplyChainManager.tsx # 供应链管理
+│   │   ├── SystemSettings.tsx    # 系统设置
+│   │   ├── StaffManagement.tsx   # 员工管理
+│   │   ├── RoomGrid.tsx          # 房间网格管理
+│   │   ├── PaymentManagement.tsx # 支付管理
+│   │   ├── PartnerManagement.tsx # 合作伙伴管理
+│   │   ├── InventoryManagement.tsx # 库存管理
+│   │   ├── ImageLibrary.tsx      # 图片库
+│   │   ├── GuestOrder.tsx        # 客户订单
+│   │   ├── FinanceManagement.tsx # 财务管理
+│   │   └── ...                   # 其他核心组件
+│   ├── constants/                # 前端常量定义
+│   ├── services/                 # 前端服务层
+│   │   ├── frontend/             # 前端专用服务
+│   │   │   ├── notification.frontend.ts  # 通知服务
+│   │   │   ├── s3Service.frontend.ts     # S3存储服务
+│   │   │   └── auth-client.frontend.ts   # 认证客户端
+│   │   ├── supabaseClient.ts     # Supabase客户端
+│   │   ├── i18n.ts               # 国际化服务
+│   │   └── api.ts                # API服务封装
+│   ├── types/                    # TypeScript 类型定义
+│   ├── utils/                    # 工具函数
+│   └── solutions/                # 解决方案脚本
+├── services/                     # 后端服务 (Node.js 环境)
+│   ├── auth-server.ts            # Better-Auth 服务端配置
+│   ├── db.server.ts              # 数据库连接配置
+│   ├── api.ts                    # API 服务层封装
+│   ├── notification.ts           # 通知服务
+│   ├── s3Service.ts              # S3存储服务
+│   └── auth-client.ts            # 认证客户端
+├── supabase/functions/           # Supabase Edge Functions (统一API网关)
+│   ├── api/                      # 主API网关入口
+│   │   └── index.ts              # API路由处理器
+│   ├── auth/                     # 认证相关函数
+│   │   └── index.ts              # 认证路由处理器
+│   ├── better-auth/              # Better-Auth 集成
+│   │   └── index.ts              # Better-Auth集成
+│   └── i18n/                     # 国际化服务
+│       └── index.ts              # 国际化处理器
+├── database/                     # 数据库迁移和初始化脚本
+├── drizzle/                      # Drizzle ORM 配置和迁移文件
+├── public/                       # 静态资源文件
+├── docs/                         # 项目文档
+├── shared/                       # 共享代码和类型
+└── scripts/                      # 开发和部署脚本
+```
 
-### System Architecture Layers
+### 安全架构
+- **统一API网关**: 所有请求通过Supabase Edge Functions处理
+- **行级安全 (RLS)**: 所有业务表强制绑定`partner_id`
+- **JWT物理锚点**: 数据库自动提取`auth.jwt() -> 'partner_id'`
+- **运行时对齐**: 使用Drizzle ORM确保前后端大小写映射
+- **生物识别认证**: 全面集成FIDO2标准
 
-**1. Presentation Layer (src/)**
-- React 19 frontend with TypeScript
-- Component-based architecture organized by business modules
-- Central routing through `App.tsx` with tab-based navigation
-- State management using React hooks and context providers
-- Internationalization support with runtime language switching
+## 开发命令
 
-**2. Service Layer (services/ and src/services/)**
-- **Frontend Services** (`src/services/`): Browser-compatible clients for authentication, API calls, and notifications
-- **Backend Services** (`services/`): Node.js compatible services for database operations, file uploads, and business logic
-- Dual-service pattern maintains clean separation between client and server concerns
-- API abstraction layer in `services/api.ts` provides unified interface for all business operations
-
-**3. Data Access Layer (supabase/functions/)**
-- **Edge Functions Gateway**: `supabase/functions/api.ts` serves as primary API entry point
-- **Authentication Handler**: `supabase/functions/auth.ts` manages Better-Auth integration
-- **Supabase Integration**: Direct PostgreSQL access with RLS enforcement
-- **Real-time Subscriptions**: WebSocket channels for live order updates and notifications
-
-**4. Database Layer**
-- **Schema Definition**: `schema.ts` defines all database tables with Drizzle ORM
-- **Row Level Security**: Automatic tenant isolation through `partner_id` constraints
-- **Multi-tenancy**: Physical separation of partner data at database level
-- **Type Safety**: Runtime alignment between frontend camelCase and backend snake_case
-
-### Key Architectural Patterns
-
-**Physical Multi-tenancy**
-- Every business table includes mandatory `partner_id` foreign key
-- RLS policies enforce data isolation at database level
-- JWT token extraction ensures request-level tenant context
-- Cross-partner data access strictly prohibited
-
-**Dual Authentication System**
-- **Better-Auth**: Handles core authentication, sessions, and passkeys
-- **Application Users**: Separate business user table for role-based access control
-- **Biometric Integration**: Full FIDO2/WebAuthn support for secure authentication
-- **Session Management**: JWT-based sessions with automatic refresh
-
-**Contract Alignment Pattern**
-- Frontend uses camelCase properties (`userId`, `partnerId`)
-- Backend/database uses snake_case columns (`user_id`, `partner_id`)
-- Automatic mapping functions ensure seamless integration
-- Type-safe transformations prevent runtime errors
-
-**Clean Separation Principles**
-- Frontend code exclusively in `src/` directory
-- Backend services in `services/` directory  
-- Edge functions isolated in `supabase/functions/`
-- Shared types and constants properly exported/imported
-- Import convention: frontend uses `.js` extensions, backend omits extensions
-
-## API Structure
-
-### Supabase Edge Functions API (Primary)
-All API requests are handled through Supabase Edge Functions for optimal global performance:
-- **Main Gateway**: `supabase/functions/api/index.ts` - Handles all business logic
-- **Authentication**: `supabase/functions/auth.ts` - Better-Auth integration
-- **Health Checks**: Built-in diagnostics and monitoring
-
-### Authentication APIs
-- `/api/auth/sign-in`: Traditional login/biometric handshake
-- `/api/auth/sign-in/passkey`: Passkey/WebAuthn authentication endpoint
-- `/api/auth/passkey/*`: FIDO2 credential registration and challenge verification
-- `/api/auth/session`: High-security session management
-- `/api/auth/test-passkey`: Test endpoint for passkey functionality
-
-### Registration Management APIs
-- `/api/auth/request-registration`: Submit new user registration requests
-- `/api/auth/approve-registration`: Approve pending registrations
-- `/api/auth/reject-registration`: Reject registration requests
-- `/api/auth/registration-requests`: Get list of pending registrations
-
-### System APIs
-- `/api/health`: Edge node health check
-- `/api/db-check`: Database latency and RLS compliance audit
-- `/api/system/status`: System snapshot (order volume, connections)
-
-### Business APIs via `services/api.ts`:
-- Config: `api.config.get()` / `update()` - Global store name, theme, font family
-- Dishes: `api.dishes.getAll()` / `create()` / `update()` / `delete()` - Physically isolated menu database
-- Orders: `api.orders.create()` / `updateStatus()` / `getAll()` - Real-time stream
-- Finance: `api.expenses.getAll()` / `create()` / `delete()` / `partners.getAll()` / `create()` / `update()` / `delete()` - Settlement and expenses
-- Users: `api.users.upsert()` / `delete()` / `getAll()` - Business user and auth user dual-table sync
-- Categories: `api.categories.getAll()` / `saveAll()` - Menu categorization
-- Payments: `api.payments.getAll()` / `create()` / `update()` / `delete()` / `toggle()` - Payment method management
-- Ingredients: `api.ingredients.getAll()` / `create()` / `update()` / `delete()` - Inventory management
-- Archive: `api.archive.exportData()` / `importData()` - Data backup and restore
-- Rooms: `api.rooms.getAll()` / `updateStatus()` - Hotel room status management
-
-## Passkey Authentication Configuration
-
-The system implements FIDO2/WebAuthn passkey authentication using Better-Auth with the following configuration:
-
-- **Frontend Client**: `src/services/frontend/auth-client.frontend.ts` - Better-Auth React client
-- **Server Integration**: `supabase/functions/auth.ts` - Edge Functions authentication handler
-- **Database Schema**: Includes `passkey` table with proper relations to `user` table
-- **Supabase Integration**: Uses Drizzle ORM adapter for PostgreSQL database operations
-- **API Routing**: All auth requests handled through Supabase Edge Functions unified gateway
-
-## Environment Variables
-
-Critical variables that must be configured:
-- `VITE_SUPABASE_URL`: Supabase access gateway
-- `VITE_SUPABASE_ANON_KEY`: Frontend anonymous key
-- `DATABASE_URL`: Drizzle physical connection (port 6543 transaction pool)
-- `BETTER_AUTH_SECRET`: Session signing key (32 chars)
-- `BETTER_AUTH_URL`: Base URL for auth callbacks (production deployments)
-- `SUPABASE_SERVICE_ROLE_KEY`: Service role key for Edge Functions
-
-## Development Commands
-
-### Core Development
-- `npm run dev`: Start development server (Vite) - Hot reload enabled
-- `npm run build`: Build production bundle (Vite) - Minified output in `dist/`
-- `npm run type-check`: Type check without emitting (TSC) - Validate TypeScript types
-- `npm run preview`: Preview production build locally
-
-### Testing
-- `npm run test`: Run all tests using Jest
-- `npm run test:watch`: Run tests in watch mode
-- `npm run test:coverage`: Run tests with coverage report
-
-### Database Management
-- `npx drizzle-kit generate`: Generate database migration files from schema changes
-- `npx drizzle-kit migrate`: Apply database migrations to target database
-- `npx drizzle-kit studio`: Open Drizzle Studio GUI for database browsing and management
-- `npx drizzle-kit push`: Push schema changes directly to database (development only)
-- `npx drizzle-kit introspect`: Introspect existing database schema
-- `npx drizzle-kit up`: Upgrade Drizzle Kit to latest version
-
-### Supabase Edge Functions
-- `supabase functions serve`: Run Supabase Edge Functions locally for testing
-- `supabase functions serve --env-file .env.local`: Serve with local environment variables
-- `supabase functions deploy`: Deploy Edge Functions to Supabase production
-- `supabase functions deploy --no-verify-jwt`: Deploy without JWT verification (testing only)
-- `supabase link`: Link local project to Supabase project
-- `supabase start`: Start local Supabase development environment
-- `supabase stop`: Stop local Supabase development environment
-
-### Dependency Management
-- `npm outdated`: Check for outdated dependencies
-- `npm audit`: Security audit of dependencies
-- `npm list`: Show dependency tree
-
-## Additional Useful Commands
-
-- `npm run type-check`: Validate TypeScript types across entire codebase
-- `npm run test`: Run all tests using Jest
-- `npm run test:watch`: Watch mode for continuous testing during development
-- `npm run test:coverage`: Generate test coverage reports
-
-## Critical Development Workflows
-
-### Getting Started
-1. **Environment Setup**: Copy `.env.example` to `.env.local` and configure required variables
-2. **Database Initialization**: Run `npx drizzle-kit push` to sync schema to database
-3. **Admin Setup**: Visit `/auth/admin-setup` to configure root administrator biometric credentials
-4. **Category Configuration**: Navigate to Supply Chain → Categories to establish menu structure
-5. **Development Server**: Run `npm run dev` to start local development environment
-
-### Local Development Quick Start
 ```bash
-# Clone and setup
-git clone <repository-url>
-cd jx-cloud-terminal
+# 安装依赖
 npm install
 
-# Environment setup
-cp .env.example .env.local
-# Edit .env.local with your Supabase credentials
-
-# Database setup
-npx drizzle-kit push
-
-# Start development
+# 启动开发服务器
 npm run dev
+
+# 构建生产版本
+npm run build
+
+# 类型检查
+npm run type-check
+
+# 预览生产构建
+npm run preview
+
+# 运行测试
+npm run test
+
+# 运行特定测试文件
+npm run test -- src/components/__tests__/Dashboard.test.tsx
+
+# 监视模式下运行测试
+npm run test:watch
+
+# 运行测试并生成覆盖率报告
+npm run test:coverage
+
+# 部署边缘函数
+supabase functions deploy
+
+# 部署特定边缘函数
+supabase functions deploy api
+supabase functions deploy auth
+
+# 数据库迁移
+npx drizzle-kit generate # 生成迁移
+npx drizzle-kit migrate  # 执行迁移
+npx drizzle-kit studio   # 启动数据库可视化工具
+
+# 本地Supabase开发
+supabase start           # 启动本地Supabase
+supabase stop            # 停止本地Supabase
+supabase status          # 查看本地服务状态
 ```
 
-### Feature Development Process
-1. **Schema Changes**: Modify `schema.ts`, then run `npx drizzle-kit generate` and `npx drizzle-kit migrate`
-2. **API Development**: Add endpoints to `supabase/functions/api.ts` following existing patterns
-3. **Frontend Integration**: Create/update components in `src/components/` using established service patterns
-4. **Type Safety**: Ensure all new interfaces are added to `types.ts` with proper mappings
-5. **Testing**: Validate changes in development mode before production deployment
+## 数据库设置
 
-### Deployment Pipeline
-1. **Local Testing**: Use `supabase functions serve` to test Edge Functions locally
-2. **Type Validation**: Run `npm run type-check` to ensure TypeScript compliance
-3. **Production Build**: Execute `npm run build` to generate optimized bundle
-4. **Function Deployment**: Deploy Edge Functions using `supabase functions deploy`
-5. **Environment Promotion**: Update production environment variables accordingly
+1. 执行 `database_setup.sql` 激活RLS策略
+2. 访问 `/auth/admin-setup` 绑定首个根管理员生物凭证
+3. 通过 `Supply Chain -> Categories` 部署分类架构
+4. 配置Supabase Edge Functions环境变量
 
-### Debugging and Monitoring
-1. **Real-time Issues**: Monitor Supabase Realtime channel subscriptions and cleanup
-2. **Database Performance**: Use Drizzle Studio to analyze query performance and RLS effectiveness
-3. **Authentication Problems**: Check Better-Auth session validity and passkey registration status
-4. **Multi-tenant Validation**: Verify `partner_id` constraints are properly enforced in all queries
+## 环境变量
 
-### Advanced Debugging Techniques
-- **Edge Function Debugging**: Use `console.log` in Edge Functions and check Supabase dashboard logs
-- **Database Query Analysis**: Enable query logging in Drizzle Studio for performance optimization
-- **Network Inspection**: Use browser DevTools Network tab to monitor API calls and response times
-- **Memory Leak Detection**: Monitor React component re-renders using React DevTools Profiler
-- **Real-time Subscription Debugging**: Check active Supabase channel subscriptions in browser console
+| 变量名 | 描述 |
+|--------|------|
+| `VITE_SUPABASE_URL` | Supabase访问网关 |
+| `VITE_SUPABASE_ANON_KEY` | 前端匿名Key |
+| `DATABASE_URL` | Drizzle物理连接（端口6543事务池） |
+| `BETTER_AUTH_SECRET` | 会话签名密钥（32位） |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase服务角色密钥（Edge Functions） |
+| `BETTER_AUTH_URL` | Better-Auth服务URL |
 
-## Directory Structure Overview
+## API 结构
 
-```
-├── src/                          # Frontend application code
-│   ├── components/              # React components organized by module
-│   │   ├── Dashboard/           # Business metrics and analytics
-│   │   ├── OrderManagement/     # KDS and order processing
-│   │   ├── SupplyChainManager/  # Inventory and procurement
-│   │   ├── FinancialCenter/     # Accounting and settlements
-│   │   └── ...                  # Other business modules
-│   ├── services/                # Frontend service clients
-│   │   └── frontend/            # Browser-compatible implementations
-│   └── App.tsx                  # Main application router and state
-├── services/                     # Backend service implementations
-│   ├── api.ts                   # Primary business logic gateway
-│   ├── db.server.ts             # Database connection and Drizzle setup
-│   └── auth-server.ts           # Better-Auth server configuration
-├── supabase/functions/           # Edge Functions deployment
-│   ├── api/                     # Main API gateway files
-│   │   └── index.ts             # Main API gateway (primary entry point)
-│   ├── auth.ts                  # Authentication handlers
-│   └── better-auth.ts           # Better-Auth integration layer
-├── database/                     # Database migration files
-├── scripts/                      # Utility and deployment scripts
-└── types/                        # Shared TypeScript definitions
-```
+### 统一边缘API网关
+所有API请求统一通过 **Supabase Edge Functions** 处理 (`supabase/functions/api/index.ts`)：
 
-## Core Module Responsibilities
+- `/api/health`: 边缘节点健康检查
+- `/api/db-check`: 数据库延迟与RLS策略合规性实时审计
+- `/api/system/status`: 系统运行快照（订单量、连接数）
+- `/api/config/*`: 全局配置管理
+- `/api/dishes/*`: 菜品管理（物理隔离菜单库）
+- `/api/orders/*`: 订单管理（实时流水）
+- `/api/users/*`: 业务用户管理
+- `/api/partners/*`: 联营商户管理
+- `/api/expenses/*`: 财务支出管理
 
-**Dashboard Module**: Real-time business intelligence with automatic T+1 revenue calculations
-**Station Hub**: Physical device management with QR code generation and manual POS ordering
-**Order Matrix**: Kitchen Display System with thermal printer integration and fulfillment tracking
-**Supply Chain**: Inventory management with precision alerts and bilingual product records
-**Financial Center**: Multi-partner settlement processing and expense tracking
-**Staff Management**: RBAC system with biometric authentication integration
-**System Settings**: Global configuration management and tenant customization
+### 认证API
+通过Better-Auth处理 (`supabase/functions/auth/`):
+- `/api/auth/sign-in`: 传统登录/生物识别握手
+- `/api/auth/passkey/*`: FIDO2凭证注册与挑战验证
+- `/api/auth/session`: 高安全性会话管理
+- `/api/auth/request-registration`: 用户注册申请
+- `/api/auth/approve-registration`: 管理员审批注册
 
-## Performance Optimization Guidelines
+## 测试框架
 
-### Frontend Performance
-- **Bundle Optimization**: Use code splitting for large components and lazy loading for non-critical features
-- **Image Optimization**: Compress images and use appropriate formats (WebP when supported)
-- **Component Memoization**: Use `React.memo()` for expensive components and `useMemo/useCallback` for computations
-- **Virtual Scrolling**: Implement windowing for long lists (especially in order management and inventory)
-- **Request Caching**: Cache API responses appropriately using service worker or in-memory caching
+- **测试运行器**: Jest with ts-jest
+- **测试库**: React Testing Library, DOM Testing Library
+- **测试环境**: jsdom
+- **覆盖率**: lcov, text, html 报告
+- **测试位置**: 符合 `**/__tests__/**/*.(ts|tsx|js)` 和 `**/?(*.)+(spec|test).(ts|tsx|js)` 模式的文件
+- **Mock配置**: 
+  - CSS/Less/Sass文件自动mock为identity-obj-proxy
+  - 静态资源文件mock为文件路径
+  - 支持ESM模块转换
 
-### Database Performance
-- **Query Optimization**: Use indexes on frequently queried columns, especially `partner_id` and timestamps
-- **Connection Pooling**: Configure appropriate connection pool sizes in `DATABASE_URL`
-- **RLS Policy Optimization**: Keep RLS policies simple and avoid complex joins in policy definitions
-- **Pagination**: Implement cursor-based pagination for large datasets instead of offset-based pagination
+## 调试技巧
 
-### Edge Function Performance
-- **Cold Start Optimization**: Minimize dependencies and keep function payloads small
-- **Response Caching**: Implement appropriate caching headers for static data
-- **Error Handling**: Use structured error responses to avoid unnecessary retries
-- **Logging**: Use selective logging to avoid performance overhead in production
+1. 使用浏览器开发者工具检查网络请求和错误
+2. 查看Supabase控制台的日志和监控
+3. 使用 `DebugTools.tsx` 组件进行运行时调试
+4. 检查浏览器控制台中的类型错误和警告
+5. 使用 `src/utils/` 目录下的诊断工具：
+   - `network-diagnosis.ts`: 网络连接诊断
+   - `environment-check.ts`: 环境变量检查
+   - `registration-diagnostic.ts`: 注册流程诊断
+6. 利用React DevTools检查组件状态和props
+7. 使用Supabase本地开发环境进行离线调试
 
-## Security Best Practices
+## 常见开发任务
 
-### Authentication Security
-- **Session Management**: Implement proper session expiration and refresh token rotation
-- **Rate Limiting**: Configure rate limiting for authentication endpoints
-- **Input Validation**: Validate all user inputs at both frontend and backend levels
-- **CSRF Protection**: Implement CSRF tokens for sensitive operations
+### 创建新组件
+1. 在 `src/components/` 目录下创建新的组件文件
+2. 使用现有的类型定义和常量
+3. 遵循现有的组件模式和样式约定
+4. 为组件添加对应的测试文件在 `__tests__` 目录下
 
-### Data Security
-- **Encryption**: Use HTTPS for all communications and encrypt sensitive data at rest
-- **Access Control**: Implement principle of least privilege for database roles
-- **Audit Logging**: Log all sensitive operations for security monitoring
-- **Regular Security Updates**: Keep all dependencies updated and monitor for vulnerabilities
+### 添加API端点
+1. 在 `supabase/functions/api/index.ts` 中添加新的路由处理器
+2. 更新相应的类型定义
+3. 确保RLS策略正确应用
+4. 添加对应的前端服务方法在 `src/services/api.ts`
 
-## Development Best Practices
+### 数据库变更
+1. 修改 `schema.ts` 文件中的Drizzle模式定义
+2. 运行 `npx drizzle-kit generate` 生成迁移文件
+3. 运行 `npx drizzle-kit migrate` 应用迁移
+4. 更新相关的类型定义文件
 
-- All database queries must respect the `partner_id` isolation for multi-tenancy
-- When modifying business logic, ensure RLS policies remain intact
-- Use the `parseNumeric` utility when handling monetary values to prevent type conversion issues
-- Maintain consistency between frontend camelCase and backend snake_case properties using mapping functions
-- All new features should integrate with the existing biometric authentication system
-- Real-time updates are handled through Supabase channels, ensure proper cleanup of subscriptions
-- Use the dual-user system: auth users for authentication, business users for application logic
-- Implement proper error handling and fallback mechanisms for offline/demonstration mode
-- Follow the physical contract alignment pattern for database mappings (e.g., `tableId` ↔ `table_id`)
-- Maintain the separation between Better-Auth managed tables and application-specific user tables
-- Use the demo mode (`isDemoMode`) for offline development and testing
-- Always validate monetary values using `parseNumeric` to prevent NaN issues
-- Follow the CRUD permissions model for fine-grained access control
-- **Code Organization**: Keep frontend code in `src/`, backend services in `services/`, and edge functions in `supabase/functions/`
-- **Import Conventions**: Frontend imports use `.js` extensions, backend imports omit extensions
+### 国际化支持
+1. 在 `translations.ts` 中添加新的翻译键值对
+2. 使用 `DynamicT` 组件或 `t()` 函数在组件中引用翻译
+3. 确保支持中英文双语
 
-## Common Development Tasks
+## 常见问题解决
 
-### Adding New API Endpoints
-1. Define the endpoint in `supabase/functions/api/index.ts` within the appropriate route handler
-2. Add corresponding service method in `services/api.ts`
-3. Create frontend service wrapper in `src/services/api.ts`
-4. Update types in `types.ts` if new interfaces are needed
-5. Test endpoint using local Edge Functions server
+### 类型错误
+- 运行 `npm run type-check` 查看完整类型错误列表
+- 检查 `types.ts` 和 `types_database_aligned.ts` 文件的一致性
+- 确保Drizzle schema与前端类型保持同步
 
-### Creating New Database Tables
-1. Add table definition to `schema.ts` with proper RLS policies
-2. Run `npx drizzle-kit generate` to create migration
-3. Apply migration with `npx drizzle-kit migrate`
-4. Add corresponding TypeScript interfaces in `types.ts`
-5. Create CRUD service methods in `services/api.ts`
+### 认证问题
+- 检查 `BETTER_AUTH_SECRET` 环境变量是否正确配置
+- 验证Supabase JWT配置和RLS策略
+- 使用 `AdminSetup.tsx` 组件重新配置管理员账户
 
-### Implementing New Components
-1. Create component file in appropriate `src/components/` subdirectory
-2. Follow existing component patterns for props, state, and styling
-3. Integrate with service layer using established API methods
-4. Add proper error handling and loading states
-5. Ensure mobile responsiveness and accessibility
+### 数据库连接
+- 确认 `DATABASE_URL` 指向正确的端口(6543)
+- 检查Supabase本地开发环境是否正常运行
+- 验证RLS策略是否正确激活
 
-### Working with Authentication
-1. Use `useSession()` hook for authentication state in components
-2. Leverage Better-Auth client methods for login/logout flows
-3. Implement role-based access control using user permissions
-4. Handle biometric authentication through passkey APIs
-5. Always validate session tokens before sensitive operations
+### 边缘函数部署
+- 确保所有环境变量已在Supabase项目中配置
+- 检查函数依赖是否正确声明
+- 验证函数冷启动时间和执行超时设置
 
-### Real-time Data Handling
-1. Subscribe to Supabase channels for live updates
-2. Implement proper subscription cleanup in component effects
-3. Handle reconnection logic for network interruptions
-4. Use optimistic updates for better user experience
-5. Implement proper loading and error states for real-time operations
+## 调试技巧
 
-### Internationalization
-1. Add new translations to `translations.ts`
-2. Use `getTranslation()` function for dynamic text retrieval
-3. Support both Chinese and English languages
-4. Consider RTL layout implications for future language support
-5. Test translations across all supported languages
+1. 使用浏览器开发者工具检查网络请求和错误
+2. 查看Supabase控制台的日志和监控
+3. 使用 `DebugTools.tsx` 组件进行运行时调试
+4. 检查浏览器控制台中的类型错误和警告
 
-### Error Handling and Logging
-1. Implement try/catch blocks around async operations
-2. Use centralized error handling in service layers
-3. Log errors appropriately for debugging and monitoring
-4. Provide user-friendly error messages in UI components
-5. Implement graceful degradation for offline scenarios
+## 部署注意事项
 
-## Database Schema Notes
-
-- Authentication tables (`user`, `session`, `account`, `verification`, `passkey`) follow Better-Auth conventions
-- Business tables (`menu_dishes`, `orders`, `users`, `partners`, etc.) include `partner_id` for multi-tenancy
-- All business data is physically isolated by `partner_id` with RLS enforcement
-- Monetary values are stored as `numeric` type in database but converted to `number` in application layer
-- JSONB fields are used for flexible data storage (items in orders, permissions, etc.)
-
-## Key Utilities and Helpers
-
-### Data Transformation
-- `parseNumeric()`: Safely convert database numeric values to JavaScript numbers
-- Mapping functions (`mapDishFromDB`, `mapOrderFromDB`): Convert between database snake_case and frontend camelCase
-- Contract alignment utilities ensure consistent data flow between layers
-
-### Constants and Configuration
-- `ROOT_PROTECTION`: Root administrator email protection constant
-- `INITIAL_DISHES`, `INITIAL_CATEGORIES`: Seed data for new installations
-- Demo mode support for offline development and testing
-
-### Security Considerations
-- All business operations must validate `partner_id` to prevent cross-tenant data access
-- JWT tokens contain tenant context that's extracted and validated at database level
-- RLS policies are enforced at PostgreSQL level for maximum security
-- Biometric authentication provides zero-password security model
-
-## Troubleshooting Guide
-
-### Common Issues and Solutions
-
-**Database Connection Issues**
-- Verify `DATABASE_URL` is correctly configured
-- Check Supabase project credentials and network connectivity
-- Ensure RLS policies are properly applied to all business tables
-
-**Authentication Problems**
-- Confirm `BETTER_AUTH_SECRET` is set and is 32 characters long
-- Verify Better-Auth session validity in browser developer tools
-- Check passkey registration status for biometric login issues
-
-**Real-time Updates Not Working**
-- Verify Supabase Realtime channel subscriptions are active
-- Check WebSocket connection status in browser network tab
-- Ensure proper cleanup of subscriptions to prevent memory leaks
-
-**Type Errors**
-- Run `npm run type-check` to identify TypeScript issues
-- Check that all new interfaces are properly defined in `types.ts`
-- Verify mapping functions maintain type safety between layers
-
-**Performance Issues**
-- Use Drizzle Studio to analyze slow queries
-- Monitor Supabase dashboard for resource utilization
-- Check for unoptimized real-time subscriptions
+1. 确保所有环境变量已正确配置
+2. 验证RLS策略在生产环境中正常工作
+3. 测试所有认证流程包括生物识别
+4. 验证边缘函数的全球部署状态
+5. 检查性能指标和错误率

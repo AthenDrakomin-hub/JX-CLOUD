@@ -5,7 +5,7 @@ echo "🚀 开始部署 JX Cloud Terminal 到 Supabase Edge Functions..."
 
 # 1. 链接 Supabase 项目
 echo "🔗 链接到 Supabase 项目..."
-npx supabase link --project-ref zlbemopcgjohrnyyiwvs
+npx supabase link --project-ref ${SUPABASE_PROJECT_REF}
 
 # 2. 设置必要的环境变量
 echo "⚙️  配置环境变量..."
@@ -25,10 +25,10 @@ npx supabase functions deploy api
 # 5. 验证部署
 echo "✅ 验证部署状态..."
 echo "测试认证会话端点:"
-curl -I https://zlbemopcgjohrnyyiwvs.supabase.co/functions/v1/api/auth/session
+curl -I https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/api/auth/session
 
 echo "测试健康检查端点:"
-curl -I https://zlbemopcgjohrnyyiwvs.supabase.co/functions/v1/api/health
+curl -I https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/api/health
 
 echo "🎉 部署完成！"
 echo "现在可以访问您的应用，认证功能应该正常工作了。"

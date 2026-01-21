@@ -1,34 +1,21 @@
-// Supabase Edge Functions - Better Auth 认证路由
+// Supabase Edge Functions - Better Auth 认证路由 (独立版本)
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
-import { betterAuth } from 'https://esm.sh/better-auth@1.4.15/supabase';
-import { drizzle } from 'https://esm.sh/drizzle-orm@0.45.1/supabase';
-import * as schema from '../../../drizzle/schema.js';
+import { betterAuth } from 'https://esm.sh/better-auth@1.0.22';
 
-// 获取环境变量
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-// 初始化Supabase客户端
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-// 初始化Drizzle ORM
-const db = drizzle(supabase, { schema });
-
-// 配置Better Auth
+// 配置Better Auth - 使用连接字符串而非直接的Drizzle实例
 const auth = betterAuth({
-  secret: Deno.env.get('BETTER_AUTH_SECRET')!,
-  url: Deno.env.get('BETTER_AUTH_URL')!,
+  secret: Deno.env.get('BETTER_AUTH_SECRET') || (() => {
+    throw new Error('BETTER_AUTH_SECRET environment variable is required');
+  })(),
+  baseURL: Deno.env.get('BETTER_AUTH_URL') || `https://${Deno.env.get('SUPABASE_PROJECT_REF')}.supabase.co/functions/v1/better-auth`,
   database: {
-    connection: db,
-    tables: {
-      user: schema.user,
-      session: schema.session,
-      account: schema.account,
-      verification: schema.verification,
-      passkey: schema.passkey,
-    }
+    provider: "postgresql",
+    url: Deno.env.get('DATABASE_URL') || '',
   },
+  emailAndPassword: {
+    enabled: true,
+  },
+  socialProviders: {},
   advanced: {
     useSecureCookies: true,
     crossOrigin: true

@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { Order, Expense } from '../types';
+import { Order, Expense } from '../../types';
 import { Language, getTranslation } from '../constants/translations';
 import { 
   DollarSign, Wallet, RefreshCcw, 
@@ -26,7 +26,7 @@ const FinanceManagement: React.FC<FinanceManagementProps> = ({ orders, expenses,
   const completedOrders = useMemo(() => (orders || []).filter(o => o.status === 'completed'), [orders]);
 
   const summary = useMemo(() => {
-    const cash = Math.round(completedOrders.filter(o => o.paymentMethod === 'cash_php').reduce((s, o) => s + o.totalAmount, 0));
+    const cash = Math.round(completedOrders.filter(o => o.payment_method === 'cash_php').reduce((s, o) => s + o.total_amount, 0));
     const digital = Math.round(completedOrders.filter(o => o.paymentMethod !== 'cash_php').reduce((s, o) => s + o.totalAmount, 0));
     return { cash, digital, total: cash + digital };
   }, [completedOrders]);
@@ -113,7 +113,7 @@ const FinanceManagement: React.FC<FinanceManagementProps> = ({ orders, expenses,
                      ) : (
                        completedOrders.map(o => (
                          <tr key={o.id} className="hover:bg-slate-50 transition-colors">
-                            <td className="px-10 py-6 text-xs text-slate-400">{new Date(o.createdAt).toLocaleTimeString()}</td>
+                            <td className="px-10 py-6 text-xs text-slate-400">{new Date(o.created_at).toLocaleTimeString()}</td>
                             {/* Fix: Changed 'roomId' to 'tableId' to match Order interface */}
                             <td className="px-10 py-6">#{o.tableId} - {o.id.slice(-6)}</td>
                             <td className="px-10 py-6 text-right font-mono text-slate-900">{C}{Math.round(o.totalAmount).toLocaleString()}</td>

@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { HotelRoom, Dish, Order, OrderStatus, RoomStatus, Category } from '../types';
+import { HotelRoom, Dish, Order, OrderStatus, RoomStatus, Category } from '../../types';
 import { 
   QrCode, Printer, X, ShoppingCart, Plus, Minus, Search, Loader2, Sparkles, MonitorPlay, ChevronRight, Utensils
 } from 'lucide-react';
@@ -31,7 +31,7 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, categories = [], onU
   const filteredDishes = useMemo(() => {
     return (dishes || []).filter(d => {
       const matchSearch = (d.name || '').toLowerCase().includes((searchTerm || '').toLowerCase()) || 
-                          (d.nameEn || '').toLowerCase().includes((searchTerm || '').toLowerCase());
+                          (d.name_en || '').toLowerCase().includes((searchTerm || '').toLowerCase());
       
       let matchCategory = false;
       if (activeCategoryId === 'All') {
@@ -39,13 +39,13 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, categories = [], onU
       } else {
         const targetCat = categories.find(c => c.id === activeCategoryId);
         if (targetCat?.level === 1) {
-          const subCatIds = categories.filter(c => c.parentId === activeCategoryId).map(c => c.id);
-          matchCategory = d.categoryId === activeCategoryId || subCatIds.includes(d.categoryId);
+          const subCatIds = categories.filter(c => c.parent_id === activeCategoryId).map(c => c.id);
+          matchCategory = d.category === activeCategoryId || subCatIds.includes(d.category);
         } else {
-          matchCategory = d.categoryId === activeCategoryId;
+          matchCategory = d.category === activeCategoryId;
         }
       }
-      return matchSearch && matchCategory && d.isAvailable;
+      return matchSearch && matchCategory && d.is_available;
     });
   }, [dishes, searchTerm, activeCategoryId, categories]);
 
@@ -85,7 +85,7 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, categories = [], onU
           name: item.dish!.name,
           quantity: item.quantity,
           price: item.dish!.price,
-          partnerId: item.dish!.partnerId
+          partnerId: item.dish!.partner_id
         })),
         totalAmount: Math.round(subtotal),
         status: OrderStatus.PENDING,
@@ -193,7 +193,7 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, categories = [], onU
                             return (
                                <div key={dish.id} className={`relative bg-white dark:bg-slate-900 p-3 rounded-3xl border-2 transition-all cursor-pointer group shadow-sm active-scale flex flex-col ${inCart > 0 ? 'border-blue-500 ring-4 ring-blue-50 dark:ring-blue-900/20' : 'border-slate-100 dark:border-slate-800 hover:border-blue-300'}`} onClick={() => setCart(p => ({...p, [dish.id]: (p[dish.id] || 0) + 1}))}>
                                   {inCart > 0 && <div className="absolute -top-2 -right-2 w-8 h-8 bg-blue-600 text-white rounded-xl flex items-center justify-center font-black text-xs shadow-lg border-2 border-white dark:border-slate-900 z-10">{inCart}</div>}
-                                  <div className="aspect-square rounded-2xl overflow-hidden mb-3 bg-slate-50 dark:bg-slate-800 border border-slate-50 dark:border-slate-800"><img src={dish.imageUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={dish.name} /></div>
+                                  <div className="aspect-square rounded-2xl overflow-hidden mb-3 bg-slate-50 dark:bg-slate-800 border border-slate-50 dark:border-slate-800"><img src={dish.image_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={dish.name} /></div>
                                   <div className="space-y-1 flex-1"><h4 className="font-bold text-slate-900 dark:text-white text-sm tracking-tight truncate leading-tight">{lang === 'zh' ? dish.name : (dish.nameEn || dish.name)}</h4><p className="text-[10px] font-bold text-blue-600 dark:text-blue-400">₱{Math.round(dish.price)}</p></div>
                                </div>
                             );

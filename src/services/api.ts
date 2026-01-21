@@ -1,4 +1,3 @@
-
 import { supabase, isDemoMode } from '../../services/supabaseClient.js';
 import { 
   Partner, Order, Dish, OrderStatus, SystemConfig, UserRole, 
@@ -12,7 +11,14 @@ import { INITIAL_DISHES, INITIAL_CATEGORIES, INITIAL_PAYMENT_METHODS } from '../
  */
 
 // API基础URL配置 - 动态获取Supabase URL
-const SUPABASE_PROJECT_URL = (import.meta as any).env?.VITE_SUPABASE_URL || 'https://zlbemopcgjohrnyyiwvs.supabase.co';
+const SUPABASE_PROJECT_URL = (import.meta as any).env?.VITE_SUPABASE_URL || 
+                            (process.env as any).VITE_SUPABASE_URL ||
+                            (process.env as any).SUPABASE_URL ||
+                            (() => {
+                              const projectRef = (process.env as any).SUPABASE_PROJECT_REF || 
+                                                (process.env as any).SUPABASE_PROJECT_ID;
+                              return projectRef ? `https://${projectRef}.supabase.co` : null;
+                            })();
 const API_BASE_URL = `${SUPABASE_PROJECT_URL}/functions/v1/api`;
 
 // API客户端配置
@@ -54,45 +60,42 @@ const parseNumeric = (val: any): number => {
 const mapDishFromDB = (d: any): Dish => ({
   id: d.id,
   name: d.name,
-  nameEn: d.name_en, 
-  description: d.description,
-  tags: d.tags || [],
+  name_en: d.name_en, 
   price: parseNumeric(d.price), 
-  categoryId: d.category,  // 数据库实际字段名是 category
+  category: d.category,  // 数据库实际字段名是 category
   stock: d.stock || 0,
-  imageUrl: d.image_url || '',
-  isAvailable: d.is_available,
-  isRecommended: d.is_recommended,
-  partnerId: d.partner_id
+  image_url: d.image_url || '',
+  is_available: d.is_available,
+  is_recommended: d.is_recommended,
+  partner_id: d.partner_id,
+  created_at: d.created_at
 });
 
 const mapOrderFromDB = (o: any): Order => ({
   id: o.id, 
-  tableId: o.room_id,  // 数据库实际字段名是 room_id
-  customerId: o.customer_id,
+  room_id: o.room_id,  // 数据库实际字段名是 room_id
   items: Array.isArray(o.items) ? o.items : JSON.parse(o.items || '[]'),
-  totalAmount: parseNumeric(o.total_amount), 
+  total_amount: parseNumeric(o.total_amount), 
   status: o.status as OrderStatus,
-  paymentMethod: o.payment_method, 
-  paymentProof: o.payment_proof,
-  cashReceived: parseNumeric(o.cash_received), 
-  cashChange: parseNumeric(o.cash_change),
-  isPrinted: o.is_printed,
-  partnerId: o.partner_id,
-  createdAt: o.created_at, 
-  updatedAt: o.updated_at
+  payment_method: o.payment_method, 
+  payment_proof: o.payment_proof,
+  cash_received: parseNumeric(o.cash_received), 
+  cash_change: parseNumeric(o.cash_change),
+  partner_id: o.partner_id,
+  created_at: o.created_at, 
+  updated_at: o.updated_at
 });
 
 export const api = {
   config: {
     get: async (): Promise<SystemConfig> => {
-      if (isDemoMode || !supabase) return { hotelName: '江西云厨', theme: 'light', version: '8.8.0', autoPrintOrder: true, ticketStyle: 'standard', fontFamily: 'Plus Jakarta Sans' };
+      if (isDemoMode || !supabase) return { hotel_name: '江西云厨', theme: 'light', version: '8.8.0', auto_print_order: true, ticket_style: 'standard', font_family: 'Plus Jakarta Sans' };
       const { data } = await supabase.from('system_config').select('*').eq('id', 'global').maybeSingle();
       return data ? {
-        hotelName: data.hotel_name,
+        hotel_name: data.hotel_name,
         version: data.version,
         theme: data.theme,
-        autoPrintOrder: data.auto_print_order,
+        auto_print_order: data.auto_print_order,
         ticketStyle: data.ticket_style,
         fontFamily: data.font_family
       } : { hotelName: '江西云厨', theme: 'light' } as any;
@@ -101,9 +104,9 @@ export const api = {
       if (isDemoMode || !supabase) return;
       await supabase.from('system_config').upsert({
         id: 'global',
-        hotel_name: config.hotelName,
+        hotel_name: config.hotel_name,
         theme: config.theme,
-        auto_print_order: config.autoPrintOrder,
+        auto_print_order: config.auto_print_order,
         updated_at: new Date().toISOString()
       });
     }
@@ -113,8 +116,8 @@ export const api = {
     getAll: async (sessionUser?: any): Promise<Dish[]> => {
       if (isDemoMode || !supabase) return INITIAL_DISHES;
       let query = supabase.from('menu_dishes').select('*');
-      if (sessionUser?.role === UserRole.PARTNER && sessionUser.partnerId) {
-        query = query.eq('partner_id', sessionUser.partnerId);
+      if (sessionUser?.role === UserRole.PARTNER && sessionUser.partner_id) {
+        query = query.eq('partner_id', sessionUser.partner_id);
       }
       const { data } = await query.order('id');
       return (data || []).map(mapDishFromDB);
@@ -122,25 +125,25 @@ export const api = {
     create: async (data: Dish, sessionUser: any) => {
       if (isDemoMode || !supabase) return;
       await supabase.from('menu_dishes').insert({
-        id: data.id, name: data.name, name_en: data.nameEn,
-        price: data.price.toString(), category: data.categoryId,  // 使用实际字段名
-        image_url: data.imageUrl, is_available: data.isAvailable,
-        partner_id: sessionUser?.role === UserRole.PARTNER ? sessionUser.partnerId : data.partnerId
+        id: data.id, name: data.name, name_en: data.name_en,
+        price: data.price.toString(), category: data.category,  // 使用实际字段名
+        image_url: data.image_url, is_available: data.is_available,
+        partner_id: sessionUser?.role === UserRole.PARTNER ? sessionUser.partner_id : data.partner_id
       });
     },
     update: async (data: Dish, sessionUser: any) => {
       if (isDemoMode || !supabase) return;
       const query = supabase.from('menu_dishes').update({
-        name: data.name, name_en: data.nameEn, price: data.price.toString(),
-        category: data.categoryId, image_url: data.imageUrl, is_available: data.isAvailable  // 使用实际字段名
+        name: data.name, name_en: data.name_en, price: data.price.toString(),
+        category: data.category, image_url: data.image_url, is_available: data.is_available  // 使用实际字段名
       }).eq('id', data.id);
-      if (sessionUser?.role === UserRole.PARTNER) query.eq('partner_id', sessionUser.partnerId);
+      if (sessionUser?.role === UserRole.PARTNER) query.eq('partner_id', sessionUser.partner_id);
       await query;
     },
     delete: async (id: string, sessionUser: any) => {
       if (isDemoMode || !supabase) return;
       const query = supabase.from('menu_dishes').delete().eq('id', id);
-      if (sessionUser?.role === UserRole.PARTNER) query.eq('partner_id', sessionUser.partnerId);
+      if (sessionUser?.role === UserRole.PARTNER) query.eq('partner_id', sessionUser.partner_id);
       await query;
     }
   },
@@ -149,8 +152,8 @@ export const api = {
     getAll: async (sessionUser?: any): Promise<Order[]> => {
       if (isDemoMode || !supabase) return [];
       let query = supabase.from('orders').select('*');
-      if (sessionUser?.role === UserRole.PARTNER && sessionUser.partnerId) {
-        query = query.eq('partner_id', sessionUser.partnerId);
+      if (sessionUser?.role === UserRole.PARTNER && sessionUser.partner_id) {
+        query = query.eq('partner_id', sessionUser.partner_id);
       }
       const { data } = await query.order('created_at', { ascending: false });
       return (data || []).map(mapOrderFromDB);
@@ -158,9 +161,9 @@ export const api = {
     create: async (data: Order) => {
       if (isDemoMode || !supabase) return;
       await supabase.from('orders').insert({
-        id: data.id, room_id: data.tableId, items: data.items,  // 使用实际字段名 room_id
-        total_amount: data.totalAmount.toString(), status: data.status,
-        payment_method: data.paymentMethod, partner_id: data.partnerId
+        id: data.id, room_id: data.room_id, items: data.items,  // 使用实际字段名 room_id
+        total_amount: data.total_amount.toString(), status: data.status,
+        payment_method: data.payment_method, partner_id: data.partner_id
       });
     },
     updateStatus: async (id: string, status: OrderStatus) => {
@@ -174,17 +177,17 @@ export const api = {
       if (isDemoMode || !supabase) return INITIAL_CATEGORIES;
       const { data } = await supabase.from('menu_categories').select('*').order('display_order');
       return (data || []).map((c: any) => ({
-        id: c.id, name: c.name, nameEn: c.name_en, code: c.code,
-        level: c.level, displayOrder: c.display_order, isActive: c.is_active,
-        parentId: c.parent_id, partnerId: c.partner_id
+        id: c.id, name: c.name, name_en: c.name_en, code: c.code,
+        level: c.level, display_order: c.display_order, is_active: c.is_active,
+        parent_id: c.parent_id, partner_id: c.partner_id
       }));
     },
     saveAll: async (categories: Category[]) => {
       if (isDemoMode || !supabase) return;
       const payload = categories.map(c => ({
-        id: c.id, name: c.name, name_en: c.nameEn, level: c.level,
-        display_order: c.displayOrder, is_active: c.isActive,
-        parent_id: c.parentId, partner_id: c.partnerId
+        id: c.id, name: c.name, name_en: c.name_en, level: c.level,
+        display_order: c.display_order, is_active: c.is_active,
+        parent_id: c.parent_id, partner_id: c.partner_id
       }));
       await supabase.from('menu_categories').upsert(payload);
     }
@@ -216,9 +219,9 @@ export const api = {
     create: async (data: Partner) => {
       if (isDemoMode || !supabase) return;
       await supabase.from('partners').insert({
-        id: data.id, name: data.name, owner_name: data.ownerName, status: data.status,
-        commission_rate: data.commissionRate.toString(), balance: data.balance.toString(),
-        authorized_categories: data.authorizedCategories
+        id: data.id, name: data.name, owner_name: data.owner_name, status: data.status,
+        commission_rate: data.commission_rate.toString(), balance: data.balance.toString(),
+        authorized_categories: data.authorized_categories
       });
     },
     // Fix: Added update method for partners to resolve 'Property update does not exist' errors
@@ -243,14 +246,15 @@ export const api = {
       const { data } = await supabase.from('users').select('*').order('name');
       return (data || []).map((u: any) => ({
         id: u.id, email: u.email, name: u.name, role: u.role as UserRole,
-        partnerId: u.partner_id, isActive: u.is_active
+        partner_id: u.partner_id, is_active: u.is_active,
+        created_at: u.created_at, updated_at: u.updated_at
       }));
     },
     upsert: async (data: User) => {
       if (isDemoMode || !supabase) return;
       await supabase.from('users').upsert({
         id: data.id, email: data.email, name: data.name, role: data.role,
-        partner_id: data.partnerId, is_active: data.isActive, updated_at: new Date().toISOString()
+        partner_id: data.partner_id, is_active: data.is_active, updated_at: new Date().toISOString()
       });
     },
     // Fix: Added delete method for users to resolve 'Property delete does not exist' errors
@@ -297,7 +301,7 @@ export const api = {
       if (isDemoMode || !supabase) return;
       await supabase.from('ingredients').insert({
         id: data.id, name: data.name, unit: data.unit, 
-        stock: data.stock, min_stock: data.minStock, category: data.category,
+        stock: data.stock, min_stock: data.min_stock, category: data.category,
         last_restocked: new Date().toISOString()
       });
     },
@@ -323,33 +327,31 @@ export const api = {
       const { data } = await supabase.from('payment_methods').select('*').order('sort_order');
       if (!data || data.length === 0) return INITIAL_PAYMENT_METHODS;
       return data.map((p: any) => ({
-        id: p.id, name: p.name, nameEn: p.name_en, currency: p.currency,
-        currencySymbol: p.currency_symbol, exchangeRate: parseNumeric(p.exchange_rate),
-        isActive: p.is_active, paymentType: p.payment_type, sortOrder: p.sort_order,
-        description: p.description, descriptionEn: p.description_en, iconType: p.icon_type,
-        walletAddress: p.wallet_address, qrUrl: p.qr_url
+        id: p.id, name: p.name, name_en: p.name_en, currency: p.currency,
+        currency_symbol: p.currency_symbol, exchange_rate: parseNumeric(p.exchange_rate),
+        is_active: p.is_active, payment_type: p.payment_type, sort_order: p.sort_order,
+        wallet_address: p.wallet_address, qr_url: p.qr_url,
+        created_at: p.created_at
       }));
     },
     // Fix: Added create method for payments to resolve 'Property create does not exist' errors
     create: async (data: PaymentMethodConfig) => {
       if (isDemoMode || !supabase) return;
       await supabase.from('payment_methods').insert({
-        id: data.id, name: data.name, name_en: data.nameEn, currency: data.currency,
-        currency_symbol: data.currencySymbol, exchange_rate: data.exchangeRate.toString(),
-        is_active: data.isActive, payment_type: data.paymentType, sort_order: data.sortOrder,
-        description: data.description, description_en: data.descriptionEn, icon_type: data.iconType,
-        wallet_address: data.walletAddress, qr_url: data.qrUrl
+        id: data.id, name: data.name, name_en: data.name_en, currency: data.currency,
+        currency_symbol: data.currency_symbol, exchange_rate: data.exchange_rate.toString(),
+        is_active: data.is_active, payment_type: data.payment_type, sort_order: data.sort_order,
+        wallet_address: data.wallet_address, qr_url: data.qr_url
       });
     },
     // Fix: Added update method for payments to resolve 'Property update does not exist' errors
     update: async (data: PaymentMethodConfig) => {
       if (isDemoMode || !supabase) return;
       await supabase.from('payment_methods').update({
-        name: data.name, name_en: data.nameEn, currency: data.currency,
-        currency_symbol: data.currencySymbol, exchange_rate: data.exchangeRate.toString(),
-        is_active: data.isActive, payment_type: data.paymentType, sort_order: data.sortOrder,
-        description: data.description, description_en: data.descriptionEn, icon_type: data.iconType,
-        wallet_address: data.walletAddress, qr_url: data.qrUrl
+        name: data.name, name_en: data.name_en, currency: data.currency,
+        currency_symbol: data.currency_symbol, exchange_rate: data.exchange_rate.toString(),
+        is_active: data.is_active, payment_type: data.payment_type, sort_order: data.sort_order,
+        wallet_address: data.wallet_address, qr_url: data.qr_url
       }).eq('id', data.id);
     },
     // Fix: Added delete method for payments to resolve 'Property delete does not exist' errors

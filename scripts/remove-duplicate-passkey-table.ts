@@ -15,7 +15,7 @@ if (!connectionString) {
 async function removeDuplicatePasskeyTable() {
   console.log('🗑️  准备删除重复的通行密钥表...');
   
-  const sql = postgres(connectionString);
+  const sql = postgres(connectionString!);
   
   try {
     // 首先确认两个表都存在

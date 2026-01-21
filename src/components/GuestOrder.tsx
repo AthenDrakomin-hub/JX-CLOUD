@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Dish, Order, OrderStatus, Category, PaymentMethodConfig } from '../types';
+import { Dish, Order, OrderStatus, Category, PaymentMethodConfig } from '../../types';
 import { Language, getTranslation } from '../constants/translations';
 import { api } from '../services/api';
 import { 
@@ -45,7 +45,7 @@ const GuestOrder: React.FC<GuestOrderProps> = ({
 
   useEffect(() => {
     api.payments.getAll().then(pAll => {
-      const active = pAll.filter(p => p.isActive).sort((a, b) => a.sortOrder - b.sortOrder);
+      const active = pAll.filter(p => p.is_active).sort((a, b) => a.sort_order - b.sortOrder);
       setAvailablePayments(active);
       if (active.length > 0) setSelectedPaymentId(active[0].id);
     });
@@ -58,19 +58,19 @@ const GuestOrder: React.FC<GuestOrderProps> = ({
   const filteredDishes = useMemo(() => {
     return (dishes || []).filter(d => {
       const matchSearch = (d.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          (d.nameEn || '').toLowerCase().includes(searchTerm.toLowerCase());
+                          (d.name_en || '').toLowerCase().includes(searchTerm.toLowerCase());
       
       let matchCat = true;
       if (activeCategoryId !== 'All') {
         const cat = categories.find(c => c.id === activeCategoryId);
         if (cat?.level === 1) {
-          const subs = categories.filter(c => c.parentId === activeCategoryId).map(c => c.id);
-          matchCat = d.categoryId === activeCategoryId || subs.includes(d.categoryId);
+          const subs = categories.filter(c => c.parent_id === activeCategoryId).map(c => c.id);
+          matchCat = d.category === activeCategoryId || subs.includes(d.category);
         } else {
-          matchCat = d.categoryId === activeCategoryId;
+          matchCat = d.category === activeCategoryId;
         }
       }
-      return matchSearch && matchCat && d.isAvailable;
+      return matchSearch && matchCat && d.is_available;
     });
   }, [dishes, searchTerm, activeCategoryId, categories]);
 
@@ -100,7 +100,7 @@ const GuestOrder: React.FC<GuestOrderProps> = ({
         tableId: roomId, 
         items: Object.entries(cart).filter(([_, q]) => (q as number) > 0).map(([id, q]) => {
           const d = dishes.find(x => x.id === id)!;
-          return { dishId: id, name: lang === 'zh' ? d.name : (d.nameEn || d.name), quantity: q as number, price: d.price, partnerId: d.partnerId };
+          return { dishId: id, name: lang === 'zh' ? d.name : (d.nameEn || d.name), quantity: q as number, price: d.price, partnerId: d.partner_id };
         }), 
         totalAmount: totalAmount, 
         status: OrderStatus.PENDING, 
@@ -187,13 +187,13 @@ const GuestOrder: React.FC<GuestOrderProps> = ({
                 {paginatedDishes.length > 0 ? paginatedDishes.map(dish => (
                   <div key={dish.id} className="bg-white border border-slate-100 p-4 rounded-[2rem] flex gap-4 transition-all hover:shadow-lg active:scale-[0.98] group">
                     <div className="w-24 h-24 rounded-[1.5rem] bg-slate-100 overflow-hidden shrink-0 border border-slate-100 shadow-sm">
-                      <OptimizedImage src={dish.imageUrl} alt={dish.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                      <OptimizedImage src={dish.image_url} alt={dish.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                     </div>
                     <div className="flex-1 flex flex-col justify-between py-1 min-w-0">
                       <div>
                         <div className="flex items-start justify-between">
                             <h3 className="font-black text-slate-900 text-base truncate pr-2">{lang === 'zh' ? dish.name : (dish.nameEn || dish.name)}</h3>
-                            {dish.isRecommended && <div className="p-1 bg-amber-50 text-amber-500 rounded-md"><Sparkles size={12} fill="currentColor" /></div>}
+                            {dish.is_recommended && <div className="p-1 bg-amber-50 text-amber-500 rounded-md"><Sparkles size={12} fill="currentColor" /></div>}
                         </div>
                       </div>
                       <div className="flex justify-between items-end mt-2">

@@ -4,7 +4,7 @@ import MenuManagement from './MenuManagement';
 import CategoryManagement from './CategoryManagement';
 import InventoryManagement from './InventoryManagement';
 import GuestOrder from './GuestOrder';
-import { Dish, User, Partner, Order, Category } from '../types';
+import { Dish, User, Partner, Order, Category } from '../../types';
 import { Language, getTranslation } from '../constants/translations';
 import { Box, Layers, Package, Sparkles, MonitorSmartphone, X, Smartphone, ShieldCheck, Download, Upload, AlertCircle, HardDrive } from 'lucide-react';
 import { api } from '../services/api';

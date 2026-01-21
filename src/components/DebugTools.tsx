@@ -2,7 +2,7 @@
 import React from 'react';
 import { LogIn, RefreshCw, Trash2, X, AlertTriangle, Handshake } from 'lucide-react';
 import { ADMIN_CREDENTIALS, STAFF_CREDENTIALS } from '../services/supabaseClient';
-import { UserRole } from '../types';
+import { UserRole } from '../../types';
 
 interface DebugToolsProps {
   isOpen: boolean;

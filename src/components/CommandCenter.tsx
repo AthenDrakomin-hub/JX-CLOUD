@@ -5,7 +5,7 @@ import {
   Utensils, Zap, X, ArrowRight, Sun, 
   Moon, LogOut, Printer, LayoutDashboard
 } from 'lucide-react';
-import { HotelRoom, Order, Dish } from '../types';
+import { HotelRoom, Order, Dish } from '../../types';
 import { Language, getTranslation } from '../constants/translations';
 
 interface CommandCenterProps {
@@ -48,15 +48,15 @@ const CommandCenter: React.FC<CommandCenterProps> = ({
     });
 
     // 2. 菜品搜索 - Fix: Changed name_en to nameEn correctly from Dish interface
-    dishes.filter(d => d.name.toLowerCase().includes(q) || d.nameEn?.toLowerCase().includes(q)).slice(0, 5).forEach(d => {
+    dishes.filter(d => d.name.toLowerCase().includes(q) || d.name_en?.toLowerCase().includes(q)).slice(0, 5).forEach(d => {
       items.push({ type: 'dish', id: d.id, title: d.name, sub: `单价: ₱${d.price} | 库存: ${d.stock}`, icon: Utensils, tab: 'supply_chain' });
     });
 
     // 3. 订单搜索
     // Fix: Changed 'roomId' to 'tableId' to match Order interface
-    orders.filter(o => o.id.toLowerCase().includes(q) || o.tableId.includes(q)).slice(0, 3).forEach(o => {
+    orders.filter(o => o.id.toLowerCase().includes(q) || o.room_id.includes(q)).slice(0, 3).forEach(o => {
       // Fix: Changed 'roomId' to 'tableId' to match Order interface
-      items.push({ type: 'order', id: o.id, title: `订单 #${o.id.slice(-6)}`, sub: `房间 ${o.tableId} | ₱${o.totalAmount}`, icon: ChefHat, tab: 'orders' });
+      items.push({ type: 'order', id: o.id, title: `订单 #${o.id.slice(-6)}`, sub: `房间 ${o.room_id} | ₱${o.total_amount}`, icon: ChefHat, tab: 'orders' });
     });
 
     // 4. 系统指令

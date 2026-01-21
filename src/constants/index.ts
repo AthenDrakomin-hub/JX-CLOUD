@@ -1,5 +1,4 @@
-
-import { RoomStatus, Dish, User, UserRole, CRUDPermissions, AppModule, Partner, Category, PaymentMethodConfig } from '../../types.js';
+import { RoomStatus, Dish, User, UserRole, CRUDPermissions, AppModule, Partner, Category, PaymentMethodConfig } from '../types';
 
 /**
  * 江西云厨 - 核心资产档案 (Dishes Registry v10.5)
@@ -7,36 +6,36 @@ import { RoomStatus, Dish, User, UserRole, CRUDPermissions, AppModule, Partner, 
  */
 const dishesData: Dish[] = [
   // --- 101: 扒饭系列 ---
-  // Fix: Changed 'category' to 'categoryId' and 'name_en' to 'nameEn' in all dish objects to match Dish interface
-  { id: 'D101', name: '黑椒猪扒饭', nameEn: 'Black Pepper Pork Chop Rice', categoryId: '101', price: 150, stock: 50, isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=800', isRecommended: true, description: '选用上等里脊肉，搭配特调黑椒汁。', tags: ['热卖', '招牌'] },
-  { id: 'D102', name: '香烤牛扒饭', nameEn: 'Grilled Steak Rice', categoryId: '101', price: 280, stock: 30, isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=800', description: '严选谷饲牛肉，高温碳烤锁住肉汁。', tags: ['精品'] },
-  { id: 'D103', name: '泰式鸡腿饭', nameEn: 'Thai Chicken Leg Rice', categoryId: '101', price: 180, stock: 45, isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1562967916-eb82221dfb92?q=80&w=800', description: '泰式秘制腌料，酸辣适中。', tags: ['异域'] },
-  { id: 'D105', name: '日式咖喱饭', nameEn: 'Japanese Curry Rice', categoryId: '101', price: 190, stock: 60, isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1582576163090-6c91a6ed3d21?q=80&w=800', description: '日式温润咖喱，土豆胡萝卜入口即化。' },
+  // Updated to match database column names
+  { id: 'D101', name: '黑椒猪扒饭', name_en: 'Black Pepper Pork Chop Rice', category: '101', price: 150, stock: 50, is_available: true, image_url: 'https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=800', is_recommended: true, created_at: new Date().toISOString() },
+  { id: 'D102', name: '香烤牛扒饭', name_en: 'Grilled Steak Rice', category: '101', price: 280, stock: 30, is_available: true, image_url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=800', is_recommended: false, created_at: new Date().toISOString() },
+  { id: 'D103', name: '泰式鸡腿饭', name_en: 'Thai Chicken Leg Rice', category: '101', price: 180, stock: 45, is_available: true, image_url: 'https://images.unsplash.com/photo-1562967916-eb82221dfb92?q=80&w=800', is_recommended: false, created_at: new Date().toISOString() },
+  { id: 'D105', name: '日式咖喱饭', name_en: 'Japanese Curry Rice', category: '101', price: 190, stock: 60, is_available: true, image_url: 'https://images.unsplash.com/photo-1582576163090-6c91a6ed3d21?q=80&w=800', is_recommended: false, created_at: new Date().toISOString() },
 
   // --- 002: 中式精品 (映射至 002 或具体子类) ---
-  { id: 'D201', name: '红烧肉套餐', nameEn: 'Braised Pork Set', categoryId: '002', price: 220, stock: 20, isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?q=80&w=800', isRecommended: true, description: '经典本帮风味，软糯不油腻。', tags: ['中式'] },
-  { id: 'D202', name: '麻婆豆腐饭', nameEn: 'Mapo Tofu Rice', categoryId: '002', price: 120, stock: 100, isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1541696432-82c6da8ce7bf?q=80&w=800', description: '麻辣鲜香，传统川味。' },
-  { id: 'D203', name: '宫保鸡丁饭', nameEn: 'Kung Pao Chicken Rice', categoryId: '002', price: 160, stock: 80, isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1525755662778-989d0524087e?q=80&w=800', description: '精选鸡腿肉，搭配香脆花生米。' },
+  { id: 'D201', name: '红烧肉套餐', name_en: 'Braised Pork Set', category: '002', price: 220, stock: 20, is_available: true, image_url: 'https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?q=80&w=800', is_recommended: true, created_at: new Date().toISOString() },
+  { id: 'D202', name: '麻婆豆腐饭', name_en: 'Mapo Tofu Rice', category: '002', price: 120, stock: 100, is_available: true, image_url: 'https://images.unsplash.com/photo-1541696432-82c6da8ce7bf?q=80&w=800', is_recommended: false, created_at: new Date().toISOString() },
+  { id: 'D203', name: '宫保鸡丁饭', name_en: 'Kung Pao Chicken Rice', category: '002', price: 160, stock: 80, is_available: true, image_url: 'https://images.unsplash.com/photo-1525755662778-989d0524087e?q=80&w=800', is_recommended: false, created_at: new Date().toISOString() },
 
   // --- 602: 轩尼诗系列 ---
-  { id: 'W601', name: '轩尼诗 VSOP (700ml)', nameEn: 'Hennessy VSOP', categoryId: '602', price: 4200, stock: 12, isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?q=80&w=800', description: '干邑界的标杆，果香浓郁，余味悠长。', tags: ['名酒', '商务'] },
-  { id: 'W602', name: '轩尼诗 XO', nameEn: 'Hennessy XO', categoryId: '602', price: 9800, stock: 5, isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1569701881643-46385d30d2f3?q=80&w=800', description: '顶级干邑，口感深邃复杂。', tags: ['顶奢'] },
+  { id: 'W601', name: '轩尼诗 VSOP (700ml)', name_en: 'Hennessy VSOP', category: '602', price: 4200, stock: 12, is_available: true, image_url: 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?q=80&w=800', is_recommended: false, created_at: new Date().toISOString() },
+  { id: 'W602', name: '轩尼诗 XO', name_en: 'Hennessy XO', category: '602', price: 9800, stock: 5, is_available: true, image_url: 'https://images.unsplash.com/photo-1569701881643-46385d30d2f3?q=80&w=800', is_recommended: false, created_at: new Date().toISOString() },
 
   // --- 601: 马爹利系列 ---
-  { id: 'W611', name: '马爹利名仕', nameEn: 'Martell Noblige', categoryId: '601', price: 3800, stock: 10, isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1594411132791-7667c453f663?q=80&w=800', description: '口感圆润顺滑，带优雅芬芳。' },
-  { id: 'W612', name: '马爹利蓝带', nameEn: 'Martell Cordon Bleu', categoryId: '601', price: 8500, stock: 4, isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1527281405159-35d5b5aa7c1d?q=80&w=800', tags: ['经典'] },
+  { id: 'W611', name: '马爹利名仕', name_en: 'Martell Noblige', category: '601', price: 3800, stock: 10, is_available: true, image_url: 'https://images.unsplash.com/photo-1594411132791-7667c453f663?q=80&w=800', is_recommended: false, created_at: new Date().toISOString() },
+  { id: 'W612', name: '马爹利蓝带', name_en: 'Martell Cordon Bleu', category: '601', price: 8500, stock: 4, is_available: true, image_url: 'https://images.unsplash.com/photo-1527281405159-35d5b5aa7c1d?q=80&w=800', is_recommended: false, created_at: new Date().toISOString() },
 
   // --- 603: 麦卡伦系列 ---
-  { id: 'W631', name: '麦卡伦 12年 (雪莉桶)', nameEn: 'Macallan 12Y Sherry Oak', categoryId: '603', price: 6500, stock: 8, isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1527281405159-35d5b5aa7c1d?q=80&w=800', description: '带有浓郁的蜜饯与干果香气。' },
+  { id: 'W631', name: '麦卡伦 12年 (雪莉桶)', name_en: 'Macallan 12Y Sherry Oak', category: '603', price: 6500, stock: 8, is_available: true, image_url: 'https://images.unsplash.com/photo-1527281405159-35d5b5aa7c1d?q=80&w=800', is_recommended: false, created_at: new Date().toISOString() },
 
   // --- 901: 罐装汽水 ---
-  { id: 'B901', name: '可口可乐 (330ml)', nameEn: 'Coca Cola', categoryId: '901', price: 35, stock: 500, isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?q=80&w=800', tags: ['气泡'] },
-  { id: 'B902', name: '雪碧 (330ml)', nameEn: 'Sprite', categoryId: '901', price: 35, stock: 500, isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1625772290748-390939a20011?q=80&w=800' },
-  { id: 'B903', name: '王老吉', nameEn: 'Wong Lo Kat', categoryId: '901', price: 45, stock: 200, isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1544145945-f904253d0c7b?q=80&w=800', description: '正宗凉茶，清热去火。' },
+  { id: 'B901', name: '可口可乐 (330ml)', name_en: 'Coca Cola', category: '901', price: 35, stock: 500, is_available: true, image_url: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?q=80&w=800', is_recommended: false, created_at: new Date().toISOString() },
+  { id: 'B902', name: '雪碧 (330ml)', name_en: 'Sprite', category: '901', price: 35, stock: 500, is_available: true, image_url: 'https://images.unsplash.com/photo-1625772290748-390939a20011?q=80&w=800', is_recommended: false, created_at: new Date().toISOString() },
+  { id: 'B903', name: '王老吉', name_en: 'Wong Lo Kat', category: '901', price: 45, stock: 200, is_available: true, image_url: 'https://images.unsplash.com/photo-1544145945-f904253d0c7b?q=80&w=800', is_recommended: false, created_at: new Date().toISOString() },
 
   // --- 004: 海鲜水产 ---
-  { id: 'S401', name: '清蒸大龙虾', nameEn: 'Steamed Lobster', categoryId: '004', price: 1200, stock: 15, isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1559700018-9d14fd5a99ce?q=80&w=800', isRecommended: true, description: '鲜活龙虾，原汁原味。' },
-  { id: 'S402', name: '香辣大闸蟹', nameEn: 'Spicy Hairy Crab', categoryId: '004', price: 800, stock: 20, isAvailable: true, imageUrl: 'https://images.unsplash.com/photo-1590759021051-0202d46947a7?q=80&w=800' }
+  { id: 'S401', name: '清蒸大龙虾', name_en: 'Steamed Lobster', category: '004', price: 1200, stock: 15, is_available: true, image_url: 'https://images.unsplash.com/photo-1559700018-9d14fd5a99ce?q=80&w=800', is_recommended: true, created_at: new Date().toISOString() },
+  { id: 'S402', name: '香辣大闸蟹', name_en: 'Spicy Hairy Crab', category: '004', price: 800, stock: 20, is_available: true, image_url: 'https://images.unsplash.com/photo-1590759021051-0202d46947a7?q=80&w=800', is_recommended: false, created_at: new Date().toISOString() }
 ];
 
 export const ROOM_NUMBERS = [
@@ -47,45 +46,39 @@ export const ROOM_NUMBERS = [
 
 export const INITIAL_PAYMENT_METHODS: PaymentMethodConfig[] = [
   { 
-    // Fix: Updated snake_case properties to camelCase to match PaymentMethodConfig interface
-    id: 'cash_php', name: '现金支付', nameEn: 'Cash Payment', currency: 'PHP', currencySymbol: '₱', 
-    exchangeRate: 1.0, isActive: true, paymentType: 'cash', sortOrder: 1, 
-    description: '到店现金支付 (比索)，支持自动找零感应', descriptionEn: 'Cash payment in PHP', iconType: 'banknote' 
+    id: 'cash_php', name: '现金支付', name_en: 'Cash Payment', currency: 'PHP', currency_symbol: '₱', 
+    exchange_rate: 1.0, is_active: true, payment_type: 'cash', sort_order: 1, 
+    created_at: new Date().toISOString()
   },
   { 
-    // Fix: Updated snake_case properties to camelCase to match PaymentMethodConfig interface
-    id: 'gcash', name: 'GCash', nameEn: 'GCash', currency: 'PHP', currencySymbol: '₱', 
-    exchangeRate: 1.0, isActive: true, paymentType: 'digital', sortOrder: 2, 
-    description: '菲律宾本地钱包支付，需上传凭证', descriptionEn: 'Pay via GCash, upload screenshot', 
-    iconType: 'wallet', qrUrl: 'https://placehold.co/400x400/blue/white?text=GCash+QR', walletAddress: '0912-345-6789'
+    id: 'gcash', name: 'GCash', name_en: 'GCash', currency: 'PHP', currency_symbol: '₱', 
+    exchange_rate: 1.0, is_active: true, payment_type: 'digital', sort_order: 2, 
+    qr_url: 'https://placehold.co/400x400/blue/white?text=GCash+QR', wallet_address: '0912-345-6789',
+    created_at: new Date().toISOString()
   },
   { 
-    // Fix: Updated snake_case properties to camelCase to match PaymentMethodConfig interface
-    id: 'paypal', name: 'PayPal', nameEn: 'PayPal', currency: 'USD', currencySymbol: '$', 
-    exchangeRate: 0.018, isActive: true, paymentType: 'digital', sortOrder: 3, 
-    description: '国际 PayPal 转账', descriptionEn: 'PayPal International Transfer', 
-    iconType: 'credit-card', walletAddress: 'payment@jxcloud.com'
+    id: 'paypal', name: 'PayPal', name_en: 'PayPal', currency: 'USD', currency_symbol: '$', 
+    exchange_rate: 0.018, is_active: true, payment_type: 'digital', sort_order: 3, 
+    wallet_address: 'payment@jxcloud.com',
+    created_at: new Date().toISOString()
   },
   { 
-    // Fix: Updated snake_case properties to camelCase to match PaymentMethodConfig interface
-    id: 'alipay', name: '支付宝', nameEn: 'Alipay', currency: 'CNY', currencySymbol: '¥', 
-    exchangeRate: 0.12, isActive: true, paymentType: 'digital', sortOrder: 4, 
-    description: '中国支付宝扫码支付', descriptionEn: 'Scan to pay via Alipay', 
-    iconType: 'smartphone', qrUrl: 'https://placehold.co/400x400/blue/white?text=Alipay+QR'
+    id: 'alipay', name: '支付宝', name_en: 'Alipay', currency: 'CNY', currency_symbol: '¥', 
+    exchange_rate: 0.12, is_active: true, payment_type: 'digital', sort_order: 4, 
+    qr_url: 'https://placehold.co/400x400/blue/white?text=Alipay+QR',
+    created_at: new Date().toISOString()
   },
   { 
-    // Fix: Updated snake_case properties to camelCase to match PaymentMethodConfig interface
-    id: 'wechat_pay', name: '微信支付', nameEn: 'WeChat Pay', currency: 'CNY', currencySymbol: '¥', 
-    exchangeRate: 0.12, isActive: true, paymentType: 'digital', sortOrder: 5, 
-    description: '中国微信扫码支付', descriptionEn: 'Scan to pay via WeChat', 
-    iconType: 'smartphone', qrUrl: 'https://placehold.co/400x400/green/white?text=WeChat+QR'
+    id: 'wechat_pay', name: '微信支付', name_en: 'WeChat Pay', currency: 'CNY', currency_symbol: '¥', 
+    exchange_rate: 0.12, is_active: true, payment_type: 'digital', sort_order: 5, 
+    qr_url: 'https://placehold.co/400x400/green/white?text=WeChat+QR',
+    created_at: new Date().toISOString()
   },
   { 
-    // Fix: Updated snake_case properties to camelCase to match PaymentMethodConfig interface
-    id: 'usdt_trc20', name: 'USDT (TRC20)', nameEn: 'USDT-TRC20', currency: 'USDT', currencySymbol: '₮', 
-    exchangeRate: 0.017, isActive: true, paymentType: 'digital', sortOrder: 6, 
-    description: '加密货币转账，需输入 TxID 或上传截图', descriptionEn: 'Crypto transfer via TRC20', 
-    iconType: 'coins', walletAddress: 'TXxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+    id: 'usdt_trc20', name: 'USDT (TRC20)', name_en: 'USDT-TRC20', currency: 'USDT', currency_symbol: '₮', 
+    exchange_rate: 0.017, is_active: true, payment_type: 'digital', sort_order: 6, 
+    wallet_address: 'TXxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    created_at: new Date().toISOString()
   }
 ];
 
@@ -106,24 +99,30 @@ export const INITIAL_PARTNERS: Partner[] = [
 ];
 
 export const INITIAL_CATEGORIES: Category[] = [
-  // Fix: Updated snake_case properties to camelCase to match Category interface
-  { id: '001', name: '主食套餐类', nameEn: 'Main Course Sets', parentId: null, level: 1, displayOrder: 1, isActive: true, code: 'MAIN_COURSE' },
-  { id: '101', name: '扒饭系列', nameEn: 'Grill Series', parentId: '001', level: 2, displayOrder: 1, isActive: true, code: 'GRILL' },
-  { id: '002', name: '中式精品', nameEn: 'Chinese Special', parentId: null, level: 1, displayOrder: 2, isActive: true, code: 'CHINESE' },
-  { id: '004', name: '海鲜水产', nameEn: 'Seafood', parentId: null, level: 1, displayOrder: 4, isActive: true, code: 'SEAFOOD' },
-  { id: '006', name: '高端洋酒', nameEn: 'Premium Spirits', parentId: null, level: 1, displayOrder: 6, isActive: true, code: 'SPIRITS' },
-  { id: '601', name: '马爹利系列', nameEn: 'Martell Series', parentId: '006', level: 2, displayOrder: 1, isActive: true, code: 'MARTELL' },
-  { id: '602', name: '轩尼诗系列', nameEn: 'Hennessy Series', parentId: '006', level: 2, displayOrder: 2, isActive: true, code: 'HENNESSY' },
-  { id: '603', name: '麦卡伦系列', nameEn: 'Macallan Series', parentId: '006', level: 2, displayOrder: 3, isActive: true, code: 'MACALLAN' },
-  { id: '009', name: '软饮料', nameEn: 'Beverages', parentId: null, level: 1, displayOrder: 9, isActive: true, code: 'BEVERAGES' },
-  { id: '901', name: '罐装汽水', nameEn: 'Sodas', parentId: '009', level: 2, displayOrder: 1, isActive: true, code: 'SODA' }
+  { id: '001', name: '主食套餐类', name_en: 'Main Course Sets', parent_id: null, level: 1, display_order: 1, is_active: true, code: 'MAIN_COURSE' },
+  { id: '101', name: '扒饭系列', name_en: 'Grill Series', parent_id: '001', level: 2, display_order: 1, is_active: true, code: 'GRILL' },
+  { id: '002', name: '中式精品', name_en: 'Chinese Special', parent_id: null, level: 1, display_order: 2, is_active: true, code: 'CHINESE' },
+  { id: '004', name: '海鲜水产', name_en: 'Seafood', parent_id: null, level: 1, display_order: 4, is_active: true, code: 'SEAFOOD' },
+  { id: '006', name: '高端洋酒', name_en: 'Premium Spirits', parent_id: null, level: 1, display_order: 6, is_active: true, code: 'SPIRITS' },
+  { id: '601', name: '马爹利系列', name_en: 'Martell Series', parent_id: '006', level: 2, display_order: 1, is_active: true, code: 'MARTELL' },
+  { id: '602', name: '轩尼诗系列', name_en: 'Hennessy Series', parent_id: '006', level: 2, display_order: 2, is_active: true, code: 'HENNESSY' },
+  { id: '603', name: '麦卡伦系列', name_en: 'Macallan Series', parent_id: '006', level: 2, display_order: 3, is_active: true, code: 'MACALLAN' },
+  { id: '009', name: '软饮料', name_en: 'Beverages', parent_id: null, level: 1, display_order: 9, is_active: true, code: 'BEVERAGES' },
+  { id: '901', name: '罐装汽水', name_en: 'Sodas', parent_id: '009', level: 2, display_order: 1, is_active: true, code: 'SODA' }
 ];
 
 export const INITIAL_DISHES: Dish[] = dishesData;
 
-// Fix: Removed 'isOnline' and 'isEnvLocked' property from the initial user object as they are not defined in the 'User' interface.
+// Updated to match database structure
 export const INITIAL_USERS: User[] = [
-  { id: 'admin-root', email: 'athendrakomin@proton.me', role: UserRole.ADMIN, name: '系统总监' }
+  { 
+    id: 'admin-root', 
+    email: 'athendrakomin@proton.me', 
+    role: UserRole.ADMIN, 
+    name: '系统总监',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  }
 ];
 
 export const COLORS = { primary: '#2563eb', success: '#22c55e', danger: '#ef4444', warning: '#f59e0b' };

@@ -2,10 +2,9 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import postgres from 'postgres';
 import { 
-  user, session, account, verification, passkey,
-  users, menuDishes, orders, paymentMethods, 
-  translations 
-} from '../src/schema';
+  user, session, account, verification, passkeys,
+  users, menuDishes, orders, paymentMethods
+} from '../schema';
 
 // 不要直接提交敏感信息到代码中
 const connectionString = process.env.DATABASE_URL;

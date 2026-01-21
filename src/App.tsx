@@ -23,7 +23,7 @@ import { notificationService } from './services/frontend/notification.frontend';
 import { 
   HotelRoom, Order, Dish, OrderStatus, 
   Expense, Partner, Category, SystemConfig, User, UserRole, Language 
-} from './types';
+} from '../types';
 import { getTranslation } from './constants/translations';
 import { Bell, Command, Loader2, ShieldCheck, Wifi, WifiOff, AlertTriangle, X, Lock } from 'lucide-react';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -210,7 +210,7 @@ const App: React.FC = () => {
 
   return (
     <ErrorBoundary lang={lang}>
-      <div className={`min-h-screen transition-colors duration-500 ${config?.theme === 'dark' ? 'dark bg-slate-950' : 'bg-slate-50'}`} style={{ fontFamily: config?.fontFamily || 'Plus Jakarta Sans' }}>
+      <div className={`min-h-screen transition-colors duration-500 ${config?.theme === 'dark' ? 'dark bg-slate-950' : 'bg-slate-50'}`} style={{ fontFamily: config?.font_family || 'Plus Jakarta Sans' }}>
         <Sidebar currentTab={currentTab} setCurrentTab={setCurrentTab} currentUser={session.user} onLogout={safeSignOut} lang={lang} onToggleLang={toggleLanguage} isCollapsed={isSidebarCollapsed} onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)} />
         
         <main className={`transition-all duration-500 min-h-screen ${isSidebarCollapsed ? 'ml-24' : 'ml-72'}`}>

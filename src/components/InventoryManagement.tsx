@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Ingredient } from '../types';
+import { Ingredient } from '../../types';
 import { translations, Language } from '../constants/translations';
 import { 
   Plus, Trash2, Search, X, 
@@ -91,7 +91,7 @@ const InventoryManagement: React.FC<{ lang: Language }> = ({ lang }) => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
          {filteredIngs.map((ing, idx) => {
-           const isLowStock = ing.stock <= ing.minStock;
+           const isLowStock = ing.stock <= ing.min_stock;
            return (
              <div key={ing.id} className="bg-white p-8 rounded-[3.5rem] border border-slate-50 shadow-sm hover:shadow-2xl transition-all duration-700 group relative overflow-hidden animate-in fade-in slide-in-from-bottom-8" style={{ animationDelay: `${idx * 50}ms` }}>
                 {isLowStock && (
@@ -134,7 +134,7 @@ const InventoryManagement: React.FC<{ lang: Language }> = ({ lang }) => {
                    <div className="flex items-center space-x-2">
                       <History size={14} className="text-slate-300" />
                       {/* Fix: Changed last_restocked to lastRestocked to match Ingredient interface */}
-                      <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">最近入库: {ing.lastRestocked ? new Date(ing.lastRestocked).toLocaleDateString() : '—'}</span>
+                      <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">最近入库: {ing.last_restocked ? new Date(ing.lastRestocked).toLocaleDateString() : '—'}</span>
                    </div>
                 </div>
              </div>

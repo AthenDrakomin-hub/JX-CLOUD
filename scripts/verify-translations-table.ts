@@ -15,7 +15,7 @@ if (!connectionString) {
 async function verifyTranslationsTable() {
   console.log('🚀 连接到数据库...');
   
-  const sql = postgres(connectionString);
+  const sql = postgres(connectionString!);
   
   try {
     // 查询所有翻译记录总数

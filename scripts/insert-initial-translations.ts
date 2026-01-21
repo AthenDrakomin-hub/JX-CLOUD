@@ -15,7 +15,7 @@ if (!connectionString) {
 async function insertInitialTranslations() {
   console.log('🚀 连接到数据库...');
   
-  const sql = postgres(connectionString);
+  const sql = postgres(connectionString!);
   
   try {
     // 检查是否已有翻译数据

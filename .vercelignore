@@ -37,3 +37,6 @@ supabase/.branches
 # 测试覆盖率
 coverage/
 .nyc_output/
+
+# 本地脚本和工具（不需要部署到Vercel）
+scripts/

@@ -15,7 +15,7 @@ if (!connectionString) {
 async function verifyPasskeyTableCleanup() {
   console.log('🔍 验证通行密钥表清理结果...');
   
-  const sql = postgres(connectionString);
+  const sql = postgres(connectionString!);
   
   try {
     // 检查通行密钥相关表

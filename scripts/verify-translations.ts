@@ -2,7 +2,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Initialize Supabase client
-const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://zlbemopcgjohrnyyiwvs.supabase.co';
+const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://${SUPABASE_PROJECT_REF}.supabase.co';
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseKey);
 

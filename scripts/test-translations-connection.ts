@@ -15,7 +15,7 @@ if (!connectionString) {
 async function testTranslationsConnection() {
   console.log('🚀 测试数据库连接和 translations 表...');
   
-  const sql = postgres(connectionString);
+  const sql = postgres(connectionString!);
   
   try {
     // 查询 translations 表的前几条记录

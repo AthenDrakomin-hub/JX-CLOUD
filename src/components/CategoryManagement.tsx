@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Layers, Plus, Trash2, Save, Activity, 
@@ -8,7 +7,7 @@ import {
 import { useForm, useFieldArray, useWatch, Control } from 'react-hook-form';
 import { api } from '../services/api';
 import { Language, getTranslation } from '../constants/translations';
-import { Category } from '../types';
+import { Category } from '../../types';
 
 interface FormValues {
   categories: Category[];
@@ -28,142 +27,142 @@ interface CategoryRowProps {
 const CategoryRow: React.FC<CategoryRowProps> = ({ 
   index, item, depth, control, onRemove, onMove, onAddChild, lang 
 }) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const { register, setValue } = useForm<FormValues>();
+  const { register, setValue } = useForm();
+  
+  const generateId = useCallback((level: number, parentId: string | null) => {
+    return `${parentId ? `${parentId}-` : ''}L${level}-${Date.now()}`;
+  }, []);
 
-  // Get current name for local display while not editing
-  const currentName = useWatch({
-    control,
-    name: `categories.${index}.name` as const,
-  });
-  const currentNameEn = useWatch({
-    control,
-    // Fix: Changed name_en to nameEn to match Category interface
-    name: `categories.${index}.nameEn` as const,
-  });
+  const handleNameChange = (field: keyof Category, value: string) => {
+    setValue(`${field}`, value);
+  };
 
   return (
-    <div 
-      className={`group flex items-center justify-between p-4 hover:bg-slate-50 transition-all ${depth > 0 ? 'bg-slate-50/30' : ''}`}
-      style={{ paddingLeft: `${depth * 3 + 2}rem` }}
-    >
-      <div className="flex items-center space-x-4 flex-1">
-        <GripVertical size={16} className="text-slate-300 opacity-0 group-hover:opacity-100 cursor-move transition-opacity" />
-        <div className="w-10 h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center font-mono text-[10px] font-black text-slate-400 shadow-sm">
-          {item.id}
+    <div className={`flex items-center gap-4 p-6 hover:bg-slate-50 transition-colors ${depth > 0 ? `pl-${8 + depth * 8}` : ''}`}>
+      <div className="flex items-center gap-3 w-full">
+        <div className="flex items-center gap-2">
+          {[...Array(depth)].map((_, i) => (
+            <div key={i} className="w-4 h-px bg-slate-300" />
+          ))}
+          <GripVertical className="text-slate-400 cursor-move" size={16} />
         </div>
         
-        {isEditing ? (
-          <div className="flex-1 flex gap-2">
-            <div className="flex-1 grid grid-cols-2 gap-2">
-              <input 
-                {...register(`categories.${index}.name` as const)}
-                autoFocus
-                className="px-4 py-2 bg-white border border-blue-500 rounded-lg outline-none text-sm font-bold shadow-sm"
-                placeholder="中文名称"
-              />
-              <input 
-                // Fix: Changed name_en to nameEn to match Category interface
-                {...register(`categories.${index}.nameEn` as const)}
-                className="px-4 py-2 bg-white border border-blue-500 rounded-lg outline-none text-sm font-bold shadow-sm"
-                placeholder="English Name"
-              />
-            </div>
-            <button type="button" onClick={() => setIsEditing(false)} className="p-2 bg-blue-600 text-white rounded-lg active-scale">
-              <Check size={16} />
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center space-x-3 flex-1">
-            <span className={`text-sm font-bold ${depth === 0 ? 'text-slate-900' : 'text-slate-600'}`}>
-              {lang === 'zh' ? currentName : (currentNameEn || currentName)}
-            </span>
-            {item.level < 3 && (
-              <button 
-                type="button" 
-                onClick={() => onAddChild(item.id)} 
-                className="p-1 text-slate-300 hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-all"
-                title="Add Sub-category"
-              >
-                <Plus size={14} />
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-
-      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all">
-        <div className="flex items-center bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-          <button type="button" onClick={() => onMove(index, 'up')} className="p-2 hover:bg-slate-50 text-slate-400 border-r border-slate-100"><ArrowUp size={14} /></button>
-          <button type="button" onClick={() => onMove(index, 'down')} className="p-2 hover:bg-slate-50 text-slate-400"><ArrowDown size={14} /></button>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
+          <input
+            {...register(`categories.${index}.name`)}
+            defaultValue={item.name}
+            className="px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder={lang === 'zh' ? '分类名称' : 'Category Name'}
+          />
+          <input
+            {...register(`categories.${index}.name_en`)}
+            defaultValue={item.name_en}
+            className="px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder={lang === 'zh' ? '英文名称' : 'English Name'}
+          />
+          <input
+            {...register(`categories.${index}.code`)}
+            defaultValue={item.code}
+            className="px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+            placeholder="CAT_001"
+          />
         </div>
-        <button type="button" onClick={() => setIsEditing(!isEditing)} className="p-2.5 bg-white border border-slate-200 text-slate-400 hover:text-blue-600 rounded-xl shadow-sm">
-          {isEditing ? <X size={14} /> : <Edit3 size={14} />}
+        
+        <div className="flex items-center gap-2">
+          <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+            item.is_active 
+              ? 'bg-green-100 text-green-800' 
+              : 'bg-slate-100 text-slate-500'
+          }`}>
+            {item.is_active ? 'ACTIVE' : 'INACTIVE'}
+          </span>
+          <span className="text-xs text-slate-500 font-mono">
+            L{item.level}
+          </span>
+        </div>
+      </div>
+      
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => onAddChild(item.id)}
+          disabled={item.level >= 3}
+          className="p-2 text-slate-400 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          title={lang === 'zh' ? '添加子分类' : 'Add Child'}
+        >
+          <Plus size={16} />
         </button>
-        <button type="button" onClick={() => onRemove(index)} className="p-2.5 bg-white border border-slate-200 text-slate-400 hover:text-red-600 rounded-xl shadow-sm"><Trash2 size={14} /></button>
+        <button
+          type="button"
+          onClick={() => onMove(index, 'up')}
+          className="p-2 text-slate-400 hover:text-blue-600"
+          title={lang === 'zh' ? '上移' : 'Move Up'}
+        >
+          <ArrowUp size={16} />
+        </button>
+        <button
+          type="button"
+          onClick={() => onMove(index, 'down')}
+          className="p-2 text-slate-400 hover:text-blue-600"
+          title={lang === 'zh' ? '下移' : 'Move Down'}
+        >
+          <ArrowDown size={16} />
+        </button>
+        <button
+          type="button"
+          onClick={() => onRemove(index)}
+          className="p-2 text-slate-400 hover:text-red-600"
+          title={lang === 'zh' ? '删除' : 'Delete'}
+        >
+          <Trash2 size={16} />
+        </button>
       </div>
     </div>
   );
 };
 
-const CategoryManagement: React.FC<{ lang: Language; onRefreshGlobal?: () => void }> = ({ lang, onRefreshGlobal }) => {
+const CategoryManagement: React.FC<{ 
+  lang: Language; 
+  onRefreshGlobal?: () => void 
+}> = ({ lang, onRefreshGlobal }) => {
   const t = useCallback((key: string) => getTranslation(lang, key), [lang]);
+  
+  const [categories, setCategories] = useState<Category[]>([]);
   const [isSaving, setIsSaving] = useState(false);
-
-  const { control, handleSubmit, reset, formState: { isDirty } } = useForm<FormValues>({
+  
+  const { control, handleSubmit, formState: { isDirty }, reset, watch } = useForm<FormValues>({
     defaultValues: { categories: [] }
   });
-
+  
   const { fields, append, remove, move, replace } = useFieldArray({
     control,
     name: "categories"
   });
 
   const fetchCategories = useCallback(async () => {
-    const data = await api.categories.getAll();
-    // Maintain a flat structure sorted by depth and order for tree-like rendering with useFieldArray
-    // Fix: Changed display_order to displayOrder to match Category interface
-    const sorted = [...data].sort((a, b) => a.level - b.level || a.displayOrder - b.displayOrder);
-    
-    // We transform the flat list into a tree-ordered flat list for useFieldArray to render correctly
-    const treeOrdered: Category[] = [];
-    const buildTree = (parentId: string | null = null) => {
-      // Fix: Changed parent_id to parentId and display_order to displayOrder to match Category interface
-      const children = sorted.filter(c => c.parentId === parentId).sort((a, b) => a.displayOrder - b.displayOrder);
-      children.forEach(child => {
-        treeOrdered.push(child);
-        buildTree(child.id);
-      });
-    };
-    buildTree(null);
-    
-    replace(treeOrdered);
-    reset({ categories: treeOrdered });
-  }, [replace, reset]);
+    try {
+      const data = await api.categories.getAll();
+      setCategories(data);
+      reset({ categories: data });
+    } catch (error) {
+      console.error('Failed to fetch categories:', error);
+    }
+  }, [reset]);
 
   useEffect(() => {
     fetchCategories();
   }, [fetchCategories]);
 
-  const generateNewId = (level: number, parentId: string | null): string => {
-    // Fix: Changed parent_id to parentId to match Category interface
-    const siblings = fields.filter(c => c.parentId === parentId);
-    let nextNum = 1;
-    if (siblings.length > 0) {
-      const ids = siblings.map(s => parseInt(s.id.slice(-2)) || 0);
-      nextNum = Math.max(...ids) + 1;
-    }
-    
-    if (level === 1) return nextNum.toString().padStart(3, '0');
-    return `${parentId}${nextNum.toString().padStart(2, '0')}`;
-  };
+  const generateNewId = useCallback((level: number, parentId: string | null) => {
+    return `${parentId ? `${parentId}-` : ''}L${level}-${Date.now()}`;
+  }, []);
 
   const handleAdd = (parentId: string | null = null) => {
     const parent = parentId ? fields.find(c => c.id === parentId) : null;
     const newLevel = parent ? parent.level + 1 : 1;
     
     if (newLevel > 3) {
-      alert(lang === 'zh' ? "系统目前仅支持最高三级分类架构。" : "Supports up to 3 levels only.");
+      alert(lang === 'zh' ? "系统目前仅支持最高三级分类架构" : "Supports up to 3 levels only.");
       return;
     }
 
@@ -171,28 +170,19 @@ const CategoryManagement: React.FC<{ lang: Language; onRefreshGlobal?: () => voi
     const newCat: Category = {
       id: newId,
       name: lang === 'zh' ? '新分类' : 'New Category',
-      // Fix: Changed name_en to nameEn to match Category interface
-      nameEn: 'New Category',
+      name_en: 'New Category',
       code: `CAT_${newId}`,
-      // Fix: Changed parent_id to parentId and display_order to displayOrder and is_active to isActive to match Category interface
-      parentId: parentId,
+      parent_id: parentId,
       level: newLevel,
-      displayOrder: fields.filter(c => c.parentId === parentId).length + 1,
-      isActive: true
+      display_order: fields.filter(c => c.parent_id === parentId).length + 1,
+      is_active: true
     };
 
-    // If adding a child, insert it after the last existing sibling/descendant of the parent
     if (parentId) {
       let insertIndex = fields.findIndex(f => f.id === parentId) + 1;
-      // Skip all current descendants of the parent to append at the end of its branch
-      // Fix: Changed parent_id to parentId to match Category interface
-      while (insertIndex < fields.length && (fields[insertIndex].parentId === parentId || isDescendant(fields[insertIndex].parentId, parentId))) {
+      while (insertIndex < fields.length && (fields[insertIndex].parent_id === parentId || isDescendant(fields[insertIndex].parent_id, parentId))) {
         insertIndex++;
       }
-      // Note: useFieldArray's insert would be better here, but append/move logic is similar. 
-      // For simplicity in this implementation, we just use replace for complex tree structural changes if insert isn't enough.
-      // But standard useFieldArray 'append' works for top-level. 
-      // We'll use replace to maintain tree order for simplicity during structural changes.
       const newFields = [...fields];
       newFields.splice(insertIndex, 0, newCat as any);
       replace(newFields);
@@ -205,20 +195,17 @@ const CategoryManagement: React.FC<{ lang: Language; onRefreshGlobal?: () => voi
     if (!childPid) return false;
     if (childPid === ancestorId) return true;
     const parent = fields.find(f => f.id === childPid);
-    // Fix: Changed parent_id to parentId to match Category interface
-    return isDescendant(parent?.parentId, ancestorId);
+    return isDescendant(parent?.parent_id, ancestorId);
   };
 
   const handleRemove = (index: number) => {
     const target = fields[index];
-    // Fix: Changed parent_id to parentId to match Category interface
-    const childrenCount = fields.filter(c => c.parentId === target.id).length;
-    if (confirm(lang === 'zh' ? `确定删除 [${target.name}] 吗？${childrenCount > 0 ? '其下所有子类将同步删除。' : ''}` : `Delete [${target.name}]?`)) {
+    const childrenCount = fields.filter(c => c.parent_id === target.id).length;
+    if (confirm(lang === 'zh' ? `确定删除 [${target.name}] 吗？${childrenCount > 0 ? '其下所有子类将同步删除' : ''}` : `Delete [${target.name}]?`)) {
       const idsToRemove = new Set<string>();
       const collectIds = (pid: string) => {
         idsToRemove.add(pid);
-        // Fix: Changed parent_id to parentId to match Category interface
-        fields.filter(c => c.parentId === pid).forEach(child => collectIds(child.id));
+        fields.filter(c => c.parent_id === pid).forEach(child => collectIds(child.id));
       };
       collectIds(target.id);
       replace(fields.filter(f => !idsToRemove.has(f.id)));
@@ -227,15 +214,12 @@ const CategoryManagement: React.FC<{ lang: Language; onRefreshGlobal?: () => voi
 
   const handleMove = (index: number, direction: 'up' | 'down') => {
     const target = fields[index];
-    // Fix: Changed parent_id to parentId to match Category interface
-    const siblings = fields.filter(f => f.parentId === target.parentId);
+    const siblings = fields.filter(f => f.parent_id === target.parent_id);
     const siblingIndex = siblings.findIndex(s => s.id === target.id);
 
     if (direction === 'up' && siblingIndex > 0) {
       const prevSibling = siblings[siblingIndex - 1];
       const prevSiblingIndex = fields.findIndex(f => f.id === prevSibling.id);
-      // To move a whole branch, we'd need to identify all descendants.
-      // For this refactor, we provide standard swap/move on the field array.
       move(index, prevSiblingIndex);
     } else if (direction === 'down' && siblingIndex < siblings.length - 1) {
       const nextSibling = siblings[siblingIndex + 1];
@@ -247,11 +231,9 @@ const CategoryManagement: React.FC<{ lang: Language; onRefreshGlobal?: () => voi
   const onSave = async (data: FormValues) => {
     setIsSaving(true);
     try {
-      // Update displayOrder based on current visual order in the form
       const orderedData = data.categories.map((c, i) => ({
         ...c,
-        // Fix: Changed display_order to displayOrder to match Category interface
-        displayOrder: i + 1
+        display_order: i + 1
       }));
       await api.categories.saveAll(orderedData);
       await fetchCategories();
@@ -297,7 +279,7 @@ const CategoryManagement: React.FC<{ lang: Language; onRefreshGlobal?: () => voi
                ${isSaving || !isDirty ? 'bg-slate-100 text-slate-400' : 'bg-slate-950 text-white hover:bg-blue-600 ring-4 ring-blue-600/10'}`}
            >
              {isSaving ? <Activity className="animate-spin" size={18} /> : <Save size={18} />}
-             <span>{isSaving ? (lang === 'zh' ? '同步中...' : 'Syncing...') : t('deploy_arch')}</span>
+             <span>{isSaving ? (lang === 'zh' ? '同步中..' : 'Syncing...') : t('deploy_arch')}</span>
            </button>
         </div>
       </div>

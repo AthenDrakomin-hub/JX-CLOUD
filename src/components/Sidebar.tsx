@@ -6,7 +6,7 @@ import {
   Handshake, Box, Image as ImageIcon, PanelLeftClose, PanelLeft
 } from 'lucide-react';
 import { Language, getTranslation } from '../constants/translations';
-import { UserRole } from '../types';
+import { UserRole } from '../../types';
 
 interface SidebarProps {
   currentTab: string;

@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { User, UserRole, AppModule, CRUDPermissions, Partner } from '../types';
+import { User, UserRole, AppModule, CRUDPermissions, Partner } from '../../types';
 import { Language, getTranslation } from '../constants/translations';
 import { 
   UserPlus, X, Save, Trash2, Shield, Lock, Eye, 
@@ -102,7 +102,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({
     setEditing(u);
     const role = u?.role || UserRole.STAFF;
     setSelectedRole(role);
-    setPermissions(u?.modulePermissions || ROLE_PRESETS[role]);
+    setPermissions(u?.module_permissions || ROLE_PRESETS[role]);
     setShowInviteLink(null);
     setIsOpen(true);
   };
@@ -133,7 +133,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({
       name, 
       email,
       role: selectedRole,
-      partnerId: selectedRole === UserRole.PARTNER ? (editing?.partnerId || `p-${Date.now()}`) : undefined,
+      partnerId: selectedRole === UserRole.PARTNER ? (editing?.partner_id || `p-${Date.now()}`) : undefined,
       modulePermissions: permissions
     } as User; 
     

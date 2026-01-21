@@ -17,7 +17,7 @@ cat > DEPLOYMENT_INSTRUCTIONS.md << 'EOF'
 # 手动部署说明
 
 ## 1. 登录Supabase仪表板
-访问: https://app.supabase.com/project/zlbemopcgjohrnyyiwvs
+访问: https://app.supabase.com/project/${SUPABASE_PROJECT_REF}
 
 ## 2. 部署函数
 导航到: Functions → Create Function
@@ -41,9 +41,9 @@ cat > DEPLOYMENT_INSTRUCTIONS.md << 'EOF'
 
 ## 3. 验证部署
 部署后测试以下端点:
-- POST https://zlbemopcgjohrnyyiwvs.supabase.co/functions/v1/api
-- POST https://zlbemopcgjohrnyyiwvs.supabase.co/functions/v1/auth
-- GET https://zlbemopcgjohrnyyiwvs.supabase.co/functions/v1/i18n
+- POST https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/api
+- POST https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/auth
+- GET https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/i18n
 
 ## 4. 配置CORS (如果需要)
 在函数设置中允许以下来源:

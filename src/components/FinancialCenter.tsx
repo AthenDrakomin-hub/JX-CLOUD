@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import FinanceManagement from './FinanceManagement';
 import PaymentManagement from './PaymentManagement';
-import { Order, Expense, Partner, User, UserRole } from '../types';
+import { Order, Expense, Partner, User, UserRole } from '../../types';
 import { Language, getTranslation } from '../constants/translations';
 import { 
   Wallet, CreditCard, Sparkles, 

@@ -15,7 +15,7 @@ if (!connectionString) {
 async function checkOrCreateTranslationsTable() {
   console.log('🚀 连接到数据库...');
   
-  const sql = postgres(connectionString);
+  const sql = postgres(connectionString!);
   
   try {
     // 检查 translations 表是否存在

@@ -9,7 +9,7 @@ import {
 import { Language, getTranslation } from '../constants/translations';
 import { api } from '../services/api';
 import authClient from '../services/frontend/auth-client.frontend';
-import { SystemConfig } from '../types';
+import { SystemConfig } from '../../types';
 
 interface SystemSettingsProps {
   lang: Language;
@@ -121,7 +121,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, onChangeLang, onU
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] ml-2">{lang === 'zh' ? '全局字体族' : 'Global Font Family'}</label>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {['Plus Jakarta Sans', 'Inter', 'Noto Sans SC'].map(f => (
-                  <button key={f} onClick={() => setConfig({...config, fontFamily: f})} className={`py-4 rounded-2xl border-2 font-bold text-[10px] transition-all ${config.fontFamily === f ? 'bg-blue-600 border-blue-600 text-white' : 'bg-slate-50 text-slate-500'}`}>{f}</button>
+                  <button key={f} onClick={() => setConfig({...config, font_family: f})} className={`py-4 rounded-2xl border-2 font-bold text-[10px] transition-all ${config.font_family === f ? 'bg-blue-600 border-blue-600 text-white' : 'bg-slate-50 text-slate-500'}`}>{f}</button>
                 ))}
               </div>
             </div>
@@ -144,7 +144,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, onChangeLang, onU
                         </div>
                      </div>
                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" checked={config.autoPrintOrder} onChange={(e) => setConfig({...config, autoPrintOrder: e.target.checked})} className="sr-only peer" />
+                        <input type="checkbox" checked={config.auto_print_order} onChange={(e) => setConfig({...config, autoPrintOrder: e.target.checked})} className="sr-only peer" />
                         <div className="w-14 h-7 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
                      </label>
                   </div>
@@ -226,7 +226,7 @@ const SystemSettings: React.FC<SystemSettingsProps> = ({ lang, onChangeLang, onU
                               <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400"><Smartphone size={20} /></div>
                               <div>
                                  <p className="text-xs font-bold text-slate-900">{pk.name || '已绑定设备'}</p>
-                                 <p className="text-[8px] text-slate-400 uppercase font-black">{new Date(pk.createdAt).toLocaleDateString()}</p>
+                                 <p className="text-[8px] text-slate-400 uppercase font-black">{new Date(pk.created_at).toLocaleDateString()}</p>
                               </div>
                            </div>
                            <button 

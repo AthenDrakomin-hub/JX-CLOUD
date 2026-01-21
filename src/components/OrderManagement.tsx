@@ -1,6 +1,5 @@
-
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { Order, OrderStatus, User, SystemConfig } from '../types';
+import { Order, OrderStatus, User, SystemConfig } from '../../types';
 import { Language, getTranslation } from '../constants/translations';
 import { 
   Printer, ChefHat, CheckCircle2, Search, Clock, 
@@ -32,8 +31,7 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ orders, onUpdateStatu
   const filteredOrders = useMemo(() => {
     return (orders || []).filter(o => 
       o.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      // Fix: Changed 'roomId' to 'tableId' to match Order interface
-      o.tableId.toLowerCase().includes(searchTerm.toLowerCase())
+      o.room_id.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [orders, searchTerm]);
 
@@ -77,80 +75,271 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ orders, onUpdateStatu
                />
             </div>
          </div>
-         <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
-            {/* Fix: Corrected typo 'setIsMode' to 'setIsKdsMode' */}
-            <button onClick={() => setIsKdsMode(false)} className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${!isKdsMode ? 'bg-white text-slate-950 shadow-md' : 'text-slate-400'}`}>{t('standardMode')}</button>
-            <button onClick={() => setIsKdsMode(true)} className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${isKdsMode ? 'bg-white text-slate-950 shadow-md' : 'text-slate-400'}`}>{t('kdsMode')}</button>
+         
+         <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+               <span className="text-sm font-bold text-slate-600">标准模式</span>
+               <label className="relative inline-flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={isKdsMode}
+                    onChange={(e) => setIsKdsMode(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+               </label>
+               <span className="text-sm font-bold text-slate-600">KDS模式</span>
+            </div>
+            
+            <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 rounded-xl">
+               <Clock size={16} className="text-slate-400" />
+               <span className="text-sm font-bold text-slate-600">
+                  {filteredOrders.length} {t('orders')}
+               </span>
+            </div>
          </div>
       </div>
 
-      <div className={`grid gap-8 no-print ${isKdsMode ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'}`}>
+      {/* 订单列表 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         {filteredOrders.map(o => (
-          <div key={o.id} className="bg-white rounded-[2.5rem] border transition-all duration-500 hover:shadow-2xl cursor-pointer relative overflow-hidden group p-8 border-slate-100" onClick={() => setViewingOrder(o)}>
-            <div className={`absolute top-0 right-0 px-6 py-2 rounded-bl-3xl text-[9px] font-black uppercase tracking-widest text-white shadow-lg z-10 ${getStatusColor(o.status)}`}>
-              {t(`status_${o.status}` as any)}
-            </div>
-            <div className="flex justify-between items-start mb-8">
-              <div>
-                {/* Fix: Changed 'roomId' to 'tableId' to match Order interface */}
-                <h3 className="text-4xl font-black text-slate-950 tracking-tighter leading-none">{o.tableId}</h3>
-                <div className="flex items-center space-x-2 mt-4 text-slate-400">
-                   <Clock size={14} />
-                   <p className="text-[10px] font-bold uppercase tracking-widest">{new Date(o.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</p>
+          <div 
+            key={o.id} 
+            className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer"
+            onClick={() => setViewingOrder(o)}
+          >
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="font-black text-xl text-slate-900 tracking-tight">
+                    订单 #{o.id.slice(-6)}
+                  </h3>
+                  {/* Fix: Changed 'roomId' to 'room_id' to match database structure */}
+                  <p className="text-slate-500 font-bold mt-1">房间 {o.room_id}</p>
+                </div>
+                <div className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${getStatusColor(o.status)}`}>
+                  {t(o.status)}
                 </div>
               </div>
-              <button onClick={(e) => { e.stopPropagation(); handlePrint(o); }} className="w-14 h-14 flex items-center justify-center bg-slate-900 text-white rounded-2xl hover:bg-blue-600 transition-all shadow-xl"><Printer size={24} /></button>
-            </div>
-            <div className="space-y-4 mb-8 bg-slate-50/50 p-6 rounded-3xl border border-slate-50">
-              {o.items.slice(0, 3).map((it, idx) => (
-                <div key={idx} className="flex justify-between items-center text-xs font-bold text-slate-600">
-                  <span className="truncate pr-4">{it.name}</span>
-                  <span className="text-slate-900 font-black">x{it.quantity}</span>
+              
+              <div className="space-y-3 mb-6">
+                {o.items.slice(0, 2).map((item: any, idx: number) => (
+                  <div key={idx} className="flex justify-between items-center">
+                    <span className="font-bold text-slate-700">{item.name}</span>
+                    <span className="text-slate-500">x{item.quantity}</span>
+                  </div>
+                ))}
+                {o.items.length > 2 && (
+                  <div className="text-center text-slate-400 text-sm font-bold">
+                    +{o.items.length - 2} 更多项
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex justify-between items-center pt-4 border-t border-slate-100">
+                <div>
+                  <p className="text-2xl font-serif italic text-slate-900 font-bold">
+                    ₱{o.total_amount.toFixed(2)}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    {new Date(o.created_at).toLocaleTimeString()}
+                  </p>
                 </div>
-              ))}
-            </div>
-            <div className="flex items-center justify-between border-t border-slate-100 pt-6">
-               <span className="text-2xl font-serif italic text-blue-700 leading-none">₱{Math.round(o.totalAmount)}</span>
-               <ChevronRight size={14} className="opacity-40" />
+                <div className="flex gap-2">
+                  {o.status === OrderStatus.PENDING && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onUpdateStatus(o.id, OrderStatus.PREPARING);
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-colors"
+                    >
+                      <ChefHat size={16} />
+                      接受
+                    </button>
+                  )}
+                  {o.status === OrderStatus.PREPARING && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onUpdateStatus(o.id, OrderStatus.COMPLETED);
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition-colors"
+                    >
+                      <CheckCircle2 size={16} />
+                      完成
+                    </button>
+                  )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePrint(o);
+                    }}
+                    className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-colors"
+                  >
+                    <Printer size={16} />
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         ))}
+        
+        {filteredOrders.length === 0 && (
+          <div className="col-span-full text-center py-16">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-4">
+              <Search className="w-8 h-8 text-slate-400" />
+            </div>
+            <h3 className="text-lg font-black text-slate-900 mb-2">暂无订单</h3>
+            <p className="text-slate-500">没有找到匹配的订单记录</p>
+          </div>
+        )}
       </div>
 
+      {/* 订单详情模态框 */}
       {viewingOrder && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-md no-print">
-          <div className="relative w-full max-w-lg bg-white rounded-[3.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 flex flex-col max-h-[90vh]">
-             <div className="p-10 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-                <h3 className="text-2xl font-black text-slate-900 tracking-tighter uppercase">{t('viewAudit')}</h3>
-                <button onClick={() => setViewingOrder(null)} className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white border border-slate-200 text-slate-400 hover:text-slate-950 shadow-sm transition-all"><X size={24} /></button>
-             </div>
-             <div className="p-10 space-y-8 overflow-y-auto no-scrollbar flex-1">
-                <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 flex justify-between items-center shadow-inner">
-                   {/* Fix: Changed 'roomId' to 'tableId' to match Order interface */}
-                   <div><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t('station')}</p><p className="text-5xl font-black text-slate-950 tracking-tighter">{viewingOrder.tableId}</p></div>
-                   <div className="text-right"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t('totalBill')}</p><p className="text-4xl font-serif italic text-blue-700">₱{Math.round(viewingOrder.totalAmount)}</p></div>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+              <h2 className="text-2xl font-black text-slate-900">
+                订单详情
+              </h2>
+              <button
+                onClick={() => setViewingOrder(null)}
+                className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-2 gap-6">
+                {/* Fix: Changed 'roomId' to 'room_id' to match database structure */}
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                    {t('station')}
+                  </p>
+                  <p className="text-5xl font-black text-slate-950 tracking-tighter">
+                    {viewingOrder.room_id}
+                  </p>
                 </div>
-                <div className="space-y-4">
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">{t('orderSummary')}</p>
-                   <div className="bg-white border-2 border-slate-100 rounded-[2.5rem] overflow-hidden">
-                      {viewingOrder.items.map((it, idx) => (
-                        <div key={idx} className="px-8 py-5 border-b border-slate-50 last:border-0 flex justify-between items-center hover:bg-slate-50 transition-all">
-                           <div className="flex-1 pr-4"><p className="font-bold text-slate-900 text-sm leading-tight">{it.name}</p></div>
-                           <span className="font-black text-slate-950">x {it.quantity}</span>
-                        </div>
-                      ))}
-                   </div>
+                
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                    状态
+                  </p>
+                  <div className={`inline-block px-3 py-1 rounded-full text-sm font-black uppercase ${getStatusColor(viewingOrder.status)}`}>
+                    {t(viewingOrder.status)}
+                  </div>
                 </div>
-             </div>
-             <div className="p-10 border-t border-slate-100 bg-slate-50 flex gap-4">
+                
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                    总额
+                  </p>
+                  <p className="text-3xl font-black text-slate-950 tracking-tighter">
+                    ₱{viewingOrder.total_amount.toFixed(2)}
+                  </p>
+                </div>
+                
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                    时间
+                  </p>
+                  <p className="text-lg font-bold text-slate-700">
+                    {new Date(viewingOrder.created_at).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="font-black text-lg text-slate-900 mb-4">订单项</h3>
+                <div className="space-y-3">
+                  {viewingOrder.items.map((item: any, idx: number) => (
+                    <div key={idx} className="flex justify-between items-center p-4 bg-slate-50 rounded-xl">
+                      <div>
+                        <p className="font-bold text-slate-900">{item.name}</p>
+                        <p className="text-sm text-slate-500">单价: ₱{item.price}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-slate-900">x{item.quantity}</p>
+                        <p className="text-sm text-slate-500">小计: ₱{(item.price * item.quantity).toFixed(2)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="flex gap-3 pt-6 border-t border-slate-100">
                 {viewingOrder.status === OrderStatus.PENDING && (
-                  <button onClick={() => { onUpdateStatus(viewingOrder.id, OrderStatus.PREPARING); setViewingOrder(null); }} className="flex-1 py-5 bg-blue-600 text-white rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest shadow-xl active-scale-95 transition-all"><ChefHat size={18} /><span>{t('acceptOrder')}</span></button>
+                  <button
+                    onClick={() => {
+                      onUpdateStatus(viewingOrder.id, OrderStatus.PREPARING);
+                      setViewingOrder(null);
+                    }}
+                    className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-[1.75rem] font-bold transition-colors"
+                  >
+                    <ChefHat className="w-5 h-5" />
+                    接受订单
+                  </button>
                 )}
                 {viewingOrder.status === OrderStatus.PREPARING && (
-                  <button onClick={() => { onUpdateStatus(viewingOrder.id, OrderStatus.COMPLETED); setViewingOrder(null); }} className="flex-1 py-5 bg-emerald-600 text-white rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest shadow-xl active-scale-95 transition-all"><CheckCircle2 size={18} /><span>{t('completeOrder')}</span></button>
+                  <button
+                    onClick={() => {
+                      onUpdateStatus(viewingOrder.id, OrderStatus.COMPLETED);
+                      setViewingOrder(null);
+                    }}
+                    className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[1.75rem] font-bold transition-colors"
+                  >
+                    <CheckCircle2 className="w-5 h-5" />
+                    完成订单
+                  </button>
                 )}
-                <button onClick={() => { if(confirm(t('voidOrder') + '?')) { onUpdateStatus(viewingOrder.id, OrderStatus.CANCELLED); setViewingOrder(null); } }} className="px-8 py-5 text-red-500 hover:bg-red-50 rounded-[1.5rem] transition-all font-black text-[10px] uppercase tracking-widest border border-red-100">{t('delete')}</button>
-             </div>
+                <button
+                  onClick={() => {
+                    handlePrint(viewingOrder);
+                    setViewingOrder(null);
+                  }}
+                  className="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-[1.75rem] font-bold transition-colors"
+                >
+                  <Printer className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 打印样式（隐藏元素） */}
+      {printing && (
+        <div className="print-container hidden">
+          <div className="p-8 max-w-xs mx-auto">
+            <div className="text-center mb-6">
+              <h1 className="text-2xl font-black text-slate-900 mb-2">江西云厨</h1>
+              <p className="text-sm text-slate-500">订单 #{printing.id.slice(-6)}</p>
+              <p className="text-lg font-bold mt-2">房间 {printing.room_id}</p>
+            </div>
+            
+            <div className="border-t border-slate-200 pt-4 mb-6">
+              {printing.items.map((item: any, idx: number) => (
+                <div key={idx} className="flex justify-between items-center py-2">
+                  <span className="font-bold">{item.name}</span>
+                  <span className="text-slate-500">x{item.quantity}</span>
+                </div>
+              ))}
+            </div>
+            
+            <div className="border-t border-slate-200 pt-4">
+              <div className="flex justify-between items-center text-lg font-black">
+                <span>总计:</span>
+                <span>₱{printing.total_amount.toFixed(2)}</span>
+              </div>
+            </div>
+            
+            <div className="text-center mt-8">
+              <QRCodeSVG value={printing.id} size={120} />
+              <p className="text-xs text-slate-500 mt-2">{new Date().toLocaleString()}</p>
+            </div>
           </div>
         </div>
       )}

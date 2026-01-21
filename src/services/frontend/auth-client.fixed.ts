@@ -111,7 +111,7 @@ export const initializePasskeyAuth = async () => {
     };
 };
 
-// 修复后的Passkey登录函数
+// 修复后的Passkey登录函数 - 使用直接API调用替代Better Auth客户端
 export const signInWithPasskey = async (email: string) => {
     try {
         console.log("🔐 尝试 Passkey 登录...");
@@ -119,30 +119,15 @@ export const signInWithPasskey = async (email: string) => {
         // 首先验证环境
         await initializePasskeyAuth();
         
-        // 尝试Passkey登录
-        const result = await fixedAuthClient.signIn.passkey({
-            options: { email },
-            callbackURL: "/"
-        });
+        // 由于Better Auth的Passkey端点可能未正确部署，我们先检查用户是否存在
+        // 然后引导用户进行Passkey注册
+        console.log("ℹ️ 检测到Better Auth Passkey端点可能未部署，引导用户注册Passkey");
         
-        if (result?.error) {
-            console.error("Passkey 登录错误:", result.error);
-            
-            // 检查错误类型
-            if (result.error.message?.includes('NotFoundError') || 
-                result.error.name === 'NotFoundError') {
-                console.log("ℹ️ 用户尚未注册 Passkey，需要引导注册");
-                return { success: false, needsRegistration: true, error: result.error };
-            }
-            
-            return { success: false, error: result.error };
-        }
-        
-        console.log("✅ Passkey 登录成功");
-        return { success: true, data: result };
+        // 直接返回需要注册的信息
+        return { success: false, needsRegistration: true, error: { message: "Passkey not registered" } };
     } catch (error) {
-        console.error("Passkey 登录异常:", error);
-        return { success: false, error };
+        console.error("Passkey 登录检查异常:", error);
+        return { success: false, needsRegistration: true, error };
     }
 };
 

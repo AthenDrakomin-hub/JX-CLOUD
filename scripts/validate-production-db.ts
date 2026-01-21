@@ -15,7 +15,7 @@ if (!connectionString) {
 async function validateCoreTables() {
   console.log('🚀 连接到生产数据库进行表结构验证...');
   
-  const sql = postgres(connectionString);
+  const sql = postgres(connectionString!);
   
   try {
     // 1. 验证核心表存在性

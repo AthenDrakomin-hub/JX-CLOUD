@@ -29,13 +29,13 @@ export const notificationService = {
     
     // Fix: Added support for Filipino (fil) speech synthesis and improved logic for language selection
     let text = '';
-    // Fix: Changed 'roomId' to 'tableId' to match Order interface
+    // Fix: Changed 'roomId' to 'room_id' to match Order interface
     if (lang === 'zh') {
-      text = `江西云厨提醒，您有一条来自 ${order.tableId} 的新订单，请及时接单。`;
+      text = `江西云厨提醒，您有一条来自 ${order.room_id} 的新订单，请及时接单。`;
     } else if (lang === 'fil') {
-      text = `May bagong order galing sa Room ${order.tableId}. Kabuuang halaga ay ${Math.round(order.totalAmount)} pesos.`;
+      text = `May bagong order galing sa Room ${order.room_id}. Kabuuang halaga ay ${Math.round(order.total_amount)} pesos.`;
     } else {
-      text = `New order from Room ${order.tableId}. Total amount is ${Math.round(order.totalAmount)} pesos.`;
+      text = `New order from Room ${order.room_id}. Total amount is ${Math.round(order.total_amount)} pesos.`;
     }
 
     window.speechSynthesis.cancel();

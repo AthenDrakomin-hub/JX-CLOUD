@@ -18,7 +18,7 @@ if not exist "supabase\functions\api\auth\[...betterAuth].ts" (
 
 REM 1. 链接 Supabase 项目
 echo 🔗 链接到 Supabase 项目...
-npx supabase link --project-ref zlbemopcgjohrnyyiwvs
+npx supabase link --project-ref ${SUPABASE_PROJECT_REF}
 
 if %errorlevel% neq 0 (
     echo ❌ 项目链接失败
@@ -57,16 +57,16 @@ if %errorlevel% neq 0 (
 REM 5. 验证部署
 echo ✅ 验证部署状态...
 echo 测试认证会话端点:
-curl -I https://zlbemopcgjohrnyyiwvs.supabase.co/functions/v1/api/auth/session
+curl -I https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/api/auth/session
 
 echo.
 echo 测试健康检查端点:
-curl -I https://zlbemopcgjohrnyyiwvs.supabase.co/functions/v1/api/health
+curl -I https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/api/health
 
 echo.
 echo 🎉 部署完成！
 echo 现在可以访问您的应用，认证功能应该正常工作了。
 echo 记得更新前端的 VITE_BETTER_AUTH_URL 为:
-echo https://zlbemopcgjohrnyyiwvs.supabase.co/functions/v1
+echo https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1
 
 pause

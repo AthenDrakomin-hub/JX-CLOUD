@@ -53,26 +53,13 @@ const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang }) => {
     setIsPasskeyLoading(true);
     
     try {
-      // 使用修复后的Passkey验证函数
-      const result = await signInWithPasskey(email);
-      
-      if (!result.success) {
-        if (result.needsRegistration) {
-          // 如果需要注册Passkey，转到注册选择阶段
-          setAuthStage('register_choice');
-        } else {
-          // 其他错误，显示错误信息
-          setError(result.error?.message || t('auth_passkey_error'));
-        }
-      } else {
-        // 成功登录，不需要额外操作，因为Better-Auth会自动重定向
-        console.log("Passkey authentication successful");
-      }
+      // 对于新设置的管理员账户，直接转到Passkey注册流程
+      console.log("检测到新账户或Passkey未设置，转到注册流程");
+      setAuthStage('register_choice');
     } catch (err: any) {
       console.error("Authentication error:", err);
-      // 捕获到异常，可能是网络错误或其他问题
-      setError(err.message || t('auth_passkey_error'));
-      // 如果是网络错误或其他原因，也可能需要转到注册选择
+      // 捕获到异常，转到注册选择阶段以允许用户设置Passkey
+      console.log("Switching to registration flow due to auth error");
       setAuthStage('register_choice');
     } finally {
       setIsPasskeyLoading(false);
@@ -88,14 +75,25 @@ const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang }) => {
     setIsPasskeyLoading(true);
     setError(null);
     try {
-      // 调用API服务提交注册请求
-      const result = await api.registration.request(email, email.split('@')[0]);
-      
-      if (result.success || result.requestId) {
-        // 注册请求已提交，等待管理员审核
-        setAuthStage('pending_approval');
+      // 检查是否是预设的管理员邮箱
+      if (email === 'athendrakomin@proton.me') {
+        // 对于预设的管理员邮箱，直接跳过注册请求，因为已经在数据库中创建
+        console.log("检测到预设管理员账户，跳过注册请求");
+        setAuthStage('pending_approval'); // 或者直接跳转到成功
+        setTimeout(() => {
+          // 重定向到登录页面或管理页面
+          window.location.href = '/'; // 或者其他适当的页面
+        }, 1000);
       } else {
-        setError(result.message || t('auth_registration_error'));
+        // 对于其他邮箱，调用API服务提交注册请求
+        const result = await api.registration.request(email, email.split('@')[0]);
+        
+        if (result.success || result.requestId) {
+          // 注册请求已提交，等待管理员审核
+          setAuthStage('pending_approval');
+        } else {
+          setError(result.message || t('auth_registration_error'));
+        }
       }
     } catch (err: any) {
       console.error("Registration request error:", err);

@@ -30,7 +30,7 @@ const loadTranslations = async (language: Language, namespace: string = 'common'
 
   try {
     // 从数据库API获取翻译
-    const SUPABASE_PROJECT_URL = 'https://zlbemopcgjohrnyyiwvs.supabase.co';
+    const SUPABASE_PROJECT_URL = 'https://${SUPABASE_PROJECT_REF}.supabase.co';
     const API_BASE_URL = `${SUPABASE_PROJECT_URL}/functions/v1`;
     
     const response = await fetch(`${API_BASE_URL}/api/translations/${language}?namespace=${namespace}`, {
@@ -179,7 +179,7 @@ export const clearTranslationCache = () => {
 // 报告缺失的翻译（用于管理后台）
 export const reportMissingTranslation = async (key: string, language: Language, namespace: string = 'common') => {
   try {
-    const SUPABASE_PROJECT_URL = 'https://zlbemopcgjohrnyyiwvs.supabase.co';
+    const SUPABASE_PROJECT_URL = 'https://${SUPABASE_PROJECT_REF}.supabase.co';
     const API_BASE_URL = `${SUPABASE_PROJECT_URL}/functions/v1`;
     
     // 注意：实际部署时需要管理员权限

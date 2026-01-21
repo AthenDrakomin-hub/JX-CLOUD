@@ -15,7 +15,7 @@ if (!connectionString) {
 async function testAuthEndpoints() {
   console.log('🚀 测试认证相关 API 端点...');
   
-  const sql = postgres(connectionString);
+  const sql = postgres(connectionString!);
   
   try {
     // 1. 测试用户表访问

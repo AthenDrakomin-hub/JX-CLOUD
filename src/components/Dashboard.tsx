@@ -3,7 +3,7 @@ import React, { useMemo } from 'react';
 import { 
   ResponsiveContainer, CartesianGrid, XAxis, YAxis, Tooltip, AreaChart, Area
 } from 'recharts';
-import { Order, HotelRoom, Expense, OrderStatus, Dish, Ingredient, User, UserRole, Partner } from '../types';
+import { Order, HotelRoom, Expense, OrderStatus, Dish, Ingredient, User, UserRole, Partner } from '../../types';
 import { Language, getTranslation } from '../constants/translations';
 import { 
   TrendingUp, ShoppingBag, DollarSign, ShieldCheck, 
@@ -44,15 +44,15 @@ const Dashboard: React.FC<DashboardProps> = ({ orders = [], rooms = [], expenses
   const t = (key: string) => getTranslation(lang, key);
 
   const isPartner = currentUser.role === UserRole.PARTNER;
-  const currentPartner = partners.find(p => p.id === currentUser.partnerId);
+  const currentPartner = partners.find(p => p.id === currentUser.partner_id);
 
   // 核心隔离：过滤订单
   const filteredOrders = useMemo(() => {
     if (isPartner) {
-      return orders.filter(o => o.items.some(it => it.partnerId === currentUser.partnerId));
+      return orders.filter(o => o.items.some(it => it.partner_id === currentUser.partner_id));
     }
     return orders;
-  }, [orders, isPartner, currentUser.partnerId]);
+  }, [orders, isPartner, currentUser.partner_id]);
 
   const stats = useMemo(() => {
     const completed = filteredOrders.filter(o => o.status === OrderStatus.COMPLETED);
@@ -61,18 +61,18 @@ const Dashboard: React.FC<DashboardProps> = ({ orders = [], rooms = [], expenses
     let totalRevenue = 0;
     if (isPartner) {
       totalRevenue = Math.round(completed.reduce((acc, o) => {
-        const partnerItems = o.items.filter(it => it.partnerId === currentUser.partnerId);
+        const partnerItems = o.items.filter(it => it.partner_id === currentUser.partner_id);
         return acc + partnerItems.reduce((s, it) => s + (it.price * it.quantity), 0);
       }, 0));
     } else {
-      totalRevenue = Math.round(completed.reduce((acc, o) => acc + (Number(o.totalAmount) || 0), 0));
+      totalRevenue = Math.round(completed.reduce((acc, o) => acc + (Number(o.total_amount) || 0), 0));
     }
 
     const pendingCount = filteredOrders.filter(o => o.status === OrderStatus.PENDING || o.status === OrderStatus.PREPARING).length;
     
     // 结算余额：联营收入 * (1 - 抽佣率)
     const netProfit = isPartner 
-      ? Math.round(totalRevenue * (1 - (currentPartner?.commissionRate || 0.15))) 
+      ? Math.round(totalRevenue * (1 - (currentPartner?.commission_rate || 0.15))) 
       : (totalRevenue - expenses.reduce((a,b)=>a+b.amount,0));
 
     return { 
@@ -82,7 +82,7 @@ const Dashboard: React.FC<DashboardProps> = ({ orders = [], rooms = [], expenses
       orderCount: completed.length,
       avgTicket: completed.length > 0 ? Math.round(totalRevenue / completed.length) : 0 
     };
-  }, [filteredOrders, isPartner, currentUser.partnerId, currentPartner, expenses]);
+  }, [filteredOrders, isPartner, currentUser.partner_id, currentPartner, expenses]);
 
   return (
     <div className="space-y-8 pb-20 animate-fade-up">
@@ -102,7 +102,7 @@ const Dashboard: React.FC<DashboardProps> = ({ orders = [], rooms = [], expenses
            </div>
            {isPartner && (
              <div className="px-4 py-2 bg-blue-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg">
-                ID: {currentUser.partnerId}
+                ID: {currentUser.partner_id}
              </div>
            )}
         </div>

@@ -17,7 +17,7 @@ if (!connectionString) {
 async function createMissingAuthTables() {
   console.log('🚀 开始创建缺失的 Better-Auth 表...');
   
-  const sql = postgres(connectionString);
+  const sql = postgres(connectionString!);
   
   try {
     // 读取 SQL 文件

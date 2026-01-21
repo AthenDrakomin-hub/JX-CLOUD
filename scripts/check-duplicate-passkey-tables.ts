@@ -15,7 +15,7 @@ if (!connectionString) {
 async function checkAndCleanDuplicateTables() {
   console.log('🔍 检查重复的通行密钥相关表...');
   
-  const sql = postgres(connectionString);
+  const sql = postgres(connectionString!);
   
   try {
     // 查找所有与通行密钥相关的表

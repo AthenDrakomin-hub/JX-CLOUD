@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { PaymentMethodConfig } from '../types';
+import { PaymentMethodConfig } from '../../types';
 import { translations, Language } from '../constants/translations';
 import { api } from '../services/api';
 import { 
@@ -44,7 +44,7 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ lang }) => {
   const handleEdit = (p: PaymentMethodConfig) => {
     setEditingPayment(p);
     setSelectedIcon(p.iconType || 'credit-card');
-    setIsActive(p.isActive);
+    setIsActive(p.is_active);
     setIsFieldLocked(true); 
     setIsModalOpen(true);
   };
@@ -176,7 +176,7 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ lang }) => {
                       {p.isActive ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
                       <span>{p.isActive ? 'Active' : 'Offline'}</span>
                   </button>
-                  <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-lg uppercase tracking-widest">Rate: {p.exchangeRate}</span>
+                  <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-lg uppercase tracking-widest">Rate: {p.exchange_rate}</span>
                </div>
             </div>
 
@@ -187,7 +187,7 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ lang }) => {
                        <h4 className="text-2xl font-bold text-slate-900 tracking-tight">{p.name}</h4>
                        <span className="text-sm font-black text-slate-300">/ {p.currency}</span>
                     </div>
-                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">{p.paymentType}</p>
+                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">{p.payment_type}</p>
                   </div>
                   
                   <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 min-h-[80px]">
@@ -205,7 +205,7 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ lang }) => {
                         <span>配置详情</span>
                      </button>
                      <div className="px-5 flex flex-col items-end border-l border-slate-100">
-                        <span className="text-2xl font-serif italic text-slate-900 leading-none">{p.currencySymbol}</span>
+                        <span className="text-2xl font-serif italic text-slate-900 leading-none">{p.currency_symbol}</span>
                         <span className="text-[8px] font-black text-slate-300 uppercase tracking-tighter">SYMBOL</span>
                      </div>
                   </div>
@@ -219,7 +219,7 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ lang }) => {
 
                   <div className="flex items-center gap-6">
                      <div className="shrink-0 p-3 bg-white rounded-2xl border-2 border-slate-100 shadow-sm relative group/qr">
-                        {p.qrUrl || p.walletAddress ? (
+                        {p.qr_url || p.wallet_address ? (
                           <QRCodeSVG value={p.qrUrl || p.walletAddress || ''} size={80} level="M" />
                         ) : (
                           <div className="w-20 h-20 bg-slate-100 rounded-lg flex items-center justify-center text-slate-200">
@@ -275,12 +275,12 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ lang }) => {
                    <div className="space-y-8">
                       <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-3"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">网关 ID (Key)</label><input name="id" defaultValue={editingPayment.id} required readOnly={!!editingPayment.id} placeholder="ID Code" className="w-full px-8 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-mono text-xs uppercase" /></div>
-                        <div className="space-y-3"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">显示权重 (Sort)</label><input name="sortOrder" type="number" defaultValue={editingPayment.sortOrder} required className="w-full px-8 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-bold text-sm" /></div>
+                        <div className="space-y-3"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">显示权重 (Sort)</label><input name="sortOrder" type="number" defaultValue={editingPayment.sort_order} required className="w-full px-8 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-bold text-sm" /></div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-3"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">通道名称</label><input name="name" defaultValue={editingPayment.name} required className="w-full px-8 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-bold text-sm" /></div>
-                        <div className="space-y-3"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">英文名称</label><input name="nameEn" defaultValue={editingPayment.nameEn} required className="w-full px-8 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-bold text-sm" /></div>
+                        <div className="space-y-3"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">英文名称</label><input name="nameEn" defaultValue={editingPayment.name_en} required className="w-full px-8 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-bold text-sm" /></div>
                       </div>
 
                       <div className="grid grid-cols-3 gap-6">

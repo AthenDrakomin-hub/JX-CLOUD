@@ -1,0 +1,10 @@
+{
+  "projects": {
+    "jx-cloud": {
+      "ref": "${SUPABASE_PROJECT_REF}",
+      "org_id": "",
+      "db_id": ""
+    }
+  },
+  "version": "1.0"
+}

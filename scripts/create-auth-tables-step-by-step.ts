@@ -15,7 +15,7 @@ if (!connectionString) {
 async function createAuthTablesStepByStep() {
   console.log('🚀 逐步创建 Better-Auth 表...');
   
-  const sql = postgres(connectionString);
+  const sql = postgres(connectionString!);
   
   try {
     // 1. 创建 account 表

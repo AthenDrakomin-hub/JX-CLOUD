@@ -6,11 +6,9 @@ export default defineConfig({
   plugins: [react()],
   server: {
     // 开发环境SPA支持
-    historyApiFallback: true,
   },
   preview: {
     // 预览环境SPA支持
-    historyApiFallback: true,
   },
   build: {
     outDir: 'dist',

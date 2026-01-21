@@ -1,6 +1,6 @@
 import React from 'react';
 import { ChevronDown } from 'lucide-react';
-import { Language } from '../types';
+import { Language } from '../../types';
 
 interface LanguageSelectorProps {
   currentLanguage: Language;
