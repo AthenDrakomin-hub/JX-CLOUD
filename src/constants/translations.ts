@@ -173,7 +173,7 @@ export const translations = {
 // Static fallback for immediate translations
 export const getStaticTranslation = (lang: Language, key: string, params?: Record<string, string | number>): string => {
   const langSet = translations[lang] || translations.zh;
-  let text = (langSet as any)[key] || (translations.zh as any)[key] || key;
+  let text = (langSet as Record<string, string>)[key] || (translations.zh as Record<string, string>)[key] || key;
   
   if (params) {
     Object.entries(params).forEach(([k, v]) => {

@@ -12,11 +12,9 @@ import CommandCenter from './components/CommandCenter';
 import NotificationCenter from './components/NotificationCenter';
 import ImageManagement from './components/ImageManagement';
 import AuthPage from './components/AuthPage';
-import AdminSetup from './components/AdminSetup';
-import StaffActivation from './components/StaffActivation';
 import GuestOrder from './components/GuestOrder';
 import Toast, { ToastType } from './components/Toast';
-import { useSession, safeSignOut } from './services/frontend/auth-client.frontend';
+import { safeSignOut } from './services/frontend/auth-client.frontend';
 import { api } from './services/api';
 import { supabase, isDemoMode } from './services/supabaseClient';
 import { notificationService } from './services/frontend/notification.frontend';
@@ -188,13 +186,7 @@ const App: React.FC = () => {
     );
   }
 
-  if (routeState.isAdminSetup) {
-    return <AdminSetup lang={lang} onSuccess={() => window.location.href = '/auth'} />;
-  }
 
-  if (routeState.activationToken) {
-    return <StaffActivation token={routeState.activationToken} lang={lang} onSuccess={() => window.location.href = '/auth'} />;
-  }
 
   if (isAuthLoading && !localStorage.getItem('jx_root_authority_bypass')) {
     return (

@@ -83,7 +83,7 @@ export const t = async (key: string, params?: Record<string, any>, namespace: st
   
   try {
     const translations = await loadTranslations(language, namespace);
-    let translation = translations[key] || key; // 如果没找到，返回原始键
+    let translation = (translations as Record<string, string>)[key] || key; // 如果没找到，返回原始键
     
     // 替换参数
     if (params) {
@@ -107,7 +107,7 @@ export const tSync = (key: string, params?: Record<string, any>, namespace: stri
   
   if (cached) {
     try {
-      const translations = JSON.parse(cached);
+      const translations = JSON.parse(cached) as Record<string, string>;
       let translation = translations[key] || key;
       
       // 替换参数
@@ -127,7 +127,7 @@ export const tSync = (key: string, params?: Record<string, any>, namespace: stri
   // ✅ 直接使用顶部静态导入的翻译数据，完全移除 require
   try {
     const translations = staticTranslations[language] || staticTranslations.zh;
-    let translation = translations[key] || key;
+    let translation = (translations as Record<string, string>)[key] || key;
     
     if (params) {
       Object.entries(params).forEach(([paramKey, paramValue]) => {
