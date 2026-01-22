@@ -34,8 +34,12 @@ export const signInWithMagicLink = async ({ email }: { email: string }) => {
 
 // Passkey 登录
 export const signInWithPasskey = async ({ email }: { email: string }) => {
-  const { data, error } = await supabase.auth.signInWithPasskey({
-    email
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "passkey",
+    options: {
+      email,
+      redirectTo: window.location.origin
+    }
   });
   
   if (error) {

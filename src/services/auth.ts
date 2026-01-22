@@ -69,8 +69,12 @@ export const signInWithPasskey = async ({
       };
     }
 
-    const { data, error } = await supabase.auth.signInWithPasskey({
-      email
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "passkey",
+      options: {
+        email,
+        redirectTo: window.location.origin
+      }
     });
 
     if (error) {
