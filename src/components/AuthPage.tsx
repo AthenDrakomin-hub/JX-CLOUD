@@ -53,34 +53,23 @@ const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang }) => {
     setIsPasskeyLoading(true);
     
     try {
-      // 首先尝试 Passkey 登录
-      const passkeyResult = await authService.signInWithPasskey({ email });
+      // 使用 Magic Link 登录（仅使用 Supabase 原生支持的方式）
+      const magicLinkResult = await authService.signInWithMagicLink({ 
+        email, 
+        redirectTo: window.location.origin 
+      });
       
-      if (passkeyResult.success) {
-        // Passkey 登录成功
-        console.log("Passkey authentication successful");
-        // 重定向到主应用
-        window.location.href = '/';
+      if (magicLinkResult.success) {
+        // 显示成功消息，提示用户查收邮件
+        setError(null);
+        alert(magicLinkResult.message || t('auth_magic_link_sent', { email }));
       } else {
-        // Passkey 失败，尝试 Magic Link 登录
-        const magicLinkResult = await authService.signInWithMagicLink({ 
-          email, 
-          redirectTo: window.location.origin 
-        });
-        
-        if (magicLinkResult.success) {
-          // 显示成功消息，提示用户查收邮件
-          setError(null);
-          alert(t('auth_magic_link_sent', { email }));
-        } else {
-          // 两种方式都失败，显示错误
-          setError(magicLinkResult.message || t('auth_passkey_error'));
-        }
+        setError(magicLinkResult.message || t('auth_magic_link_error'));
       }
     } catch (err: any) {
       console.error("Authentication error:", err);
       // 捕获到异常，可能是网络错误或其他问题
-      setError(err.message || t('auth_passkey_error'));
+      setError(err.message || t('auth_magic_link_error'));
       // 如果是网络错误或其他原因，也可能需要转到注册选择
       setAuthStage('register_choice');
     } finally {
@@ -254,12 +243,12 @@ const renderPendingApproval = () => (
                       {isPasskeyLoading ? (
                         <Loader2 size={32} className="animate-spin text-blue-500" />
                       ) : (
-                        <Fingerprint size={40} className="text-blue-500 group-hover:scale-110 transition-transform" />
+                        <Mail size={40} className="text-blue-500 group-hover:scale-110 transition-transform" />
                       )}
                     </div>
                     <div className="text-left">
-                      <p className="text-2xl font-black text-white leading-none mb-1">{t('auth_passkey_entry')}</p>
-                      <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{t('auth_passkey_desc')}</p>
+                      <p className="text-2xl font-black text-white leading-none mb-1">{t('auth_magic_link_entry') || '登录邮箱验证'}</p>
+                      <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{t('auth_magic_link_desc') || '通过邮箱接收登录链接'}</p>
                     </div>
                   </div>
                   <ArrowRight size={24} className="text-slate-700 group-hover:text-white transition-colors group-hover:translate-x-1" />
