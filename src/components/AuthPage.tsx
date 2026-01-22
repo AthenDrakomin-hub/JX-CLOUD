@@ -88,7 +88,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang }) => {
       // 使用 Supabase 注册用户（通过 Magic Link）
       const result = await authService.signUpWithEmail({ 
         email, 
-        redirectTo: window.location.origin 
+        redirectTo: `${window.location.origin}/auth/callback`
       });
       
       if (result.success) {
