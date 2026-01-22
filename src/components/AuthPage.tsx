@@ -20,7 +20,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang }) => {
   const [email, setEmail] = useState('');
   const [isPasskeyLoading, setIsPasskeyLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [authStage, setAuthStage] = useState<'input' | 'register_choice' | 'handoff_qr' | 'pending_approval'>('input');
+  const [authStage, setAuthStage] = useState<'input' | 'register_choice' | 'handoff_qr' | 'pending_approval' | 'pending_magic_link'>('input');
   const [isMobile, setIsMobile] = useState(false);
   const [webAuthnSupported, setWebAuthnSupported] = useState(true);
   const [sysTime, setSysTime] = useState(new Date().toLocaleTimeString());
@@ -56,13 +56,12 @@ const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang }) => {
       // 使用 Magic Link 登录（仅使用 Supabase 原生支持的方式）
       const magicLinkResult = await authService.signInWithMagicLink({ 
         email, 
-        redirectTo: window.location.origin 
+        redirectTo: `${window.location.origin}/auth/callback` 
       });
       
       if (magicLinkResult.success) {
-        // 显示成功消息，提示用户查收邮件
-        setError(null);
-        alert(magicLinkResult.message || t('auth_magic_link_sent', { email }));
+        // 切换到等待邮件确认状态
+        setAuthStage('pending_magic_link');
       } else {
         setError(magicLinkResult.message || t('auth_magic_link_error'));
       }
@@ -324,6 +323,39 @@ const renderPendingApproval = () => (
                   {lang === 'zh' 
                     ? '审核通过后，您将收到邮件通知'
                     : 'You will receive email notification once approved'
+                  }
+                </div>
+              </div>
+              <div className="space-y-4 pt-6">
+                <button 
+                  onClick={() => setAuthStage('input')} 
+                  className="w-full py-7 bg-slate-700 hover:bg-slate-600 text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.4em] transition-all active:scale-95"
+                >
+                  {lang === 'zh' ? '返回登录' : 'BACK TO LOGIN'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {authStage === 'pending_magic_link' && (
+            <div className="space-y-10 text-center animate-in zoom-in-95 duration-500">
+              <div className="w-24 h-24 bg-blue-600/10 rounded-[3rem] flex items-center justify-center mx-auto border border-blue-600/20 shadow-xl shadow-blue-500/5">
+                <Mail size={48} className="text-blue-500 animate-pulse" />
+              </div>
+              <div className="space-y-3">
+                <h3 className="text-3xl font-black text-white uppercase italic tracking-tighter">
+                  {lang === 'zh' ? '请查收邮件' : 'Check Your Email'}
+                </h3>
+                <p className="text-sm text-slate-500 px-8 leading-relaxed font-medium">
+                  {lang === 'zh' 
+                    ? `登录链接已发送至 ${email}，请查收邮件并点击链接完成登录。`
+                    : `Login link sent to ${email}, please check your email and click the link to complete login.`
+                  }
+                </p>
+                <div className="text-xs text-slate-400 mt-4">
+                  {lang === 'zh' 
+                    ? '邮件可能需要几分钟到达，请耐心等待'
+                    : 'Email may take a few minutes to arrive, please wait patiently'
                   }
                 </div>
               </div>
