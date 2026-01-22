@@ -46,37 +46,34 @@ const App: React.FC = () => {
   }, []);
 
   const session = useMemo(() => {
-    // 保留你的开发模式 bypass 功能
     const bypass = localStorage.getItem('jx_root_authority_bypass');
     if (bypass === 'true') {
-      return {
+      const adminSession = {
         user: {
           id: 'root-athen-god-mode',
           name: 'Athen Drakomin (Master)',
-          email: 'athendrakomin@proton.me',
+          email: 'athendrakomin@proton.me', // ⚠️ 必须和你在Supabase策略中用的邮箱完全一致
           role: UserRole.ADMIN,
           isRoot: true
         },
         session: { expiresAt: new Date(Date.now() + 86400000).toISOString() }
       };
-    }
-    
-    // 生产环境使用 Supabase 返回的真实会话
-    if (remoteSession) {
-      return {
-        user: {
-          id: remoteSession.user.id,
-          name: remoteSession.user.user_metadata?.name || remoteSession.user.email,
-          email: remoteSession.user.email,
-          role: (remoteSession.user.user_metadata?.role as UserRole) || UserRole.STAFF,
-          isRoot: remoteSession.user.email === 'athendrakomin@proton.me'
-        },
-        session: { expiresAt: remoteSession.expires_at }
-      };
-    }
 
-    return null;
-  }, [remoteSession]);
+      // 🛠️ 关键：同时将管理员信息同步到 Supabase 客户端
+      if (supabase) {
+        supabase.auth.setSession({
+          access_token: 'dev-bypass-token',
+          refresh_token: 'dev-bypass-refresh',
+          expires_in: 86400,
+          expires_at: Date.now() + 86400000,
+          token_type: 'bearer'
+        }).catch(console.error);
+      }
+
+      return adminSession;
+    }
+    return remoteSession;
+  }, [remoteSession, supabase]);
 
   // 🔑 新增：监听 Supabase 认证状态，这是自动登录的核心
   // URL参数处理：bypass=1 开启绕过，bypass=0 关闭绕过
