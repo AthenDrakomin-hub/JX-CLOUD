@@ -1,0 +1,207 @@
+# 翻译键完整列表
+
+## 从代码库中提取的翻译键
+
+以下是从项目源代码中提取的所有需要翻译的键：
+
+### 通用翻译键 (common namespace):
+- jxCloud - 江西云厨终端系统 / JX CLOUD Terminal
+- dashboard - 经营大盘 / Dashboard
+- rooms - 桌位点餐 / Floor Plan
+- orders - 调度矩阵 / Order Matrix
+- menu - 资产档案 / Asset Files
+- inventory - 物料库存 / Inventory
+- finance - 财务审计 / Audit
+- financial_hub - 财务与结算 / Financials
+- users - 组织授权 / Auth Center
+- settings - 系统控制台 / Control Console
+- images - 视觉资产 / Visuals
+- supply_chain - 供应链资产 / Supply Chain
+- signOut - 安全退出 / Logout
+- enMode - English Mode
+- zhMode - 中文模式 / Chinese Mode
+- filMode - Tagalog Mode
+- enterprise_auth - 企业级授权 v2 / Enterprise Auth v2
+- collapse - 折叠导航 / Collapse
+- expand - 展开导航 / Expand
+- save - 保存 / Save
+- cancel - 取消 / Cancel
+- delete - 删除 / Delete
+- edit - 编辑 / Edit
+- add - 添加 / Add
+- search - 搜索 / Search
+- confirm - 确认 / Confirm
+- refresh - 刷新 / Refresh
+- success - 成功 / Success
+- error - 错误 / Error
+- new_order_toast - 新订单: {room} / New Order: {room}
+- sync_active - 已同步 / Synced
+- sync_offline - 离线 / Offline
+- welcome_back - 欢迎回来，{user} / Welcome back, {user}
+- noData - 暂无数据 / No Data
+- taxonomy_mgmt - 分类管理 / Taxonomy Management
+- add_l1_cat - 添加一级分类 / Add L1 Category
+- deploy_arch - 部署架构 / Deploy Architecture
+
+### 认证相关翻译键 (auth namespace):
+- auth_title - 身份准入 / Access Identity
+- auth_subtitle - 企业云端资产访问网关 / Enterprise Asset Access Gateway
+- auth_passkey_entry - 生物识别登录 / Biometric Entry
+- auth_passkey_desc - 使用已绑定的指纹或面部识别 / Touch ID / Face ID recognized
+- auth_root_access - 根权限访问 (Master) / Advanced Authority (Root)
+- email_placeholder - 输入授权邮箱地址 / Authorized Email Address
+- auth_verify - 验证权限协议... / Verifying protocol...
+- rls_status - 数据库 RLS 审计已激活 / Database RLS Audit Active
+- auth_failed - 认证失败：该身份未获得授权 / Authorization denied: Unknown identity
+- auth_passkey_error - Passkey 验证中断或设备未绑定 / Passkey failed or device not bound
+- auth_not_found - 🔑 未找到你的生物识别凭证。点击下方按钮进行初始化。 / 🔑 No credentials found. Click the button below to initialize.
+- auth_not_allowed - 🔄 跨设备认证已激活！请使用手机扫描屏幕上的二维码进行确认。 / 🔄 Cross-device auth active! Please use your mobile to scan the QR code.
+- auth_register_init - 初始化生物凭证 / Initialize Biometrics
+- auth_register_desc - 注册新的硬件令牌 (Hardware Token) / Register New Hardware Token
+- digital_driven - 数字驱动， / Digital Driven,
+- cloud_kitchen - 云端厨卫。 / Cloud Kitchen.
+- auth_description - 江西云厨：集成本地 RLS 审计、多维财务模型与物理硬件链路。 / JX Cloud: Integrated RLS audit, financial models and physical hardware links.
+- master_inject_btn - 立即注入系统级 Session / Inject System Session
+- intel_node - 企业级智能节点 / Enterprise Intel Node
+- registration_pending_title - 等待管理员审核 / Awaiting Admin Approval
+- registration_pending_message - 您的注册申请已提交，管理员将在24小时内完成审核 / Your registration request has been submitted. Admin will review within 24 hours
+- registration_email_sent - 审核结果将发送至 {email} / Approval result will be sent to {email}
+- back_to_login - 返回登录 / Back to Login
+- auth_network_error - 网络连接错误，请稍后重试 / Network connection error, please try again later
+- auth_registration_error - 注册申请提交失败 / Failed to submit registration request
+
+### 业务功能翻译键:
+- secureCloudActive - 安全云链路已激活 / Secure Cloud Active
+- revenue - 营收统计 / Revenue Statistics
+- profit_estimate - 利润预估 / Profit Estimate
+- pending_orders - 待处理订单 / Pending Orders
+- avgOrderValue - 平均订单价值 / Average Order Value
+- trend_analysis - 趋势分析 / Trend Analysis
+- node_security - 节点安全 / Node Security
+- infraSecurity - 基础设施安全 / Infrastructure Security
+- sslTlsLabel - SSL/TLS 加密 / SSL/TLS Encryption
+- sslTlsDesc - 端到端传输加密 / End-to-end transport encryption
+- jwtAuthLabel - JWT 身份验证 / JWT Authentication
+- jwtAuthDesc - 基于令牌的身份验证 / Token-based authentication
+- corsPolicyLabel - CORS 策略 / CORS Policy
+- corsPolicyDesc - 跨域资源共享策略 / Cross-origin resource sharing policy
+- envVarsLabel - 环境变量 / Environment Variables
+- envVarsDesc - 安全环境配置 / Secure environment configuration
+- backendStorage - 后端存储 / Backend Storage
+- dbProdLabel - 生产数据库 / Production Database
+- dbProdDesc - PostgreSQL 15 生产环境 / PostgreSQL 15 Production Environment
+- redisCacheLabel - Redis 缓存 / Redis Cache
+- redisCacheDesc - 内存缓存加速 / Memory cache acceleration
+- dbBackupLabel - 数据库备份 / Database Backup
+- dbBackupDesc - 自动备份策略 / Automatic backup strategy
+- businessIntegration - 业务集成 / Business Integration
+- paymentSdkLabel - 支付 SDK / Payment SDK
+- paymentSdkDesc - 多种支付方式集成 / Multiple payment methods integration
+- cloudPrintLabel - 云打印 / Cloud Print
+- cloudPrintDesc - 无线打印机集成 / Wireless printer integration
+- preProductionAudit - 预生产审计 / Pre-production Audit
+- productionReadiness - 生产就绪状态 / Production Readiness
+- deploymentDesc - 部署状态描述 / Deployment Status Description
+- completed - 已完成 / Completed
+- pending - 待处理 / Pending
+- responseLatency - 响应延迟 / Response Latency
+- globalCdn - 全球 CDN / Global CDN
+- dataIntegrity - 数据完整性 / Data Integrity
+- ddosMitigation - DDoS 防护 / DDoS Protection
+- statusActive - 状态: 活跃 / Status: Active
+- errorOccurred - 发生错误 / Error Occurred
+- errorDescription - 错误详情 / Error Details
+- retryAction - 重试 / Retry
+- reportIssue - 报告问题 / Report Issue
+- financial_hub - 财务中心 / Financial Hub
+- revenue_flow - 营收流水 / Revenue Flow
+- cashierShift - 收银班次 / Cashier Shift
+- daily_revenue - 日营收 / Daily Revenue
+- cashIncome - 现金收入 / Cash Income
+- digitalIncome - 数字收入 / Digital Income
+- transactionLog - 交易日志 / Transaction Log
+- shiftReport - 班次报告 / Shift Report
+- endShift - 结束班次 / End Shift
+- financial_console - 财务控制台 / Financial Console
+- permanently_delete - 永久删除 / Permanently Delete
+- cloud_gateway - 云网关 / Cloud Gateway
+- visual_center - 视觉中心 / Visual Center
+- vault_info - 云存储库: {name}, 文件数量: {count} / Cloud Vault: {name}, File Count: {count}
+- syncing - 同步中... / Syncing...
+- upload_new - 上传新文件 / Upload New File
+- copied - 已复制 / Copied
+- copy_url - 复制链接 / Copy URL
+- preview - 预览 / Preview
+- dimension_info - 尺寸信息 / Dimension Info
+- copy_link - 复制链接 / Copy Link
+- all_assets - 所有资产 / All Assets
+- dish_archives - 菜品档案 / Dish Archives
+- new_asset - 新建资产 / New Asset
+- edit_asset - 编辑资产 / Edit Asset
+- new_asset_registry - 新建资产注册 / New Asset Registry
+- overwrite_record - 覆盖记录 / Overwrite Record
+- deploy_asset - 部署资产 / Deploy Asset
+- inventory - 库存 / Inventory
+- stationManagement - 工位管理 / Station Management
+- generateAllQR - 生成所有二维码 / Generate All QR
+- zone - 区域 / Zone
+- ready - 就绪 / Ready
+- manualOrder - 手动下单 / Manual Order
+- orderSummary - 订单摘要 / Order Summary
+- clear - 清空 / Clear
+- emptyCart - 购物车为空 / Empty Cart
+- totalBill - 总账单 / Total Bill
+- placeOrder - 下单 / Place Order
+- station - 工位 / Station
+- guestQRCode - 客户二维码 / Guest QR Code
+- displayQRDesc - 显示二维码供客户扫描 / Display QR for guest scanning
+- staffOperatedDesc - 员工操作下单 / Staff operated ordering
+- printTicket - 打印票据 / Print Ticket
+- rbac_title - 权限管理 / Permission Management
+- accounts - 账户 / Accounts
+- partners - 合作伙伴 / Partners
+- issue_account - 发放账户 / Issue Account
+- root_authority - 根权限 / Root Authority
+- bind_biometric - 绑定生物识别 / Bind Biometric
+- identity_secured - 身份已保障 / Identity Secured
+- activate_token_generated - 激活令牌已生成 / Activation Token Generated
+- activation_desc - 激活描述 / Activation Description
+- local_name - 本地姓名 / Local Name
+- module_permissions - 模块权限 / Module Permissions
+- enable_e - 启用(E) / Enable(E)
+- create_c - 创建(C) / Create(C)
+- update_u - 更新(U) / Update(U)
+- delete_d - 删除(D) / Delete(D)
+- currency - 货币 / Currency
+- save_permissions - 保存权限 / Save Permissions
+- issue_certificate - 颁发证书 / Issue Certificate
+- supply_chain_mgmt - 供应链管理 / Supply Chain Management
+- client_preview - 客户端预览 / Client Preview
+- sys_console - 系统控制台 / System Console
+- visual_tab - 视觉 / Visual
+- infra_tab - 基础设施 / Infrastructure
+- apply_settings - 应用设置 / Apply Settings
+- visual_theme - 视觉主题 / Visual Theme
+- themeLight - 浅色 / Light
+- themeDark - 深色 / Dark
+- font_typography - 字体排版 / Font Typography
+- hardware_link - 硬件连接 / Hardware Link
+- autoPrint - 自动打印 / Auto Print
+- standardMode - 标准模式 / Standard Mode
+- kdsMode - KDS模式 / KDS Mode
+- status_pending - 待处理 / Pending
+- status_preparing - 准备中 / Preparing
+- status_completed - 已完成 / Completed
+- status_cancelled - 已取消 / Cancelled
+- viewAudit - 查看审计 / View Audit
+- acceptOrder - 接受订单 / Accept Order
+- completeOrder - 完成订单 / Complete Order
+- voidOrder - 作废订单 / Void Order
+
+## 使用说明
+
+1. 这些翻译键已包含在 insert_translations.sql 文件中
+2. 每个键都有对应的中文、英文和菲律宾语翻译
+3. 翻译数据按照 namespace 分组：common, auth 等
+4. 所有动态参数（如 {user}, {name}, {count}, {room}）都已保留
+5. 可以直接在数据库中执行 SQL 文件来填充翻译表
