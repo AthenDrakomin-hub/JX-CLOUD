@@ -99,7 +99,7 @@ export const t = async (key: string, params?: Record<string, any>, namespace: st
   }
 };
 
-// 同步版本（用于不需要await的场景）
+// ✅ 同步版本（用于不需要await的场景）- 已完全移除 require
 export const tSync = (key: string, params?: Record<string, any>, namespace: string = 'common'): string => {
   const language = (localStorage.getItem('language') || 'zh') as Language;
   const cacheKey = `${CACHE_PREFIX}:${language}:${namespace}`;
@@ -107,7 +107,7 @@ export const tSync = (key: string, params?: Record<string, any>, namespace: stri
   
   if (cached) {
     try {
-      const translations = JSON.parse(cached) as Record<string, string>;
+      const translations = JSON.parse(cached);
       let translation = translations[key] || key;
       
       // 替换参数
@@ -120,14 +120,13 @@ export const tSync = (key: string, params?: Record<string, any>, namespace: stri
       return translation;
     } catch (e) {
       console.error('Error parsing cached translations', e);
-      return key;
     }
   }
   
-  // ✅ 直接使用顶部静态导入的翻译数据，完全移除 require
+  // 🎯 这里直接使用顶部静态导入的翻译数据，完全移除了 require
   try {
     const translations = staticTranslations[language] || staticTranslations.zh;
-    let translation = (translations as Record<string, string>)[key] || key;
+    let translation = translations[key] || key;
     
     if (params) {
       Object.entries(params).forEach(([paramKey, paramValue]) => {
