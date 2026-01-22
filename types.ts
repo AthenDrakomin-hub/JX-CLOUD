@@ -14,7 +14,7 @@ export enum RoomStatus {
 
 export interface HotelRoom {
   id: string;
-  status: RoomStatus | string;
+  status: RoomStatus | string; // 与src/types/index.ts保持一致
   updatedAt?: string;
 }
 
@@ -34,9 +34,9 @@ export interface CRUDPermissions {
 export interface User {
   id: string;
   username?: string;
-  email: string; 
-  name: string;
-  role: UserRole;
+  email: string; // 与src/types/index.ts保持一致
+  name: string; // 与src/types/index.ts保持一致
+  role: UserRole; // 与src/types/index.ts保持一致
   partnerId?: string; // 对应 partner_id
   modulePermissions?: Partial<Record<AppModule, CRUDPermissions>>;
   authType?: string;
@@ -66,21 +66,22 @@ export enum OrderStatus {
 }
 
 /**
- * 契约对齐：Order 对象的 tableId 必须映射物理 table_id
+ * 契约对齐：Order 对象的 roomId 必须映射物理 room_id
  */
 export interface Order {
   id: string;
-  tableId: string; // 映射 table_id
+  roomId: string; // 映射 room_id
+  tableId: string; // 映射 table_id，与src/types/index.ts保持一致
   customerId?: string;
   items: OrderItem[];
-  totalAmount: number; // 应用层统一使用 number
+  totalAmount: number;
   status: OrderStatus;
   paymentMethod: string;
   paymentProof?: string; 
   cashReceived?: number;
   cashChange?: number;
-  isPrinted?: boolean;
-  partnerId?: string; // 物理隔离键
+  isPrinted?: boolean; // 添加isPrinted属性
+  partnerId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -91,15 +92,15 @@ export interface Order {
 export interface Dish {
   id: string;
   name: string;
-  nameEn: string; // 映射 name_en
+  nameEn: string; // 与src/types/index.ts保持一致
   description?: string;
   tags?: string[];
-  price: number; // 应用层统一使用 number
-  categoryId: string; // 映射 category_id
+  price: number;
+  categoryId: string; // 与src/types/index.ts保持一致
   stock: number;
-  imageUrl: string; // 映射 image_url
-  isAvailable: boolean; // 映射 is_available
-  isRecommended?: boolean; // 映射 is_recommended
+  imageUrl: string; // 与src/types/index.ts保持一致
+  isAvailable: boolean;
+  isRecommended?: boolean;
   partnerId?: string;
   createdAt?: string;
 }
@@ -107,13 +108,13 @@ export interface Dish {
 export interface Partner {
   id: string;
   name: string;
-  ownerName: string; // 映射 owner_name
+  ownerName: string; // 与src/types/index.ts保持一致
   contact?: string;
   email?: string;
-  status: 'active' | 'suspended';
-  commissionRate: number; // 映射 commission_rate
+  status: 'active' | 'suspended'; // 与src/types/index.ts保持一致
+  commissionRate: number;
   balance: number;
-  authorizedCategories: string[]; // 映射 authorized_categories
+  authorizedCategories: string[]; // 与src/types/index.ts保持一致
   totalSales?: number;
   joinedAt?: string;
 }
@@ -133,16 +134,16 @@ export interface Category {
 export interface PaymentMethodConfig {
   id: string;
   name: string;
-  nameEn: string;
-  currency: string;
-  currencySymbol: string;
+  nameEn: string; // 与src/types/index.ts保持一致
+  currency: string; // 与src/types/index.ts保持一致
+  currencySymbol: string; // 与src/types/index.ts保持一致
   exchangeRate: number;
   isActive: boolean;
-  paymentType: string;
+  paymentType: string; // 与src/types/index.ts保持一致
   sortOrder: number;
-  description: string;
-  descriptionEn: string;
-  iconType: string;
+  description: string; // 与src/types/index.ts保持一致
+  descriptionEn: string; // 与src/types/index.ts保持一致
+  iconType: string; // 与src/types/index.ts保持一致
   walletAddress?: string;
   qrUrl?: string;
 }
@@ -171,8 +172,28 @@ export interface Ingredient {
 
 export interface Expense {
   id: string;
-  description: string;
+  description: string; // 与src/types/index.ts保持一致
   amount: number;
-  category: string;
+  category: string; // 与src/types/index.ts保持一致
   date: string;
+}
+
+
+
+export interface MenuCategory {
+  id: string;
+  name: string;
+  nameEn?: string;
+  code?: string;
+  level: number; // 默认值1
+  displayOrder: number; // 默认值0
+  isActive: boolean; // 默认值true
+  parentId?: string | null;
+  createdAt?: string;
+}
+
+export interface Room {
+  id: string;
+  status?: string; // 默认值'ready'
+  updatedAt?: string;
 }

@@ -1,0 +1,13 @@
+schema.ts(82,51): error TS2345: Argument of type 'string' is not assignable to parameter of type 'string[] | SQL<unknown>'.
+schema.ts(107,31): error TS2551: Property 'defaultFunc' does not exist on type 'IsPrimaryKey<NotNull<PgTextBuilderInitial<"id", [string, ...string[]]>>>'. Did you mean '$defaultFn'?
+schema.ts(197,18): error TS2339: Property 'defaultRandom' does not exist on type 'PgTextBuilderInitial<"id", [string, ...string[]]>'.
+src/services/api.ts(69,44): error TS2741: Property 'roomId' is missing in type '{ id: any; tableId: any; customerId: any; items: any; totalAmount: number; status: OrderStatus; paymentMethod: any; paymentProof: any; cashReceived: number; cashChange: number; isPrinted: any; partnerId: any; createdAt: any; updatedAt: any; }' but required in type 'Order'.
+src/services/passkey-fix.ts(6,21): error TS2307: Cannot find module './services/api' or its corresponding type declarations.
+src/services/passkey-fix.ts(7,24): error TS2307: Cannot find module './services/frontend/auth-client.frontend' or its corresponding type declarations.
+src/services/registration-fix.ts(66,61): error TS2554: Expected 1 arguments, but got 2.
+src/solutions/quick-registration-fix.ts(62,54): error TS18046: 'error' is of type 'unknown'.
+src/utils/environment-check.ts(68,51): error TS18046: 'error' is of type 'unknown'.
+src/utils/environment-check.ts(97,35): error TS18046: 'error' is of type 'unknown'.
+src/utils/registration-diagnostic.ts(232,36): error TS18046: 'e' is of type 'unknown'.
+src/utils/registration-diagnostic.ts(240,37): error TS18046: 'e' is of type 'unknown'.
+src/utils/registration-diagnostic.ts(248,35): error TS18046: 'e' is of type 'unknown'.

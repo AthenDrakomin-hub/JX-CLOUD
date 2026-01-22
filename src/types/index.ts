@@ -71,6 +71,7 @@ export enum OrderStatus {
 export interface Order {
   id: string;
   tableId: string; // 映射 table_id
+  roomId: string; // 映射 room_id
   customerId?: string;
   items: OrderItem[];
   totalAmount: number; // 应用层统一使用 number

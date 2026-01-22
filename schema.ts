@@ -73,27 +73,28 @@ export const passkey = pgTable('passkeys', {
 export const users = pgTable('users', {
   id: text('id').primaryKey(),
   username: text('username').notNull().unique(),
-  email: text('email').notNull().unique(),
-  name: text('name').notNull(),
-  role: text('role').notNull().default('staff'), 
+  email: text('email'), // nullable in actual DB
+  name: text('name'),
+  role: text('role').default('staff'), 
   partnerId: text('partner_id'), 
-  modulePermissions: jsonb('module_permissions'), 
-  authType: text('auth_type').default('credentials'),
-  emailVerified: boolean('email_verified').default(false),
-  isActive: boolean('is_active').default(true),
-  isPasskeyBound: boolean('is_passkey_bound').default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  allowedIps: text('allowed_ips').array().default('{}'),
+  authType: text('auth_type').default('id-only'),
+  isActive: boolean('is_active').default(true),
+  displayName: text('display_name'),
+  lastLogin: timestamp('last_login'),
+  modulePermissions: jsonb('module_permissions'), 
+  emailVerified: boolean('email_verified').default(false),
+  isPasskeyBound: boolean('is_passkey_bound').default(false),
 });
 
 export const menuDishes = pgTable('menu_dishes', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   nameEn: text('name_en'), 
-  description: text('description'),
-  tags: text('tags').array(),
   price: numeric('price').notNull(), 
-  categoryId: text('category_id'), 
+  category: text('category'), // Maps to category (not category_id)
   stock: integer('stock').default(99),
   imageUrl: text('image_url'),
   isAvailable: boolean('is_available').default(true),
@@ -103,20 +104,18 @@ export const menuDishes = pgTable('menu_dishes', {
 });
 
 export const orders = pgTable('orders', {
-  id: text('id').primaryKey(),
-  tableId: text('table_id').notNull(),
-  customerId: text('customer_id'),
+  id: text('id').primaryKey().defaultFunc(() => `'ORD-' || floor(random()*1000000)`),
+  roomId: text('room_id').notNull(),
   items: jsonb('items').default('[]'),
   totalAmount: numeric('total_amount').default('0'),
   status: text('status').default('pending'),
-  paymentMethod: text('payment_method'),
+  paymentMethod: text('payment_method').notNull(),
   paymentProof: text('payment_proof'),
   cashReceived: numeric('cash_received'),
   cashChange: numeric('cash_change'),
-  isPrinted: boolean('is_printed').default(false),
-  partnerId: text('partner_id'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
+  partnerId: text('partner_id'),
 });
 
 export const paymentMethods = pgTable('payment_methods', {
@@ -129,10 +128,80 @@ export const paymentMethods = pgTable('payment_methods', {
   isActive: boolean('is_active').default(true),
   paymentType: text('payment_type').default('digital'),
   sortOrder: integer('sort_order').default(0),
-  description: text('description'),
-  descriptionEn: text('description_en'),
-  iconType: text('icon_type'),
   walletAddress: text('wallet_address'),
   qrUrl: text('qr_url'),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const systemConfig = pgTable('system_config', {
+  id: text('id').primaryKey().default('global'),
+  hotelName: text('hotel_name').default('江西云厨酒店'),
+  version: text('version').default('8.8.0'),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+export const menuCategories = pgTable('menu_categories', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  nameEn: text('name_en'),
+  code: text('code'),
+  level: integer('level').default(1),
+  displayOrder: integer('display_order').default(0),
+  isActive: boolean('is_active').default(true),
+  parentId: text('parent_id'),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const rooms = pgTable('rooms', {
+  id: text('id').primaryKey(),
+  status: text('status').default('ready'),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+export const ingredients = pgTable('ingredients', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  unit: text('unit'),
+  stock: numeric('stock').default('0'),
+  minStock: numeric('min_stock').default('10'),
+  category: text('category'),
+  lastRestocked: timestamp('last_restocked').defaultNow(),
+  partnerId: text('partner_id'),
+});
+
+export const partners = pgTable('partners', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  ownerName: text('owner_name'),
+  status: text('status').default('active'),
+  commissionRate: numeric('commission_rate').default('0.15'),
+  balance: numeric('balance').default('0'),
+  contact: text('contact'),
+  email: text('email'),
+  authorizedCategories: text('authorized_categories').array(),
+  totalSales: numeric('total_sales').default('0'),
+  joinedAt: timestamp('joined_at').defaultNow(),
+});
+
+export const expenses = pgTable('expenses', {
+  id: text('id').primaryKey(),
+  amount: numeric('amount').notNull().default('0'),
+  category: text('category'),
+  description: text('description'),
+  date: timestamp('date').defaultNow(),
+  createdAt: timestamp('created_at').defaultNow(),
+  partnerId: text('partner_id'),
+});
+
+export const translations = pgTable('translations', {
+  id: text('id').defaultRandom(),
+  key: text('key').notNull(),
+  language: text('language').notNull(),
+  value: text('value').notNull(),
+  namespace: text('namespace').default('common'),
+  context: jsonb('context'),
+  version: integer('version').default(1),
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });

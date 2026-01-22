@@ -68,7 +68,8 @@ const mapDishFromDB = (d: any): Dish => ({
 
 const mapOrderFromDB = (o: any): Order => ({
   id: o.id, 
-  tableId: o.room_id,  // 数据库实际字段名是 room_id
+  tableId: o.table_id,  // 修正：使用正确的table_id字段
+  roomId: o.room_id,    // 添加roomId字段
   customerId: o.customer_id,
   items: Array.isArray(o.items) ? o.items : JSON.parse(o.items || '[]'),
   totalAmount: parseNumeric(o.total_amount), 

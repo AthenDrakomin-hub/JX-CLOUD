@@ -38,6 +38,7 @@ const mapDishFromDB = (d: any): Dish => ({
 const mapOrderFromDB = (o: any): Order => ({
   id: o.id, 
   tableId: o.table_id, 
+  roomId: o.room_id, // 添加roomId
   customerId: o.customer_id,
   items: Array.isArray(o.items) ? o.items : JSON.parse(o.items || '[]'),
   totalAmount: parseNumeric(o.total_amount), 
@@ -127,9 +128,19 @@ export const api = {
     create: async (data: Order) => {
       if (isDemoMode || !supabase) return;
       await supabase.from('orders').insert({
-        id: data.id, table_id: data.tableId, items: data.items,
-        total_amount: data.totalAmount.toString(), status: data.status,
-        payment_method: data.paymentMethod, partner_id: data.partnerId
+        id: data.id, 
+        table_id: data.tableId, 
+        room_id: data.roomId, // 添加roomId
+        customer_id: data.customerId, // 添加customerId
+        items: data.items,
+        total_amount: data.totalAmount.toString(), 
+        status: data.status,
+        payment_method: data.paymentMethod, 
+        payment_proof: data.paymentProof,
+        cash_received: data.cashReceived?.toString(),
+        cash_change: data.cashChange?.toString(),
+        is_printed: data.isPrinted,
+        partner_id: data.partnerId
       });
     },
     updateStatus: async (id: string, status: OrderStatus) => {

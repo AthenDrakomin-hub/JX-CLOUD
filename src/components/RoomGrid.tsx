@@ -80,6 +80,7 @@ const RoomGrid: React.FC<RoomGridProps> = ({ rooms, dishes, categories = [], onU
       const order: Order = {
         id: `manual-${Date.now()}`,
         tableId: activeRoom.id,
+        roomId: activeRoom.id, // 添加roomId
         items: cartItems.map(item => ({
           dishId: item.dish!.id,
           name: item.dish!.name,

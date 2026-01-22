@@ -114,8 +114,9 @@ export const handler = async (req: Request): Promise<Response> => {
     // Passkey 登录端点 - 代理到BetterAuth
     if (path.includes('/sign-in/passkey')) {
       try {
-        // 构建BetterAuth端点URL
-        const betterAuthEndpoint = `${supabaseUrl}/functions/v1/better-auth${path}`;
+        // 构建BetterAuth端点URL - 移除/auth前缀，只保留基础认证路径
+        const basePath = path.replace('/auth', '');
+        const betterAuthEndpoint = `${supabaseUrl}/functions/v1/better-auth${basePath}`;
         
         // 复制原始请求的headers
         const headers = new Headers(req.headers);
@@ -157,7 +158,9 @@ export const handler = async (req: Request): Promise<Response> => {
     // Passkey 相关的所有端点都代理到BetterAuth
     if (path.includes('/passkey') || path.includes('/webauthn')) {
       try {
-        const betterAuthEndpoint = `${supabaseUrl}/functions/v1/better-auth${path}`;
+        // 构建BetterAuth端点URL - 移除/auth前缀，只保留基础认证路径
+        const basePath = path.replace('/auth', '');
+        const betterAuthEndpoint = `${supabaseUrl}/functions/v1/better-auth${basePath}`;
         
         const headers = new Headers(req.headers);
         let body;

@@ -216,7 +216,7 @@ export const handler = async (req: Request): Promise<Response> => {
 
     // 4. 用户管理API
     if (path === '/api/users' && method === 'GET') {
-      const { data, error } = await supabase.from('users').select('*').order('name');
+      const { data, error } = await supabase.from('users').select('*').order('id'); // 使用id排序，因为name可能为空
       if (error) throw error;
       
       return new Response(JSON.stringify(data || []), {
@@ -247,7 +247,76 @@ export const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // 6. 翻译API
+    // 6. 类别管理API
+    if (path === '/api/categories' && method === 'GET') {
+      const { data, error } = await supabase.from('menu_categories').select('*').order('display_order');
+      if (error) throw error;
+      
+      return new Response(JSON.stringify(data || []), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // 7. 配料管理API
+    if (path === '/api/ingredients' && method === 'GET') {
+      const { data, error } = await supabase.from('ingredients').select('*').order('name');
+      if (error) throw error;
+      
+      return new Response(JSON.stringify(data || []), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // 8. 合作伙伴管理API
+    if (path === '/api/partners' && method === 'GET') {
+      const { data, error } = await supabase.from('partners').select('*').order('name');
+      if (error) throw error;
+      
+      return new Response(JSON.stringify(data || []), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // 9. 支出管理API
+    if (path === '/api/expenses' && method === 'GET') {
+      const { data, error } = await supabase.from('expenses').select('*').order('date', { ascending: false });
+      if (error) throw error;
+      
+      return new Response(JSON.stringify(data || []), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // 10. 系统配置API
+    if (path === '/api/config' && method === 'GET') {
+      const { data, error } = await supabase.from('system_config').select('*').single();
+      if (error) {
+        // 如果没有配置，返回默认值
+        if (error.code === 'PGRST116') {
+          return new Response(JSON.stringify({
+            id: 'global',
+            hotelName: '江西云厨酒店',
+            version: '8.8.0',
+            updatedAt: new Date().toISOString()
+          }), {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        throw error;
+      }
+      
+      return new Response(JSON.stringify(data || {}), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // 11. 翻译API
     if (path.startsWith('/api/translations') && method === 'GET') {
       // 这个请求应该被转发到专门的翻译服务
       // 实际上，我们会把翻译API放在单独的文件中 (i18n.ts)
@@ -256,6 +325,78 @@ export const handler = async (req: Request): Promise<Response> => {
         message: "Translation API moved to dedicated service",
         service: 'jx-cloud-api-edge'
       }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // 12. 菜品管理API - POST
+    if (path === '/api/dishes' && method === 'POST') {
+      const body = await req.json();
+      const { data, error } = await supabase.from('menu_dishes').insert(body).select();
+      if (error) throw error;
+      
+      return new Response(JSON.stringify(data || []), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // 13. 订单管理API - POST
+    if (path === '/api/orders' && method === 'POST') {
+      const body = await req.json();
+      const { data, error } = await supabase.from('orders').insert(body).select();
+      if (error) throw error;
+      
+      return new Response(JSON.stringify(data || []), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // 14. 用户管理API - POST
+    if (path === '/api/users' && method === 'POST') {
+      const body = await req.json();
+      const { data, error } = await supabase.from('users').insert(body).select();
+      if (error) throw error;
+      
+      return new Response(JSON.stringify(data || []), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // 15. 配料管理API - POST
+    if (path === '/api/ingredients' && method === 'POST') {
+      const body = await req.json();
+      const { data, error } = await supabase.from('ingredients').insert(body).select();
+      if (error) throw error;
+      
+      return new Response(JSON.stringify(data || []), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // 16. 合作伙伴管理API - POST
+    if (path === '/api/partners' && method === 'POST') {
+      const body = await req.json();
+      const { data, error } = await supabase.from('partners').insert(body).select();
+      if (error) throw error;
+      
+      return new Response(JSON.stringify(data || []), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // 17. 支出管理API - POST
+    if (path === '/api/expenses' && method === 'POST') {
+      const body = await req.json();
+      const { data, error } = await supabase.from('expenses').insert(body).select();
+      if (error) throw error;
+      
+      return new Response(JSON.stringify(data || []), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
