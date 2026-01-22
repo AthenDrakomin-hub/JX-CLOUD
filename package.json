@@ -18,6 +18,7 @@
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.45.1",
     "lucide-react": "^0.475.0",
+    "node-fetch": "^3.3.2",
     "pg": "^8.17.1",
     "postgres": "^3.4.8",
     "postgres-js": "^0.1.0",
