@@ -106,6 +106,23 @@ const App: React.FC = () => {
 
     // 初始化：获取当前已有的会话
     const initializeAuth = async () => {
+      // 🛠️ 当处于 bypass 模式时，手动模拟 Supabase 会话
+      const bypass = localStorage.getItem('jx_root_authority_bypass');
+      if (bypass === 'true' && supabase) {
+        // 手动设置一个模拟的会话，让 Supabase API 调用不会返回 401
+        try {
+          await supabase.auth.setSession({
+            access_token: 'bypass-dev-token',
+            refresh_token: 'bypass-dev-refresh',
+            expires_in: 3600,
+            expires_at: Math.floor((Date.now() + 86400000) / 1000) // Convert to seconds
+          });
+          console.log("🔧 已为 bypass 模式设置模拟会话");
+        } catch (error) {
+          console.warn("⚠️ 无法设置 bypass 会话，继续使用现有会话", error);
+        }
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       setRemoteSession(session);
       setIsAuthLoading(false);
