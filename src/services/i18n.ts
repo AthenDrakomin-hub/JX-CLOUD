@@ -1,5 +1,7 @@
 // src/services/i18n.ts
 import { Language } from '../constants/translations.js';
+// ✅ 提前静态导入翻译文件，这是浏览器环境唯一正确的同步加载方式
+import { translations as staticTranslations } from '../constants/translations.js';
 
 // 本地缓存配置
 const CACHE_PREFIX = 'jx_i18n_cache';
@@ -122,11 +124,10 @@ export const tSync = (key: string, params?: Record<string, any>, namespace: stri
     }
   }
   
-  // 如果缓存不可用，回退到静态翻译
+  // ✅ 直接使用顶部静态导入的翻译数据，完全移除 require
   try {
-    const staticTranslationsModule = require('../constants/translations.js');
-    const staticTranslations = staticTranslationsModule.translations[language] || staticTranslationsModule.translations.zh;
-    let translation = staticTranslations[key] || key;
+    const translations = staticTranslations[language] || staticTranslations.zh;
+    let translation = translations[key] || key;
     
     if (params) {
       Object.entries(params).forEach(([paramKey, paramValue]) => {
@@ -182,12 +183,17 @@ export const reportMissingTranslation = async (key: string, language: Language, 
     const SUPABASE_PROJECT_URL = 'https://zlbemopcgjohrnyyiwvs.supabase.co';
     const API_BASE_URL = `${SUPABASE_PROJECT_URL}/functions/v1`;
     
+    // ✅ 替换为 Supabase 的认证 token
+    const supabaseModule = await import('../services/supabaseClient.js');
+    const session = await supabaseModule.supabase.auth.getSession();
+    const accessToken = session.data.session?.access_token;
+    
     // 注意：实际部署时需要管理员权限
     await fetch(`${API_BASE_URL}/api/translations/admin`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('better-auth-session')}`, // 需要有效的管理员token
+        'Authorization': `Bearer ${accessToken}`, // 使用 Supabase token
       },
       body: JSON.stringify({
         translations: [{ key, value: key }], // 默认值为键本身
