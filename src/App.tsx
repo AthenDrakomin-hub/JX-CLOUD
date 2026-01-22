@@ -16,7 +16,7 @@ import GuestOrder from './components/GuestOrder';
 import Toast, { ToastType } from './components/Toast';
 import { safeSignOut } from './services/frontend/auth-client.frontend';
 import { api } from './services/api';
-import { supabase, isDemoMode } from './services/supabaseClient';
+import { supabase, isDemoMode, applyDevBypass } from './services/supabaseClient';
 import { notificationService } from './services/frontend/notification.frontend';
 import { 
   HotelRoom, Order, Dish, OrderStatus, 
@@ -25,6 +25,11 @@ import {
 import { getTranslation } from './constants/translations';
 import { Bell, Command, Loader2, ShieldCheck, Wifi, WifiOff, AlertTriangle, X, Lock } from 'lucide-react';
 import ErrorBoundary from './components/ErrorBoundary';
+
+// 应用开发旁路功能
+if (typeof window !== 'undefined') {
+  applyDevBypass();
+}
 
 const App: React.FC = () => {
   const [remoteSession, setRemoteSession] = useState<any>(null);

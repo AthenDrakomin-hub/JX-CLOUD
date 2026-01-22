@@ -33,6 +33,45 @@ export const supabase = isDemoMode
       }
     });
 
+/**
+ * applyDevBypass
+ * - 仅在开发环境调用（你可以用 process.env.NODE_ENV === 'development' 做保护）
+ * - 从 localStorage 读取短期 access token 并设置到 supabase session
+ */
+export async function applyDevBypass() {
+  try {
+    // 避免在生产启用（双重保险）
+    if (process.env.NODE_ENV === 'production') {
+      console.warn('Dev bypass disabled in production.');
+      return;
+    }
+    
+    const isBypass = localStorage.getItem('jx_root_authority_bypass') === 'true';
+    if (!isBypass) return;
+    
+    const token = localStorage.getItem('jx_dev_access_token');
+    if (!token) {
+      console.warn('Dev bypass enabled but no jx_dev_access_token found in localStorage.');
+      return;
+    }
+    
+    // 如果你的版本支持 setSession（supabase-js v2），调用它注入 access token
+    const { error } = await supabase.auth.setSession({
+      access_token: token,
+      refresh_token: '', // 可留空；短期 token 到期后会失效
+    });
+    
+    if (error) {
+      console.error('Failed to set dev session on supabase:', error);
+      return;
+    }
+    
+    console.info('Dev bypass applied: dev access token set on supabase session.');
+  } catch (err) {
+    console.error('applyDevBypass error', err);
+  }
+}
+
 export const ADMIN_CREDENTIALS = { email: 'athendrakomin@proton.me' };
 export const STAFF_CREDENTIALS = { id: 'staff_user' };
 
