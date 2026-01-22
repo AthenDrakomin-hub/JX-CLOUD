@@ -19,7 +19,9 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const { pathname, method } = new URL(req.url || '', `https://${req.headers.host || 'localhost'}`);
+    const url = new URL(req.url || '/', `https://${req.headers.host || 'localhost'}`);
+    const pathname = url.pathname;
+    const method = req.method; // 从 req 对象获取方法，而不是 URL 对象
     
     // CORS头部
     const corsHeaders = {

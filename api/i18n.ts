@@ -19,7 +19,9 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const { pathname, method } = new URL(req.url || '', `https://${req.headers.host || 'localhost'}`);
+    const url = new URL(req.url || '/', `https://${req.headers.host || 'localhost'}`);
+    const pathname = url.pathname;
+    const method = req.method; // 从 req 对象获取方法，而不是 URL 对象
     
     // CORS配置
     const corsHeaders = {
@@ -33,7 +35,7 @@ export default async function handler(req: any, res: any) {
     if (pathname.startsWith('/api/translations/') && method === 'GET') {
       const pathParts = pathname.split('/');
       const lang = pathParts[3]; // /api/translations/zh -> zh
-      const namespace = req.query.namespace || 'common';
+      const namespace = req.query?.namespace || 'common';
       
       if (!lang) {
         return res.status(400).json({ 
@@ -53,10 +55,12 @@ export default async function handler(req: any, res: any) {
         if (error) throw error;
 
         // 转换为键值对格式
-        const translations = data.reduce((acc: Record<string, string>, item: any) => {
-          acc[item.key] = item.value;
-          return acc;
-        }, {});
+        const translations: Record<string, string> = {};
+        if (data) {
+          for (const item of data) {
+            translations[item.key] = item.value;
+          }
+        }
 
         res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=600'); // 5分钟缓存
         
@@ -78,8 +82,8 @@ export default async function handler(req: any, res: any) {
     if (pathname.match(/\/api\/translations\/[^\/]+\/incremental/) && method === 'GET') {
       const pathParts = pathname.split('/');
       const lang = pathParts[3]; // /api/translations/zh/incremental -> zh
-      const lastUpdate = req.query.lastUpdate || '0';
-      const namespace = req.query.namespace || 'common';
+      const lastUpdate = req.query?.lastUpdate || '0';
+      const namespace = req.query?.namespace || 'common';
       
       try {
         // 查询自上次更新以来的变化
@@ -93,10 +97,12 @@ export default async function handler(req: any, res: any) {
 
         if (error) throw error;
 
-        const translations = data.reduce((acc: Record<string, string>, item: any) => {
-          acc[item.key] = item.value;
-          return acc;
-        }, {});
+        const translations: Record<string, string> = {};
+        if (data) {
+          for (const item of data) {
+            translations[item.key] = item.value;
+          }
+        }
 
         return res.status(200).json({
           namespace,

@@ -101,7 +101,7 @@ class RegistrationDiagnosticTool {
           method: 'OPTIONS' // 使用OPTIONS方法检查端点是否存在
         });
         endpoints.registrationRequest = response.status !== 404;
-      } catch (e) {
+      } catch (e: any) {
         console.warn('❌ 注册请求端点不可用');
       }
       
@@ -149,7 +149,7 @@ class RegistrationDiagnosticTool {
           checks.connection = true;
           console.log('✅ 数据库连接正常:', healthData);
         }
-      } catch (e) {
+      } catch (e: any) {
         console.warn('❌ 数据库连接异常:', e);
       }
       
@@ -169,7 +169,7 @@ class RegistrationDiagnosticTool {
       }
       
       return checks;
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ 数据库检查失败:', error);
       return checks;
     }
@@ -202,12 +202,12 @@ class RegistrationDiagnosticTool {
           checks.betterAuthConfigured = response.status !== 404;
           console.log('✅ Better-Auth配置检查:', checks.betterAuthConfigured);
         }
-      } catch (e) {
+      } catch (e: any) {
         console.warn('❌ Better-Auth配置检查失败:', e);
       }
       
       return checks;
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ 认证配置检查失败:', error);
       return checks;
     }
@@ -228,7 +228,7 @@ class RegistrationDiagnosticTool {
     try {
       await this.ensureEnvironment();
       fixes.applied.push('环境配置');
-    } catch (e) {
+    } catch (e: any) {
       fixes.failed.push('环境配置: ' + e.message);
     }
     
@@ -236,7 +236,7 @@ class RegistrationDiagnosticTool {
     try {
       await this.ensureApiEndpoints();
       fixes.applied.push('API端点');
-    } catch (e) {
+    } catch (e: any) {
       fixes.failed.push('API端点: ' + e.message);
     }
     
@@ -244,7 +244,7 @@ class RegistrationDiagnosticTool {
     try {
       await this.ensureDatabase();
       fixes.applied.push('数据库');
-    } catch (e) {
+    } catch (e: any) {
       fixes.failed.push('数据库: ' + e.message);
     }
     

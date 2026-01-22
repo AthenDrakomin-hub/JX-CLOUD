@@ -5,31 +5,31 @@ import { pgTable, text, numeric, timestamp, integer, boolean, jsonb } from 'driz
  * 1. 认证核心表 (Better-Auth Required)
  */
 export const user = pgTable('user', {
-  id: text('id').primaryKey(),
+  id: text('id').primaryKey().$defaultFn(() => Math.random().toString(36).substring(2, 15)),
   name: text('name').notNull(),
   email: text('email').notNull().unique(),
-  emailVerified: boolean('email_verified').notNull().default(false),
+  emailVerified: boolean('email_verified').notNull().$defaultFn(() => false),
   image: text('image'),
-  role: text('role').default('user'),
+  role: text('role').$defaultFn(() => 'user'),
   partnerId: text('partner_id'), 
   modulePermissions: jsonb('module_permissions'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  createdAt: timestamp('created_at').notNull().$defaultFn(() => new Date()),
+  updatedAt: timestamp('updated_at').notNull().$defaultFn(() => new Date()),
 });
 
 export const session = pgTable('session', {
-  id: text('id').primaryKey(),
+  id: text('id').primaryKey().$defaultFn(() => Math.random().toString(36).substring(2, 15)),
   expiresAt: timestamp('expires_at').notNull(),
   token: text('token').notNull().unique(),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  createdAt: timestamp('created_at').notNull().$defaultFn(() => new Date()),
+  updatedAt: timestamp('updated_at').notNull().$defaultFn(() => new Date()),
   ipAddress: text('ip_address'),
   userAgent: text('user_agent'),
   userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
 });
 
 export const account = pgTable('account', {
-  id: text('id').primaryKey(),
+  id: text('id').primaryKey().$defaultFn(() => Math.random().toString(36).substring(2, 15)),
   accountId: text('account_id').notNull(),
   providerId: text('provider_id').notNull(),
   userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
@@ -40,31 +40,31 @@ export const account = pgTable('account', {
   refreshTokenExpiresAt: timestamp('refresh_token_expires_at'),
   scope: text('scope'),
   password: text('password'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  createdAt: timestamp('created_at').notNull().$defaultFn(() => new Date()),
+  updatedAt: timestamp('updated_at').notNull().$defaultFn(() => new Date()),
 });
 
 export const verification = pgTable('verification', {
-  id: text('id').primaryKey(),
+  id: text('id').primaryKey().$defaultFn(() => Math.random().toString(36).substring(2, 15)),
   identifier: text('identifier').notNull(),
   value: text('value').notNull(),
   expiresAt: timestamp('expires_at').notNull(),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+  updatedAt: timestamp('updated_at').$defaultFn(() => new Date()),
 });
 
 export const passkey = pgTable('passkeys', {
-  id: text('id').primaryKey(),
+  id: text('id').primaryKey().$defaultFn(() => Math.random().toString(36).substring(2, 15)),
   userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
   credentialId: text('credential_id').notNull().unique(),
   publicKey: text('public_key').notNull(),
-  counter: integer('counter').notNull().default(0),
+  counter: integer('counter').notNull().$defaultFn(() => 0),
   deviceType: text('device_type').notNull(),
   transports: jsonb('transports'),
   lastUsedAt: timestamp('last_used_at'),
   expiresAt: timestamp('expires_at'),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+  updatedAt: timestamp('updated_at').$defaultFn(() => new Date()),
 });
 
 /**
@@ -75,18 +75,18 @@ export const users = pgTable('users', {
   username: text('username').notNull().unique(),
   email: text('email'), // nullable in actual DB
   name: text('name'),
-  role: text('role').default('staff'), 
+  role: text('role').$defaultFn(() => 'staff'), 
   partnerId: text('partner_id'), 
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
-  allowedIps: text('allowed_ips').array().default('{}'),
-  authType: text('auth_type').default('id-only'),
-  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at').notNull().$defaultFn(() => new Date()),
+  updatedAt: timestamp('updated_at').notNull().$defaultFn(() => new Date()),
+  allowedIps: text('allowed_ips').array().$defaultFn(() => []),
+  authType: text('auth_type').$defaultFn(() => 'id-only'),
+  isActive: boolean('is_active').$defaultFn(() => true),
   displayName: text('display_name'),
   lastLogin: timestamp('last_login'),
   modulePermissions: jsonb('module_permissions'), 
-  emailVerified: boolean('email_verified').default(false),
-  isPasskeyBound: boolean('is_passkey_bound').default(false),
+  emailVerified: boolean('email_verified').$defaultFn(() => false),
+  isPasskeyBound: boolean('is_passkey_bound').$defaultFn(() => false),
 });
 
 export const menuDishes = pgTable('menu_dishes', {
@@ -95,26 +95,26 @@ export const menuDishes = pgTable('menu_dishes', {
   nameEn: text('name_en'), 
   price: numeric('price').notNull(), 
   category: text('category'), // Maps to category (not category_id)
-  stock: integer('stock').default(99),
+  stock: integer('stock').$defaultFn(() => 99),
   imageUrl: text('image_url'),
-  isAvailable: boolean('is_available').default(true),
-  isRecommended: boolean('is_recommended').default(false),
+  isAvailable: boolean('is_available').$defaultFn(() => true),
+  isRecommended: boolean('is_recommended').$defaultFn(() => false),
   partnerId: text('partner_id'),
-  createdAt: timestamp('created_at').defaultNow(),
+  createdAt: timestamp('created_at').$defaultFn(() => new Date()),
 });
 
 export const orders = pgTable('orders', {
-  id: text('id').primaryKey().defaultFunc(() => `'ORD-' || floor(random()*1000000)`),
+  id: text('id').primaryKey().$defaultFn(() => `ORD-${Math.floor(Math.random()*1000000)}`),
   roomId: text('room_id').notNull(),
-  items: jsonb('items').default('[]'),
-  totalAmount: numeric('total_amount').default('0'),
-  status: text('status').default('pending'),
+  items: jsonb('items').$defaultFn(() => []),
+  totalAmount: numeric('total_amount').$defaultFn(() => '0'),
+  status: text('status').$defaultFn(() => 'pending'),
   paymentMethod: text('payment_method').notNull(),
   paymentProof: text('payment_proof'),
   cashReceived: numeric('cash_received'),
   cashChange: numeric('cash_change'),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+  updatedAt: timestamp('updated_at').$defaultFn(() => new Date()),
   partnerId: text('partner_id'),
 });
 
@@ -194,14 +194,14 @@ export const expenses = pgTable('expenses', {
 });
 
 export const translations = pgTable('translations', {
-  id: text('id').defaultRandom(),
+  id: text('id').$defaultFn(() => Math.random().toString(36).substring(2, 15)),
   key: text('key').notNull(),
   language: text('language').notNull(),
   value: text('value').notNull(),
-  namespace: text('namespace').default('common'),
+  namespace: text('namespace').$defaultFn(() => 'common'),
   context: jsonb('context'),
-  version: integer('version').default(1),
-  isActive: boolean('is_active').default(true),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  version: integer('version').$defaultFn(() => 1),
+  isActive: boolean('is_active').$defaultFn(() => true),
+  createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+  updatedAt: timestamp('updated_at').$defaultFn(() => new Date()),
 });

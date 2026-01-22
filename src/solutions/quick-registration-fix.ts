@@ -35,7 +35,7 @@ async function quickRegistrationFix() {
     if (!authBaseUrl) {
       console.warn("   ⚠️ 认证服务URL未配置，请检查环境变量");
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("   ❌ 检查认证配置时出错:", error);
   }
   
@@ -58,11 +58,11 @@ async function quickRegistrationFix() {
         } else {
           console.log(`   ✓ ${endpoint.name}: 配置检查完成`);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error(`   ❌ ${endpoint.name} 检查失败:`, error.message);
       }
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("   ❌ API端点检查出错:", error);
   }
   

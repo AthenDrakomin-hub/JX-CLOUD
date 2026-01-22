@@ -1,6 +1,6 @@
 // Vercel API Route - Better Auth 认证路由
 import { createClient } from '@supabase/supabase-js';
-import { betterAuth } from 'better-auth/node';
+import { createAuth } from 'better-auth';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { postgres } from 'postgres';
 import * as schema from '../../schema';
@@ -18,7 +18,7 @@ const client = postgres(databaseUrl);
 const db = drizzle(client, { schema });
 
 // 配置Better Auth
-const auth = betterAuth({
+const auth = createAuth({
   secret: process.env.BETTER_AUTH_SECRET!,
   baseURL: process.env.BETTER_AUTH_URL || `${process.env.VERCEL_URL ? 'https://' : 'http://'}${process.env.VERCEL_URL || 'localhost:3000'}`,
   database: {
@@ -49,10 +49,13 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
+    const url = new URL(req.url || '/', `https://${req.headers.host || 'localhost'}`);
+    const pathname = url.pathname;
+    const method = req.method; // 从 req 对象获取方法，而不是 URL 对象
+
     // 将 Next.js 请求转换为 fetch Request 对象
-    const url = new URL(req.url || '', `https://${req.headers.host || 'localhost'}`);
     const request = new Request(url, {
-      method: req.method,
+      method: method,
       headers: new Headers(req.headers as any),
       body: req.body ? JSON.stringify(req.body) : undefined
     });

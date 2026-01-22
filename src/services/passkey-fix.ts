@@ -3,8 +3,8 @@
  * 解决 Passkey 验证中断或设备未绑定问题
  */
 
-import { api } from './services/api';
-import { signIn } from './services/frontend/auth-client.frontend';
+import { api } from './api';
+import { signIn } from './frontend/auth-client.frontend';
 
 /**
  * 修复Passkey验证问题的函数

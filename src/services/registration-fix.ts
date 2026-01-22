@@ -13,8 +13,8 @@
  * - 数据库表缺失或配置错误
  */
 
-import { api } from '../services/api';
-import authClient from '../services/frontend/auth-client.frontend';
+import { api } from './api';
+import authClient from './frontend/auth-client.frontend';
 
 // 修复注册请求提交问题
 export async function fixRegistrationRequest(email: string, name: string) {
@@ -63,7 +63,8 @@ export async function fixAdminRejection(requestId: string, reason?: string) {
   try {
     console.log('❌ 拒绝注册请求:', requestId, reason);
     
-    const result = await api.registration.reject(requestId, reason);
+    // reject 函数只接受一个参数，reason 通过其他方式传递或忽略
+    const result = await api.registration.reject(requestId);
     console.log('✅ 注册请求拒绝成功:', result);
     
     return result;

@@ -125,7 +125,9 @@ export default async function handler(req: any, res: any) {
   const supabase = createClient(supabaseUrl, supabaseKey);
 
   try {
-    const { pathname, method } = new URL(req.url || '', `https://${req.headers.host || 'localhost'}`);
+    const url = new URL(req.url || '/', `https://${req.headers.host || 'localhost'}`);
+    const pathname = url.pathname;
+    const method = req.method; // 从 req 对象获取方法，而不是 URL 对象
     const path = pathname; // 在Vercel中，URL已经是正确的路径
 
     // 路由分发
