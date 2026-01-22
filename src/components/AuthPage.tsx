@@ -56,7 +56,8 @@ const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang }) => {
       // 使用 Magic Link 登录（仅使用 Supabase 原生支持的方式）
       const magicLinkResult = await authService.signInWithMagicLink({ 
         email, 
-        redirectTo: `${window.location.origin}/auth/callback` 
+        // ✅ 直接跳转到首页，Supabase 会自动处理 URL 中的认证参数
+        redirectTo: window.location.origin
       });
       
       if (magicLinkResult.success) {

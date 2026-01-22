@@ -26,7 +26,7 @@ export interface SignUpParams {
  */
 export const signInWithMagicLink = async ({ 
   email, 
-  redirectTo = `${window.location.origin}/auth/callback`
+  redirectTo = window.location.origin
 }: SignInWithMagicLinkParams): Promise<{ success: boolean; message?: string }> => {
   try {
     const { error } = await supabase.auth.signInWithOtp({
@@ -100,7 +100,7 @@ export const signInWithPasskey = async ({
 export const signUpWithEmail = async ({ 
   email, 
   password,
-  redirectTo = `${window.location.origin}/auth/callback`
+  redirectTo = window.location.origin
 }: SignUpParams): Promise<{ success: boolean; message?: string }> => {
   try {
     const { error } = await supabase.auth.signUp({

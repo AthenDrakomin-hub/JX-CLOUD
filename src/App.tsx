@@ -12,7 +12,6 @@ import CommandCenter from './components/CommandCenter';
 import NotificationCenter from './components/NotificationCenter';
 import ImageManagement from './components/ImageManagement';
 import AuthPage from './components/AuthPage';
-import AuthCallback from './components/AuthCallback';
 import GuestOrder from './components/GuestOrder';
 import Toast, { ToastType } from './components/Toast';
 import { safeSignOut } from './services/frontend/auth-client.frontend';
@@ -42,8 +41,7 @@ const App: React.FC = () => {
     return {
       roomId: params.get('room'),
       activationToken: params.get('activate'),
-      isAdminSetup: pathname === '/auth/admin-setup',
-      isAuthCallback: pathname === '/auth/callback'
+      isAdminSetup: pathname === '/auth/admin-setup'
     };
   }, []);
 
@@ -243,10 +241,6 @@ const App: React.FC = () => {
   }
 
 
-
-  if (routeState.isAuthCallback) {
-    return <AuthCallback />;
-  }
 
   if (isAuthLoading && !localStorage.getItem('jx_root_authority_bypass')) {
     return (
