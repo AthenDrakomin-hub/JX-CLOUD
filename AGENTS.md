@@ -45,7 +45,7 @@ This is the **JX Cloud Terminal** - a comprehensive hospitality management syste
 - API abstraction layer in `services/api.ts` provides unified interface for all business operations
 
 **3. Data Access Layer (supabase/functions/)**
-- **Edge Functions Gateway**: `supabase/functions/api.ts` serves as primary API entry point
+- **Edge Functions Gateway**: `supabase/functions/api/index.ts` serves as primary API entry point
 - **Authentication Handler**: `supabase/functions/auth.ts` manages Better-Auth integration
 - **Supabase Integration**: Direct PostgreSQL access with RLS enforcement
 - **Real-time Subscriptions**: WebSocket channels for live order updates and notifications

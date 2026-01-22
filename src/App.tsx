@@ -79,6 +79,22 @@ const App: React.FC = () => {
   }, [remoteSession]);
 
   // 🔑 新增：监听 Supabase 认证状态，这是自动登录的核心
+  // URL参数处理：bypass=1 开启绕过，bypass=0 关闭绕过
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("bypass") === "1") {
+      localStorage.setItem("jx_root_authority_bypass", "true");
+      // 清理 URL，避免一直带参数
+      window.history.replaceState({}, document.title, window.location.pathname);
+      window.location.reload();
+    }
+    if (params.get("bypass") === "0") {
+      localStorage.removeItem("jx_root_authority_bypass");
+      window.history.replaceState({}, document.title, window.location.pathname);
+      window.location.reload();
+    }
+  }, []);
+
   const t = useCallback((key: string, params?: any) => getTranslation(lang, key, params), [lang]);
 
   const toggleLanguage = useCallback(() => {

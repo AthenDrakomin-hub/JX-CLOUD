@@ -1,7 +1,5 @@
 // src/services/i18n.ts
-import { Language } from '../constants/translations.js';
-// ✅ 提前静态导入翻译文件，这是浏览器环境唯一正确的同步加载方式
-import { translations as staticTranslations } from '../constants/translations.js';
+import { Language, translations as staticTranslations } from '../constants/translations.js';
 
 // 本地缓存配置
 const CACHE_PREFIX = 'jx_i18n_cache';
@@ -59,17 +57,16 @@ const loadTranslations = async (language: Language, namespace: string = 'common'
   } catch (error) {
     console.error(`Failed to load translations for ${language}:${namespace}`, error);
     
-    // 如果数据库加载失败，回退到静态翻译
+    // 🎯 回退到静态翻译，全程使用静态导入，无 require
     try {
-      const staticTranslationsModule = await import('../constants/translations.js');
-      const staticTranslations = staticTranslationsModule.translations[language] || staticTranslationsModule.translations.zh;
+      const staticTranslationsForLang = staticTranslations[language] || staticTranslations.zh;
       
       // 仅缓存静态翻译，避免每次都尝试数据库
-      localStorage.setItem(cacheKey, JSON.stringify(staticTranslations));
+      localStorage.setItem(cacheKey, JSON.stringify(staticTranslationsForLang));
       localStorage.setItem(`${cacheKey}:timestamp`, Date.now().toString());
-      memoryCache.set(memoryKey, { data: staticTranslations, timestamp: Date.now() });
+      memoryCache.set(memoryKey, { data: staticTranslationsForLang, timestamp: Date.now() });
       
-      return staticTranslations;
+      return staticTranslationsForLang;
     } catch (staticError) {
       console.error('Failed to load static translations as fallback', staticError);
       return {}; // 返回空对象，显示原始键
@@ -99,8 +96,9 @@ export const t = async (key: string, params?: Record<string, any>, namespace: st
   }
 };
 
-// ✅ 最安全的版本：外层增加全局错误捕获
+// ✅ 同步版本 - 100% 移除 require，且外层包裹全局错误捕获
 export const tSync = (key: string, params?: Record<string, any>, namespace: string = 'common'): string => {
+  // 🛡️ 最外层全局错误捕获，确保绝对不会抛出错误打断React渲染
   try {
     const language = (localStorage.getItem('language') || 'zh') as Language;
     const cacheKey = `${CACHE_PREFIX}:${language}:${namespace}`;
@@ -109,7 +107,7 @@ export const tSync = (key: string, params?: Record<string, any>, namespace: stri
     if (cached) {
       try {
         const translations = JSON.parse(cached);
-        let translation = translations[key] || key;
+        let translation = (translations as Record<string, string>)[key] || key;
         
         // 替换参数
         if (params) {
@@ -124,25 +122,20 @@ export const tSync = (key: string, params?: Record<string, any>, namespace: stri
       }
     }
     
-    // 🎯 这里直接使用顶部静态导入的翻译数据，完全移除了 require
-    try {
-      const translations = staticTranslations[language] || staticTranslations.zh;
-      let translation = translations[key] || key;
-      
-      if (params) {
-        Object.entries(params).forEach(([paramKey, paramValue]) => {
-          translation = translation.replace(new RegExp(`{${paramKey}}`, 'g'), String(paramValue));
-        });
-      }
-      
-      return translation;
-    } catch (e) {
-      console.error('Error getting static translation', e);
-      return key;
+    // 🎯 完全使用顶部静态导入的翻译数据，没有任何 require
+    const translations = staticTranslations[language] || staticTranslations.zh;
+    let translation = (translations as Record<string, string>)[key] || key;
+    
+    if (params) {
+      Object.entries(params).forEach(([paramKey, paramValue]) => {
+        translation = translation.replace(new RegExp(`{${paramKey}}`, 'g'), String(paramValue));
+      });
     }
+    
+    return translation;
   } catch (e) {
-    // 如果任何环节出错，直接返回原始key，绝对不能抛出错误打断渲染
-    console.error('Fatal error in tSync:', e);
+    // 🚨 如果任何环节出错，直接返回原始key，绝对不能抛出错误
+    console.error('Fatal error in tSync, returning raw key:', key, e);
     return key;
   }
 };

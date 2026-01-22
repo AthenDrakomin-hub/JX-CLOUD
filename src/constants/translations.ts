@@ -187,9 +187,8 @@ export const getStaticTranslation = (lang: Language, key: string, params?: Recor
 // Dynamic translation loader that prioritizes database translations
 export const getTranslation = (lang: Language, key: string, params?: Record<string, string | number>): string => {
   try {
-    // Try to get from dynamic service first
-    const { tSync } = require('../services/i18n.js');
-    return tSync(key, params);
+    // Since we removed require, directly use static translations as fallback
+    return getStaticTranslation(lang, key, params);
   } catch (error) {
     // Fallback to static translations
     console.warn('Using static translation fallback', error);
