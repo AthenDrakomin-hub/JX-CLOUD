@@ -52,7 +52,9 @@ const App: React.FC = () => {
 
   const session = useMemo(() => {
     const bypass = localStorage.getItem('jx_root_authority_bypass');
-    if (bypass === 'true') {
+    const devToken = localStorage.getItem('jx_dev_access_token');
+    
+    if (bypass === 'true' && devToken) {
       const adminSession = {
         user: {
           id: 'root-athen-god-mode',
@@ -64,13 +66,13 @@ const App: React.FC = () => {
         session: { expiresAt: new Date(Date.now() + 86400000).toISOString() }
       };
 
-      // 🛠️ 关键：同时将管理员信息同步到 Supabase 客户端
+      // 🛠️ 关键：同时将实际的开发令牌同步到 Supabase 客户端
       if (supabase) {
         supabase.auth.setSession({
-          access_token: 'dev-bypass-token',
-          refresh_token: 'dev-bypass-refresh',
-          expires_in: 86400,
-          expires_at: Date.now() + 86400000,
+          access_token: devToken,
+          refresh_token: "", // 开发令牌通常不需要刷新
+          expires_in: 3600, // 通常JWT令牌有效期为1小时
+          expires_at: Date.now() + 3600000, // 1小时后过期
           token_type: 'bearer'
         }).catch(console.error);
       }
