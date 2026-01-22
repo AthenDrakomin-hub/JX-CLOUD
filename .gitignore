@@ -66,6 +66,21 @@ temp/
 *.tmp
 *.temp
 
+# 文档文件 - 不需要部署到Vercel
+API_GATEWAY_DEPLOYMENT_REPORT.md
+PASSKEY_FIX_GUIDE.md
+PROJECT_STRUCTURE.md
+REGISTRATION_FIX_GUIDE.md
+SUPABASE_EDGE_FUNCTIONS_FIX.md
+DEPLOY_INSTRUCTIONS.ps1
+DEPLOY_INSTRUCTIONS.sh
+deploy-api.ps1
+deploy-api.sh
+deploy-guide.txt
+
+# 文档目录
+docs/
+
 # IDE 配置 (可选)
 # .vscode/
 # .idea/
@@ -74,7 +89,7 @@ temp/
 desktop.ini
 .DS_Store
 .DS_Store?
-._*
+.*@
 .Spotlight-V100
 .Trashes
 ehthumbs.db

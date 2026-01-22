@@ -111,6 +111,86 @@ export const handler = async (req: Request): Promise<Response> => {
       });
     }
 
+    // Passkey 登录端点 - 代理到BetterAuth
+    if (path.includes('/sign-in/passkey')) {
+      try {
+        // 构建BetterAuth端点URL
+        const betterAuthEndpoint = `${supabaseUrl}/functions/v1/better-auth${path}`;
+        
+        // 复制原始请求的headers
+        const headers = new Headers(req.headers);
+        
+        // 获取请求体数据
+        let body;
+        if (req.body) {
+          const requestBody = await req.text();
+          body = requestBody;
+          headers.set('Content-Length', String(requestBody.length));
+        }
+        
+        // 发起对BetterAuth的请求
+        const betterAuthResponse = await fetch(betterAuthEndpoint, {
+          method: method,
+          headers: headers,
+          body: body
+        });
+
+        // 读取BetterAuth的响应
+        const responseText = await betterAuthResponse.text();
+        
+        return new Response(responseText, {
+          status: betterAuthResponse.status,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      } catch (error) {
+        return new Response(JSON.stringify({
+          message: 'Failed to process passkey sign-in',
+          error: error.message,
+          service: 'jx-cloud-auth-edge'
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
+    // Passkey 相关的所有端点都代理到BetterAuth
+    if (path.includes('/passkey') || path.includes('/webauthn')) {
+      try {
+        const betterAuthEndpoint = `${supabaseUrl}/functions/v1/better-auth${path}`;
+        
+        const headers = new Headers(req.headers);
+        let body;
+        if (req.body) {
+          const requestBody = await req.text();
+          body = requestBody;
+          headers.set('Content-Length', String(requestBody.length));
+        }
+        
+        const betterAuthResponse = await fetch(betterAuthEndpoint, {
+          method: method,
+          headers: headers,
+          body: body
+        });
+
+        const responseText = await betterAuthResponse.text();
+        
+        return new Response(responseText, {
+          status: betterAuthResponse.status,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      } catch (error) {
+        return new Response(JSON.stringify({
+          message: 'Failed to process passkey request',
+          error: error.message,
+          service: 'jx-cloud-auth-edge'
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
     // 注册请求端点
 if (path.endsWith('/request-registration') && method === 'POST') {
   const body = await req.json();
