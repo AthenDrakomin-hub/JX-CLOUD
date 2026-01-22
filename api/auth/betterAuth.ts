@@ -1,27 +1,29 @@
-// Supabase Edge Functions - Better Auth 认证路由
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
-import { betterAuth } from 'https://esm.sh/better-auth@1.4.15/supabase';
-import { drizzle } from 'https://esm.sh/drizzle-orm@0.45.1/supabase';
-import * as schema from '../../../drizzle/schema.js';
+// Vercel API Route - Better Auth 认证路由
+import { createClient } from '@supabase/supabase-js';
+import { betterAuth } from 'better-auth/node';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import { postgres } from 'postgres';
+import * as schema from '../../schema';
 
 // 获取环境变量
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const supabaseUrl = process.env.SUPABASE_URL!;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const databaseUrl = process.env.DATABASE_URL!;
 
 // 初始化Supabase客户端
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// 初始化Drizzle ORM
-const db = drizzle(supabase, { schema });
+// 初始化PostgreSQL连接和Drizzle ORM (用于BetterAuth)
+const client = postgres(databaseUrl);
+const db = drizzle(client, { schema });
 
 // 配置Better Auth
 const auth = betterAuth({
-  secret: Deno.env.get('BETTER_AUTH_SECRET')!,
-  url: Deno.env.get('BETTER_AUTH_URL')!,
+  secret: process.env.BETTER_AUTH_SECRET!,
+  baseURL: process.env.BETTER_AUTH_URL || `${process.env.VERCEL_URL ? 'https://' : 'http://'}${process.env.VERCEL_URL || 'localhost:3000'}`,
   database: {
     connection: db,
-    tables: {
+    schema: {
       user: schema.user,
       session: schema.session,
       account: schema.account,
@@ -30,29 +32,42 @@ const auth = betterAuth({
     }
   },
   advanced: {
-    useSecureCookies: true,
+    useSecureCookies: false, // 在 serverless 环境中设为 false
     crossOrigin: true
   }
 });
 
-// 导出处理函数
-export const handler = async (req: Request): Promise<Response> => {
-  // 处理认证请求
-  const response = await auth.handler(req);
-  
-  // 添加CORS头部
-  const headers = new Headers(response.headers);
-  headers.set('Access-Control-Allow-Origin', '*');
-  headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  
-  return new Response(response.body, {
-    status: response.status,
-    headers
-  });
-};
+// Vercel API Route 处理函数
+export default async function handler(req: any, res: any) {
+  // 处理 CORS 预检请求
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.status(200).end();
+    return;
+  }
 
-// 兼容Deno serve
-if (import.meta.main) {
-  serve(handler);
+  try {
+    // 将 Next.js 请求转换为 fetch Request 对象
+    const url = new URL(req.url || '', `https://${req.headers.host || 'localhost'}`);
+    const request = new Request(url, {
+      method: req.method,
+      headers: new Headers(req.headers as any),
+      body: req.body ? JSON.stringify(req.body) : undefined
+    });
+
+    // 处理认证请求
+    const response = await auth.handler(request);
+    
+    // 将 fetch Response 转换为 Next.js 响应
+    const responseHeaders = Object.fromEntries(response.headers.entries());
+    res.writeHead(response.status, responseHeaders);
+    
+    const responseBody = await response.text();
+    res.end(responseBody);
+  } catch (error) {
+    console.error('Auth handler error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
 }
