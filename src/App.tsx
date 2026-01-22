@@ -81,6 +81,12 @@ const App: React.FC = () => {
   }, [remoteSession]);
 
   // 🔑 新增：监听 Supabase 认证状态，这是自动登录的核心
+  const t = useCallback((key: string, params?: any) => getTranslation(lang, key, params), [lang]);
+
+  const toggleLanguage = useCallback(() => {
+    setLang(p => p === 'zh' ? 'en' : p === 'en' ? 'fil' : 'zh');
+  }, []);
+
   useEffect(() => {
     if (isDemoMode || !supabase) return;
 
@@ -96,7 +102,7 @@ const App: React.FC = () => {
 
     // 实时监听认证状态变化
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (event: any, session: any) => {
         console.log("🔑 Supabase 认证状态变更:", event, session?.user?.email);
         
         setRemoteSession(session);
@@ -141,12 +147,6 @@ const App: React.FC = () => {
     checkExpiry();
     return () => clearInterval(interval);
   }, [session]);
-
-  const t = useCallback((key: string, params?: any) => getTranslation(lang, key, params), [lang]);
-
-  const toggleLanguage = useCallback(() => {
-    setLang(p => p === 'zh' ? 'en' : p === 'en' ? 'fil' : 'zh');
-  }, []);
 
   const [rooms, setRooms] = useState<HotelRoom[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
