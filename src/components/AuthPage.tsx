@@ -3,13 +3,13 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Shield, User, ArrowRight, Loader2, Globe, 
   Fingerprint, Key, CheckCircle2,
-  ShieldAlert, Smartphone, Monitor, Info, Lock, Sparkles
+  ShieldAlert, Smartphone, Monitor, Info, Lock, Sparkles, Mail
 } from 'lucide-react';
-import { signIn, signInWithPasskey, initializePasskeyAuth } from '../services/frontend/auth-client.fixed';
 import { api } from '../services/api';
 import { Language, getTranslation } from '../constants/translations';
 import { QRCodeSVG } from 'qrcode.react';
 import LegalFooter from './LegalFooter';
+import authService from '../services/auth';
 
 interface AuthPageProps {
   lang: Language;
@@ -53,20 +53,29 @@ const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang }) => {
     setIsPasskeyLoading(true);
     
     try {
-      // 使用修复后的Passkey验证函数
-      const result = await signInWithPasskey(email);
+      // 首先尝试 Passkey 登录
+      const passkeyResult = await authService.signInWithPasskey({ email });
       
-      if (!result.success) {
-        if (result.needsRegistration) {
-          // 如果需要注册Passkey，转到注册选择阶段
-          setAuthStage('register_choice');
-        } else {
-          // 其他错误，显示错误信息
-          setError(result.error?.message || t('auth_passkey_error'));
-        }
-      } else {
-        // 成功登录，不需要额外操作，因为Better-Auth会自动重定向
+      if (passkeyResult.success) {
+        // Passkey 登录成功
         console.log("Passkey authentication successful");
+        // 重定向到主应用
+        window.location.href = '/';
+      } else {
+        // Passkey 失败，尝试 Magic Link 登录
+        const magicLinkResult = await authService.signInWithMagicLink({ 
+          email, 
+          redirectTo: window.location.origin 
+        });
+        
+        if (magicLinkResult.success) {
+          // 显示成功消息，提示用户查收邮件
+          setError(null);
+          alert(t('auth_magic_link_sent', { email }));
+        } else {
+          // 两种方式都失败，显示错误
+          setError(magicLinkResult.message || t('auth_passkey_error'));
+        }
       }
     } catch (err: any) {
       console.error("Authentication error:", err);
@@ -88,11 +97,14 @@ const AuthPage: React.FC<AuthPageProps> = ({ lang, onToggleLang }) => {
     setIsPasskeyLoading(true);
     setError(null);
     try {
-      // 调用API服务提交注册请求
-      const result = await api.registration.request(email, email.split('@')[0]);
+      // 使用 Supabase 注册用户（通过 Magic Link）
+      const result = await authService.signUpWithEmail({ 
+        email, 
+        redirectTo: window.location.origin 
+      });
       
-      if (result.success || result.requestId) {
-        // 注册请求已提交，等待管理员审核
+      if (result.success) {
+        // 注册请求已提交，等待用户通过邮件激活
         setAuthStage('pending_approval');
       } else {
         setError(result.message || t('auth_registration_error'));

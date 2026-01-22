@@ -29,7 +29,8 @@ import { Bell, Command, Loader2, ShieldCheck, Wifi, WifiOff, AlertTriangle, X, L
 import ErrorBoundary from './components/ErrorBoundary';
 
 const App: React.FC = () => {
-  const { data: remoteSession, isPending: isAuthLoading } = useSession();
+  const remoteSession = null; // Placeholder - we'll implement proper session handling
+  const isAuthLoading = false; // Placeholder - we'll implement proper loading state
   const [lang, setLang] = useState<Language>('zh');
   const [currentTab, setCurrentTab] = useState<string>('dashboard');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);

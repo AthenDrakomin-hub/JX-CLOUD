@@ -4,7 +4,7 @@
  */
 
 import { api } from './api';
-import { signIn } from './frontend/auth-client.frontend';
+import authService from './auth';
 
 /**
  * 修复Passkey验证问题的函数
@@ -34,26 +34,20 @@ export async function fixPasskeyIssue(email: string): Promise<boolean> {
     }
 
     // 3. 尝试执行Passkey登录
-    const signInResult = await signIn.passkey({
-      options: {
-        email,
-      },
-      callbackURL: "/"
-    });
+    const signInResult = await authService.signInWithPasskey({ email });
 
-    if (signInResult?.error) {
-      console.log(`⚠️ Passkey 登录失败: ${signInResult.error.message}`);
+    if (!signInResult?.success) {
+      console.log(`⚠️ Passkey 登录失败: ${signInResult.message}`);
       
       // 检查是否是因为没有注册Passkey
-      if (signInResult.error.message?.includes('NotFoundError') || 
-          signInResult.error.name === 'NotFoundError' ||
-          signInResult.error.message?.includes('No passkey') ||
-          signInResult.error.message?.includes('not registered')) {
+      if (signInResult.message?.includes('NotFoundError') || 
+          signInResult.message?.includes('No passkey') ||
+          signInResult.message?.includes('not registered')) {
         
         console.log('ℹ️ 用户尚未注册 Passkey，需要引导用户进行注册');
         return false; // 返回false表示需要注册
       } else {
-        console.error(`❌ 其他认证错误: ${signInResult.error.message}`);
+        console.error(`❌ 其他认证错误: ${signInResult.message}`);
         return false;
       }
     } else {
@@ -69,17 +63,15 @@ export async function fixPasskeyIssue(email: string): Promise<boolean> {
 /**
  * 引导用户注册新的Passkey
  */
-export async function registerNewPasskey(): Promise<boolean> {
+export async function registerNewPasskey(email: string): Promise<boolean> {
   console.log('🔐 开始注册新的 Passkey...');
   
   try {
-    // 使用Better-Auth的Passkey注册功能
-    const result = await (signIn as any).passkey.register({
-      options: {}
-    });
+    // 使用Supabase的Passkey注册功能
+    const result = await authService.signInWithPasskey({ email });
 
-    if (result?.error) {
-      console.error('❌ Passkey 注册失败:', result.error.message);
+    if (!result.success) {
+      console.error('❌ Passkey 注册失败:', result.message);
       return false;
     }
 
