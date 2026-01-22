@@ -120,6 +120,34 @@ const App: React.FC = () => {
         }
       }
 
+      // 🛠️ 开发环境专用：Bypass 模式自动注入管理员 Token
+      const applyDevBypass = async () => {
+        try {
+          const isBypassEnabled = localStorage.getItem('jx_root_authority_bypass') === 'true';
+          if (!isBypassEnabled) return;
+
+          // 从 localStorage 读取我们手动存入的开发用 Token
+          const devAccessToken = localStorage.getItem('jx_dev_access_token');
+          if (!devAccessToken) {
+            console.warn("⚠️ 已开启 Bypass 上帝模式，但未找到开发用 Token，请按步骤生成并存入 localStorage");
+            return;
+          }
+
+          // 🎯 核心操作：将合法的管理员 Token 设置到 Supabase 客户端
+          await supabase.auth.setSession({
+            access_token: devAccessToken,
+            refresh_token: "" // 短期开发 Token 不需要刷新，到期后重新生成即可
+          });
+
+          console.log("✅ 开发 Bypass 模式已激活！数据库 API 请求将以管理员 athendrakomin@proton.me 身份执行");
+        } catch (error) {
+          console.error("❌ Dev Bypass 模式激活失败", error);
+        }
+      };
+
+      // 应用 Bypass 配置
+      await applyDevBypass();
+
       const { data: { session } } = await supabase.auth.getSession();
       setRemoteSession(session);
       setIsAuthLoading(false);
