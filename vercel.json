@@ -7,6 +7,18 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
+      "source": "/api/auth/:path*",
+      "destination": "/deploy-package/api/auth/betterAuth"
+    },
+    {
+      "source": "/api/translations/:path*",
+      "destination": "/deploy-package/i18n"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "/deploy-package/api/index"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
