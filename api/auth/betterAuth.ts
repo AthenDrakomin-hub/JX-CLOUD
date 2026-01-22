@@ -1,6 +1,6 @@
 // Vercel API Route - Better Auth 认证路由
 import { createClient } from '@supabase/supabase-js';
-import { createAuth } from 'better-auth/supabase';
+import { betterAuth } from 'better-auth';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from '../../schema';
@@ -18,7 +18,7 @@ const client = postgres(databaseUrl);
 const db = drizzle(client, { schema });
 
 // 配置Better Auth
-const auth = createAuth({
+const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET!,
   baseURL: process.env.BETTER_AUTH_URL || `${process.env.VERCEL_URL ? 'https://' : 'http://'}${process.env.VERCEL_URL || 'localhost:3000'}`,
   database: {
