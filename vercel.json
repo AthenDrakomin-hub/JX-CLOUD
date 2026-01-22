@@ -1,26 +1,17 @@
 
 {
-  "functions": {
-    "deploy-package/api/**/*.ts": {
-      "runtime": "vercel-node@3"
-    }
-  },
   "rewrites": [
     {
       "source": "/api/auth/:path*",
-      "destination": "/deploy-package/api/auth/betterAuth"
+      "destination": "/api/auth/betterAuth"
     },
     {
       "source": "/api/translations/:path*",
-      "destination": "/deploy-package/i18n"
+      "destination": "/api/i18n"
     },
     {
       "source": "/api/:path*",
-      "destination": "/deploy-package/api/index"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "destination": "/api/index"
     }
   ]
 }
