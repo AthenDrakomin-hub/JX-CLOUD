@@ -99,18 +99,36 @@ export const t = async (key: string, params?: Record<string, any>, namespace: st
   }
 };
 
-// ✅ 同步版本（用于不需要await的场景）- 已完全移除 require
+// ✅ 最安全的版本：外层增加全局错误捕获
 export const tSync = (key: string, params?: Record<string, any>, namespace: string = 'common'): string => {
-  const language = (localStorage.getItem('language') || 'zh') as Language;
-  const cacheKey = `${CACHE_PREFIX}:${language}:${namespace}`;
-  const cached = localStorage.getItem(cacheKey);
-  
-  if (cached) {
+  try {
+    const language = (localStorage.getItem('language') || 'zh') as Language;
+    const cacheKey = `${CACHE_PREFIX}:${language}:${namespace}`;
+    const cached = localStorage.getItem(cacheKey);
+    
+    if (cached) {
+      try {
+        const translations = JSON.parse(cached);
+        let translation = translations[key] || key;
+        
+        // 替换参数
+        if (params) {
+          Object.entries(params).forEach(([paramKey, paramValue]) => {
+            translation = translation.replace(new RegExp(`{${paramKey}}`, 'g'), String(paramValue));
+          });
+        }
+        
+        return translation;
+      } catch (e) {
+        console.error('Error parsing cached translations', e);
+      }
+    }
+    
+    // 🎯 这里直接使用顶部静态导入的翻译数据，完全移除了 require
     try {
-      const translations = JSON.parse(cached);
+      const translations = staticTranslations[language] || staticTranslations.zh;
       let translation = translations[key] || key;
       
-      // 替换参数
       if (params) {
         Object.entries(params).forEach(([paramKey, paramValue]) => {
           translation = translation.replace(new RegExp(`{${paramKey}}`, 'g'), String(paramValue));
@@ -119,24 +137,12 @@ export const tSync = (key: string, params?: Record<string, any>, namespace: stri
       
       return translation;
     } catch (e) {
-      console.error('Error parsing cached translations', e);
+      console.error('Error getting static translation', e);
+      return key;
     }
-  }
-  
-  // 🎯 这里直接使用顶部静态导入的翻译数据，完全移除了 require
-  try {
-    const translations = staticTranslations[language] || staticTranslations.zh;
-    let translation = translations[key] || key;
-    
-    if (params) {
-      Object.entries(params).forEach(([paramKey, paramValue]) => {
-        translation = translation.replace(new RegExp(`{${paramKey}}`, 'g'), String(paramValue));
-      });
-    }
-    
-    return translation;
   } catch (e) {
-    console.error('Error getting static translation', e);
+    // 如果任何环节出错，直接返回原始key，绝对不能抛出错误打断渲染
+    console.error('Fatal error in tSync:', e);
     return key;
   }
 };
