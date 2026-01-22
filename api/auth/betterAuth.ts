@@ -1,8 +1,8 @@
 // Vercel API Route - Better Auth 认证路由
 import { createClient } from '@supabase/supabase-js';
-import { createAuth } from 'better-auth';
+import { createAuth } from 'better-auth/supabase';
 import { drizzle } from 'drizzle-orm/postgres-js';
-import { postgres } from 'postgres';
+import postgres from 'postgres';
 import * as schema from '../../schema';
 
 // 获取环境变量
