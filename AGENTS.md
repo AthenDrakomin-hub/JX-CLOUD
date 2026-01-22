@@ -385,6 +385,33 @@ npm run dev
 - All business data is physically isolated by `partner_id` with RLS enforcement
 - Monetary values are stored as `numeric` type in database but converted to `number` in application layer
 - JSONB fields are used for flexible data storage (items in orders, permissions, etc.)
+- Translation table (`translations`) supports multilingual content with RLS policies for admin-only write access
+
+## Translation System Architecture
+
+The application features a comprehensive translation system with both static and dynamic components:
+
+- **Static Translations**: Located in `src/constants/translations.ts` for immediate availability
+- **Dynamic Translations**: Stored in the `translations` table in the database with CRUD operations
+- **API Endpoints**: `/api/translations/*` handles fetching, updating and managing translations
+- **Service Layer**: `src/services/api.ts` includes translation methods for frontend-backend communication
+- **Component Integration**: `src/components/TranslationManager.tsx` provides admin UI for translation management
+- **Database Structure**: The `translations` table includes key-value pairs with language, namespace, and context support
+
+## Translation Table Schema
+
+The `translations` table includes the following columns:
+- `id`: UUID primary key
+- `key`: Translation key (VARCHAR 200, not null)
+- `language`: Language code (VARCHAR 10, not null) - supports 'zh', 'en', 'fil'
+- `value`: Translation content (TEXT, not null)
+- `namespace`: Namespace grouping (VARCHAR 50, default 'common')
+- `context`: JSONB field for dynamic parameter templates
+- `version`: Version control (INTEGER, default 1)
+- `is_active`: Boolean flag for enabling/disabling translations
+- `created_at`/`updated_at`: Timestamps for record keeping
+
+The table has RLS policies allowing public read access for active translations and admin-only write access.
 
 ## Key Utilities and Helpers
 
