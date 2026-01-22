@@ -28,8 +28,8 @@ import { Bell, Command, Loader2, ShieldCheck, Wifi, WifiOff, AlertTriangle, X, L
 import ErrorBoundary from './components/ErrorBoundary';
 
 const App: React.FC = () => {
-  const remoteSession = null; // Placeholder - we'll implement proper session handling
-  const isAuthLoading = false; // Placeholder - we'll implement proper loading state
+  const [remoteSession, setRemoteSession] = useState<any>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true); // 现在这是真实的加载状态
   const [lang, setLang] = useState<Language>('zh');
   const [currentTab, setCurrentTab] = useState<string>('dashboard');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -48,6 +48,7 @@ const App: React.FC = () => {
   }, []);
 
   const session = useMemo(() => {
+    // 保留你的开发模式 bypass 功能
     const bypass = localStorage.getItem('jx_root_authority_bypass');
     if (bypass === 'true') {
       return {
@@ -61,8 +62,61 @@ const App: React.FC = () => {
         session: { expiresAt: new Date(Date.now() + 86400000).toISOString() }
       };
     }
-    return remoteSession;
+    
+    // 生产环境使用 Supabase 返回的真实会话
+    if (remoteSession) {
+      return {
+        user: {
+          id: remoteSession.user.id,
+          name: remoteSession.user.user_metadata?.name || remoteSession.user.email,
+          email: remoteSession.user.email,
+          role: (remoteSession.user.user_metadata?.role as UserRole) || UserRole.STAFF,
+          isRoot: remoteSession.user.email === 'athendrakomin@proton.me'
+        },
+        session: { expiresAt: remoteSession.expires_at }
+      };
+    }
+
+    return null;
   }, [remoteSession]);
+
+  // 🔑 新增：监听 Supabase 认证状态，这是自动登录的核心
+  useEffect(() => {
+    if (isDemoMode || !supabase) return;
+
+    // 初始化：获取当前已有的会话
+    const initializeAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setRemoteSession(session);
+      setIsAuthLoading(false);
+      console.log("📌 应用初始化，Supabase 会话:", session?.user?.email);
+    };
+
+    initializeAuth();
+
+    // 实时监听认证状态变化
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log("🔑 Supabase 认证状态变更:", event, session?.user?.email);
+        
+        setRemoteSession(session);
+        setIsAuthLoading(false);
+
+        // 如果是通过魔法链接登录，可以在这里添加额外的逻辑
+        if (event === "SIGNED_IN" && session) {
+          // 可以在这里显示欢迎通知
+          setToast({ 
+            message: t('welcome_back', { user: session.user.email }), 
+            type: 'success' 
+          });
+        }
+      }
+    );
+
+    return () => {
+      if (subscription) subscription.unsubscribe();
+    };
+  }, [isDemoMode, supabase, t]);
 
   useEffect(() => {
     if (!session?.session?.expiresAt) return;

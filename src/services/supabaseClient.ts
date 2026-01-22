@@ -28,6 +28,8 @@ export const supabase = isDemoMode
       auth: {
         persistSession: true,
         autoRefreshToken: true,
+        detectSessionInUrl: true, // ✅ 这个必须有，魔法链接的核心
+        flowType: "pkce"
       }
     });
 

@@ -98,14 +98,19 @@ export default supabase;
  */
 export const safeSignOut = async () => {
   try {
-    await supabase.auth.signOut();
+    // 通知 Supabase 销毁会话
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
+    
+    // 清除本地 bypass
+    localStorage.removeItem('jx_root_authority_bypass');
     
     // 物理清除敏感存储
     sessionStorage.removeItem('sb-access-token');
     sessionStorage.removeItem('sb-refresh-token');
     localStorage.removeItem('sb-access-token');
     localStorage.removeItem('sb-refresh-token');
-    localStorage.removeItem('jx_root_authority_bypass');
     localStorage.removeItem('jx_bypass_timestamp');
     
     // 强制重定向至准入网关
