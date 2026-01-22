@@ -152,7 +152,7 @@ export default async function handler(req: any, res: any) {
 
         const { error } = await supabase
           .from('translations')
-          .upsert(upsertData, { onConflict: ['namespace', 'key', 'language'] });
+          .upsert(upsertData, { onConflict: 'namespace,key,language' });
 
         if (error) throw error;
 
