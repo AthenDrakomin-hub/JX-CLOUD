@@ -411,7 +411,10 @@ The `translations` table includes the following columns:
 - `is_active`: Boolean flag for enabling/disabling translations
 - `created_at`/`updated_at`: Timestamps for record keeping
 
-The table has RLS policies allowing public read access for active translations and admin-only write access.
+The table has:
+- Primary key constraint on `id`
+- Unique constraint on (`key`, `language`, `namespace`) combination to prevent duplicate translations
+- RLS policies allowing public read access for active translations and admin-only write access
 
 ## Key Utilities and Helpers
 

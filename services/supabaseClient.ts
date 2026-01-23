@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 
 /**
@@ -6,12 +5,10 @@ import { createClient } from '@supabase/supabase-js';
  * 兼容性：支持 Vercel 自动注入的环境变量
  */
 
-// 尝试从 Vite 特有的 import.meta.env 或 Node 风格的 process.env 读取
-// 优先级：VITE_ 前缀 (开发) -> 自动注入变量 (Vercel)
+// 仅从 Node 风格的 process.env 读取环境变量
+// 优先级：VITE_ 前缀 (开发) -> 直接变量名
 const getEnv = (key: string) => {
-  return (import.meta as any).env?.[`VITE_${key}`] || 
-         (import.meta as any).env?.[key] ||
-         (process.env as any)[`VITE_${key}`] || 
+  return (process.env as any)[`VITE_${key}`] || 
          (process.env as any)[key] || 
          '';
 };

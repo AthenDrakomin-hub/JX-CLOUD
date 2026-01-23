@@ -13,8 +13,8 @@
  * - 数据库表缺失或配置错误
  */
 
-import { api } from './api';
-import authClient from './frontend/auth-client.frontend';
+import { api } from './api.js';
+import authClient from './frontend/auth-client.frontend.js';
 
 // 修复注册请求提交问题
 export async function fixRegistrationRequest(email: string, name: string) {

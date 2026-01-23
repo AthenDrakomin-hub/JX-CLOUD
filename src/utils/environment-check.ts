@@ -64,8 +64,8 @@ async function checkApiEndpoints() {
           });
           console.log(`✅ ${endpoint.name} 端点可达: ${response.status}`);
         }
-      } catch (error: any) {
-        console.warn(`❌ ${endpoint.name} 端点不可达:`, error.message);
+      } catch (error) {
+        console.warn(`❌ ${endpoint.name} 端点不可达:`, (error as Error).message);
       }
     } else {
       console.log(`⚠️ ${endpoint.name} URL 未配置`);
@@ -93,8 +93,8 @@ async function checkDatabaseTables() {
     } else {
       console.warn('⚠️ 无法连接到数据库检查端点');
     }
-  } catch (error: any) {
-    console.warn('⚠️ 数据库连接检查失败:', error.message);
+  } catch (error) {
+    console.warn('⚠️ 数据库连接检查失败:', (error as Error).message);
   }
 }
 

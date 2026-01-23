@@ -1,5 +1,6 @@
 
-import { pgTable, text, numeric, timestamp, integer, boolean, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, text, numeric, timestamp, integer, boolean, jsonb, uniqueIndex } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 /**
  * 1. 认证核心表 (Better-Auth Required)
@@ -194,7 +195,7 @@ export const expenses = pgTable('expenses', {
 });
 
 export const translations = pgTable('translations', {
-  id: text('id').$defaultFn(() => Math.random().toString(36).substring(2, 15)),
+  id: text('id').primaryKey().$defaultFn(() => Math.random().toString(36).substring(2, 15)),
   key: text('key').notNull(),
   language: text('language').notNull(),
   value: text('value').notNull(),
@@ -204,4 +205,8 @@ export const translations = pgTable('translations', {
   isActive: boolean('is_active').$defaultFn(() => true),
   createdAt: timestamp('created_at').$defaultFn(() => new Date()),
   updatedAt: timestamp('updated_at').$defaultFn(() => new Date()),
+}, (table) => {
+  return {
+    uniqueKeyLangNamespace: uniqueIndex('unique_key_lang_namespace').on(table.key, table.language, table.namespace),
+  };
 });

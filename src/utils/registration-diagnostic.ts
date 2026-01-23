@@ -4,7 +4,7 @@
  * 用于诊断和修复账号注册相关问题
  */
 
-import { api } from '../services/api';
+import { api } from '../services/api.js';
 
 // 注册流程诊断类
 class RegistrationDiagnosticTool {
@@ -101,7 +101,7 @@ class RegistrationDiagnosticTool {
           method: 'OPTIONS' // 使用OPTIONS方法检查端点是否存在
         });
         endpoints.registrationRequest = response.status !== 404;
-      } catch (e: any) {
+      } catch (e) {
         console.warn('❌ 注册请求端点不可用');
       }
       
@@ -149,7 +149,7 @@ class RegistrationDiagnosticTool {
           checks.connection = true;
           console.log('✅ 数据库连接正常:', healthData);
         }
-      } catch (e: any) {
+      } catch (e) {
         console.warn('❌ 数据库连接异常:', e);
       }
       
@@ -169,7 +169,7 @@ class RegistrationDiagnosticTool {
       }
       
       return checks;
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ 数据库检查失败:', error);
       return checks;
     }
@@ -202,12 +202,12 @@ class RegistrationDiagnosticTool {
           checks.betterAuthConfigured = response.status !== 404;
           console.log('✅ Better-Auth配置检查:', checks.betterAuthConfigured);
         }
-      } catch (e: any) {
+      } catch (e) {
         console.warn('❌ Better-Auth配置检查失败:', e);
       }
       
       return checks;
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ 认证配置检查失败:', error);
       return checks;
     }
@@ -228,24 +228,24 @@ class RegistrationDiagnosticTool {
     try {
       await this.ensureEnvironment();
       fixes.applied.push('环境配置');
-    } catch (e: any) {
-      fixes.failed.push('环境配置: ' + e.message);
+    } catch (e) {
+      fixes.failed.push('环境配置: ' + (e as Error).message);
     }
     
     // 尝试修复API端点问题
     try {
       await this.ensureApiEndpoints();
       fixes.applied.push('API端点');
-    } catch (e: any) {
-      fixes.failed.push('API端点: ' + e.message);
+    } catch (e) {
+      fixes.failed.push('API端点: ' + (e as Error).message);
     }
     
     // 尝试修复数据库问题
     try {
       await this.ensureDatabase();
       fixes.applied.push('数据库');
-    } catch (e: any) {
-      fixes.failed.push('数据库: ' + e.message);
+    } catch (e) {
+      fixes.failed.push('数据库: ' + (e as Error).message);
     }
     
     console.log('✅ 修复完成:', fixes);

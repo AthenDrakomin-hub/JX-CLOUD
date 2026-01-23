@@ -3,8 +3,8 @@
  * 解决 Passkey 验证中断或设备未绑定问题
  */
 
-import { api } from './api';
-import authService from './auth';
+import { api } from './api.js';
+import authService from './auth.js';
 
 /**
  * 修复Passkey验证问题的函数
