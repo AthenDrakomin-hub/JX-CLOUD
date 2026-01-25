@@ -1,96 +1,59 @@
-
-# 依赖
-node_modules
-.pnpm-store
-
-# 编译产物
-dist
-dist-ssr
-*.local
-
-# 环境变量 (极其重要：严禁上传至 GitHub)
+# ✅ 1. 环境变量（含模板 & 本地配置）
 .env
-.env.local
 .env.*.local
+.env.local
+.env.development.local
 .env.production.local
+.env.example
+.env.production.template
 
-# 系统与编辑器
+# ✅ 2. 构建产物（Vercel 会自动构建）
+dist/
+dist-ssr/
+out/
+build/
+
+# ✅ 3. 依赖包（由 Vercel/本地自动安装）
+node_modules/
+
+# ✅ 4. 编辑器/系统配置
+.vscode/
+.idea/
 .DS_Store
 Thumbs.db
-.vscode
-.idea
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+desktop.ini
+*.swp
+*.swo
 
-# 构建工具缓存
-.vercel
-.next
-.nuxt
-.svelte-kit
-
-# Supabase 相关
-.supabase
-supabase/.temp
-supabase/.branches
-
-# 数据库相关
-.drizzle
-migrations/*.sql
-database/*.sql
-
-# 日志文件
+# ✅ 5. 日志文件
+*.log
+logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-*.log
 
-# TypeScript
+# ✅ 6. TypeScript 构建信息
 *.tsbuildinfo
 
-# 测试覆盖率
-coverage/
-.nyc_output/
-
-# 开发工具
-.env.test
-.env.development
-.env.staging
-
-# 临时文件
-tmp/
-temp/
+# ✅ 7. 临时文件/缓存
+*.zip
 *.tmp
 *.temp
+*.bak
+*.cache
+.cache/
+.next/
+jest-cache/
+npm-cache/
+.pnpm-store/
 
-# 文档文件 - 不需要部署到Vercel
-API_GATEWAY_DEPLOYMENT_REPORT.md
-PASSKEY_FIX_GUIDE.md
-PROJECT_STRUCTURE.md
-REGISTRATION_FIX_GUIDE.md
-SUPABASE_EDGE_FUNCTIONS_FIX.md
-DEPLOY_INSTRUCTIONS.ps1
-DEPLOY_INSTRUCTIONS.sh
-deploy-api.ps1
-deploy-api.sh
-deploy-guide.txt
+# ✅ 8. Coverage 和测试缓存
+coverage/
+.nyc_output/
+test-output/
+test-results/
 
-# 文档目录
-docs/
-
-# IDE 配置 (可选)
-# .vscode/
-# .idea/
-
-# OS 生成文件
-desktop.ini
-.DS_Store
-.DS_Store?
-.*@
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
+# ✅ 9. Verel / Netlify / CI 文件夹（忽略用户缓存）
+.vercel/cache/
+netlify/
