@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Mail } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import { roomApi, dishApi, orderApi, Room, Dish, Order } from './services/api';
 
 const App: React.FC = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(true);
   const [currentTab, setCurrentTab] = useState('dashboard');
   const [rooms, setRooms] = useState<Room[]>([]);
   const [dishes, setDishes] = useState<Dish[]>([]);
@@ -43,40 +42,6 @@ const App: React.FC = () => {
     loadData();
   }, []);
 
-  if (!isLoggedIn) {
-    return (
-      <div className="h-screen bg-slate-950 flex items-center justify-center p-4">
-        <div className="w-full max-w-md bg-slate-900 p-8 rounded-2xl shadow-2xl border border-slate-700">
-          <div className="text-center mb-8">
-            <div className="mx-auto w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-[0_0_40px_rgba(37,99,235,0.4)] border border-blue-400/20 mb-4">
-              <Mail size={32} className="text-white" />
-            </div>
-            <h1 className="text-2xl font-black text-white tracking-tighter uppercase leading-none italic">JX CLOUD</h1>
-            <p className="text-slate-400 mt-2 text-sm">安全认证中心</p>
-          </div>
-          <div className="space-y-4">
-            <input 
-              type="email" 
-              placeholder="邮箱地址" 
-              className="w-full px-4 py-3 rounded-lg border border-slate-600 bg-slate-800 text-white"
-            />
-            <input 
-              type="password" 
-              placeholder="密码" 
-              className="w-full px-4 py-3 rounded-lg border border-slate-600 bg-slate-800 text-white"
-            />
-            <button 
-              className="w-full py-3 bg-blue-600 text-white rounded-lg font-bold shadow-lg hover:bg-blue-700 transition-colors"
-              onClick={() => setIsLoggedIn(true)}
-            >
-              登录
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Sidebar */}
@@ -108,12 +73,6 @@ const App: React.FC = () => {
             <button className="p-2 rounded-full hover:bg-gray-100 relative">
               <Bell size={20} />
               <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-            </button>
-            <button 
-              className="bg-red-500 text-white px-4 py-2 rounded"
-              onClick={() => setIsLoggedIn(false)}
-            >
-              退出
             </button>
           </div>
         </header>
