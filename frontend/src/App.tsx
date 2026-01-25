@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Bell } from 'lucide-react';
 import { roomApi, dishApi, orderApi, Room, Dish, Order } from './services/api';
+import LoginPage from './components/LoginPage';
+import { User } from './types';
 
 const App: React.FC = () => {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [currentTab, setCurrentTab] = useState('dashboard');
   const [rooms, setRooms] = useState<Room[]>([]);
   const [dishes, setDishes] = useState<Dish[]>([]);
@@ -17,8 +20,35 @@ const App: React.FC = () => {
     { id: 'menu', label: '菜单管理' },
   ];
 
+  // 检查本地存储中的用户信息
+  useEffect(() => {
+    const storedUser = localStorage.getItem('currentUser');
+    if (storedUser) {
+      try {
+        const user: User = JSON.parse(storedUser);
+        setCurrentUser(user);
+      } catch (e) {
+        console.error('Failed to parse user data from localStorage', e);
+      }
+    }
+  }, []);
+
+  // 登录成功回调
+  const handleLoginSuccess = (user: User) => {
+    setCurrentUser(user);
+  };
+
+  // 登出功能
+  const handleLogout = () => {
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('preferredLanguage');
+    setCurrentUser(null);
+  };
+
   // 加载数据
   const loadData = async () => {
+    if (!currentUser) return; // 只有在用户登录后才加载数据
+    
     setLoading(true);
     setError(null);
     try {
@@ -39,8 +69,15 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (currentUser) {
+      loadData();
+    }
+  }, [currentUser]);
+
+  // 如果用户未登录，显示登录页面
+  if (!currentUser) {
+    return <LoginPage onLoginSuccess={handleLoginSuccess} lang={'zh'} />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -48,6 +85,7 @@ const App: React.FC = () => {
       <div className="fixed left-0 top-0 h-full w-64 bg-white shadow-lg border-r">
         <div className="p-6">
           <h1 className="text-xl font-bold text-gray-800">JX Cloud</h1>
+          <p className="text-sm text-gray-600 mt-1">{currentUser.name}</p>
         </div>
         <nav className="mt-6">
           <ul>
@@ -74,6 +112,12 @@ const App: React.FC = () => {
               <Bell size={20} />
               <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
             </button>
+            <button 
+              className="bg-red-500 text-white px-4 py-2 rounded"
+              onClick={handleLogout}
+            >
+              退出 ({currentUser.role})
+            </button>
           </div>
         </header>
 
@@ -85,6 +129,7 @@ const App: React.FC = () => {
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="text-lg font-medium mb-4">欢迎使用 JX Cloud 酒店管理系统</h3>
               <p>当前页面: {currentTab}</p>
+              <p>用户角色: {currentUser.role}</p>
               
               <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-blue-50 p-4 rounded-lg">

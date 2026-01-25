@@ -71,9 +71,24 @@ interface ApiError {
 const request = async <T>(endpoint: string, options: RequestInit = {}): Promise<T> => {
   const url = `${API_BASE_URL}${endpoint}`;
   
+  // 从localStorage获取认证token（如果存在）
+  const storedUser = localStorage.getItem('currentUser');
+  let token = null;
+  if (storedUser) {
+    try {
+      const user = JSON.parse(storedUser);
+      // 假设后端使用某种形式的认证token
+      // 这里可以根据实际后端要求添加认证头
+      token = user.token || null;
+    } catch (e) {
+      console.warn('Failed to parse user data for auth header');
+    }
+  }
+  
   const config: RequestInit = {
     headers: {
       'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
       ...options.headers,
     },
     ...options,
